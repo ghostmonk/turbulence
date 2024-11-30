@@ -48,3 +48,12 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
+
+      # Grant public access to the frontend service
+      - name: Make Frontend Public
+        run: |
+          gcloud run services add-iam-policy-binding flexible-frontend \
+            --region us-central1 \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --quiet
