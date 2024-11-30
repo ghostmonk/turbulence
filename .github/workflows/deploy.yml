@@ -37,6 +37,7 @@ jobs:
             --region us-central1 \
             --allow-unauthenticated \
             --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }}
+            --timeout=600s
 
       # Grant public access to the backend service
       - name: Grant public access to Cloud Run
