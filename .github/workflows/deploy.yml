@@ -20,26 +20,12 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      # Set up GCP CLI and install required components
-      - name: Install gcloud beta components
+      # Install Google Cloud CLI with beta components
+      - name: Install Google Cloud CLI
         run: |
-          gcloud components install beta --quiet
-
-      # Set up GCP CLI
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          install_components: gcloud
-
-      # Grant public access to the backend service
-      - name: Grant public access to Cloud Run
-        run: |
-          gcloud beta run services add-iam-policy-binding flexible-backend \
-            --region=us-central1 \
-            --member=allUsers \
-            --role=roles/run.invoker \
-            --quiet
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
 
       # Build and deploy the backend
       - name: Deploy Backend
@@ -51,6 +37,15 @@ jobs:
             --region us-central1 \
             --allow-unauthenticated \
             --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }}
+
+      # Grant public access to the backend service
+      - name: Grant public access to Cloud Run
+        run: |
+          gcloud beta run services add-iam-policy-binding flexible-backend \
+            --region=us-central1 \
+            --member=allUsers \
+            --role=roles/run.invoker \
+            --quiet
 
       # Build and deploy the frontend
       - name: Deploy Frontend
