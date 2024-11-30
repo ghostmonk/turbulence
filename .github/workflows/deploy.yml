@@ -27,6 +27,14 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_components: gcloud
 
+      # Grant public access to the backend service
+      - name: Grant public access to Cloud Run
+        run: |
+          gcloud beta run services add-iam-policy-binding flexible-backend \
+            --region=us-central1 \
+            --member=allUsers \
+            --role=roles/run.invoker
+
       # Build and deploy the backend
       - name: Deploy Backend
         run: |
