@@ -1,11 +1,11 @@
 import React from 'react';
-import FlexibleContent from './components/Turbulence';
+import Turbulence from './components/Turbulence';
 
 const App = () => {
     return (
         <div>
             <h1>Turbulence</h1>
-            <FlexibleContent />
+            <Turbulence />
         </div>
     );
 };
