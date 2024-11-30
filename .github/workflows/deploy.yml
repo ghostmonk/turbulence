@@ -30,7 +30,7 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-env-vars POSTGRES_USER=${{ secrets.POSTGRES_USER }},POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }},POSTGRES_DB=${{ secrets.POSTGRES_DB }},CLOUD_SQL_CONNECTION_NAME=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+            --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }}
 
       # Build and deploy the frontend
       - name: Deploy Frontend

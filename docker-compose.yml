@@ -6,11 +6,13 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - POSTGRES_DB=turbulence
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_CLUSTER=${MONGO_CLUSTER}
+      - MONGO_APP_NAME=${MONGO_APP_NAME}
+      - MONGO_HOST=l0j2o.mongodb.net
     depends_on:
-      - db
+      - mongo
 
   frontend:
     build:
@@ -20,11 +22,13 @@ services:
     environment:
       - REACT_APP_API_URL=http://localhost:5000/api
 
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: flexible_site
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
     ports:
-      - "5432:5432"
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
