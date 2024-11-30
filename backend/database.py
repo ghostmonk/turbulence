@@ -7,13 +7,11 @@ def get_db():
     password = _get_variable("MONGO_PASSWORD")
     cluster = _get_variable("MONGO_CLUSTER")
     app_name = _get_variable("MONGO_APP_NAME")
-    host = _get_variable("MONGO_APP_NAME")
-    if not password:
-        raise ValueError("MONGO_PASSWORD environment variable is not set")
+    host = _get_variable("MONGO_HOST")
+    db_name = os.getenv("MONGO_DB_NAME", "ghostmonk")
 
     mongo_uri = f"mongodb+srv://{user}:{password}@{cluster}.{host}/?retryWrites=true&w=majority&appName={app_name}"
     client = MongoClient(mongo_uri)
-    db_name = os.getenv("MONGO_DB_NAME", "ghostmonk")
 
     return client[db_name]
 
