@@ -20,6 +20,11 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
+      # Set up GCP CLI and install required components
+      - name: Install gcloud beta components
+        run: |
+          gcloud components install beta --quiet
+
       # Set up GCP CLI
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
