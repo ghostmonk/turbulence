@@ -33,7 +33,8 @@ jobs:
           gcloud beta run services add-iam-policy-binding flexible-backend \
             --region=us-central1 \
             --member=allUsers \
-            --role=roles/run.invoker
+            --role=roles/run.invoker \
+            --quiet
 
       # Build and deploy the backend
       - name: Deploy Backend
