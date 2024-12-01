@@ -4,7 +4,6 @@ from decorators.cache import cached
 
 data_blueprint = Blueprint("data", __name__)
 
-# Connect to the database
 db = get_db()
 collection = db["posts"]
 
