@@ -47,7 +47,8 @@ jobs:
             --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-frontend \
             --platform managed \
             --region us-central1 \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --timeout=600s
 
       # Grant public access to the frontend service
       - name: Make Frontend Public
