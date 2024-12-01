@@ -6,25 +6,29 @@ on:
       - main
 
 jobs:
-  deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
+
+      # Authenticate with GCP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
         with:
-          fetch-depth: 0  # Ensure full history is fetched
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      - name: Detect Changes in Backend
-        id: backend_changes
+      # Install Google Cloud CLI with beta components
+      - name: Install Google Cloud CLI
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q '^backend/'; then
-            echo "backend_modified=true" >> $GITHUB_ENV
-          else
-            echo "backend_modified=false" >> $GITHUB_ENV
-          fi
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
 
+      # Build and deploy the backend
       - name: Deploy Backend
-        if: env.backend_modified == 'true'
         run: |
           gcloud builds submit ./backend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-backend
           gcloud run deploy flexible-backend \
@@ -35,25 +39,8 @@ jobs:
             --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }} \
             --timeout=600s
 
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Ensure full history is fetched
-
-      - name: Detect Changes in Frontend
-        id: frontend_changes
-        run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q '^frontend/'; then
-            echo "frontend_modified=true" >> $GITHUB_ENV
-          else
-            echo "frontend_modified=false" >> $GITHUB_ENV
-          fi
-
+      # Build and deploy the frontend
       - name: Deploy Frontend
-        if: env.frontend_modified == 'true'
         run: |
           gcloud builds submit ./frontend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-frontend
           gcloud run deploy flexible-frontend \
@@ -63,8 +50,8 @@ jobs:
             --allow-unauthenticated \
             --timeout=600s
 
+      # Grant public access to the frontend service
       - name: Make Frontend Public
-        if: env.frontend_modified == 'true'
         run: |
           gcloud run services add-iam-policy-binding flexible-frontend \
             --region us-central1 \
