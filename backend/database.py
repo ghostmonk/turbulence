@@ -17,5 +17,5 @@ def get_db():
 def _get_variable(key: str) -> str:
     output = os.getenv(key)
     if not output:
-        raise ValueError(f"{key} environment variable is not set")
+        raise ValueError(f"{key} environment variable is not set.")
     return output
