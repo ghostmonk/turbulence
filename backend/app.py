@@ -1,11 +1,12 @@
 import os
 
-from flask import Flask, jsonify
+from flask import Flask
 import logging
 
 from flask_cors import CORS
 from google.cloud import logging as gcp_logging
-from database import get_db
+
+from handlers.posts import data_blueprint
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": r"https://(.+\.)?ghostmonk\.com"}})
@@ -15,18 +16,9 @@ client.setup_logging()
 
 logger = logging.getLogger("ghostmonk-turbulence")
 logger.setLevel(logging.INFO)
+logger.info("Starting application")
 
-# Connect to the database
-db = get_db()
-collection = db["posts"]
-
-@app.route('/data', methods=['GET'])
-def get_data():
-    data = list(collection.find())
-    for doc in data:
-        doc["id"] = str(doc["_id"])
-        del doc["_id"]
-    return jsonify(data)
+app.register_blueprint(data_blueprint)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
