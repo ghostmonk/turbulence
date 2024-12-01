@@ -16,7 +16,7 @@ client.setup_logging()
 
 logger = logging.getLogger("ghostmonk-turbulence")
 logger.setLevel(logging.INFO)
-logger.info("Starting application")
+logger.info("Starting application turbulent")
 
 app.register_blueprint(data_blueprint)
 
