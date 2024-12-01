@@ -1,16 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { fetchContent } from '../services/api';
 import { formatDate } from '../utils/date_time';
+import { ClipLoader } from 'react-spinners';
 
 const Turbulence = () => {
     const [content, setContent] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        setLoading(true);
         fetchContent()
-            .then(data => setContent(data)) // Set the data on success
-            .catch(err => setError(err.message)); // Handle errors
+            .then(data => {
+                setContent(data)
+                setLoading(false);
+            })
+            .catch(err => {
+                setError(err.message)
+                setLoading(false);
+            }); // Handle errors
     }, []);
+
+    if (loading) {
+        return (
+            <div style={{ textAlign: 'center', marginTop: '2em' }}>
+                <ClipLoader color="#3498db" loading={loading} size={50} />
+                <p>Loading content...</p>
+            </div>
+        );
+    }
 
     if (error) {
         return (
