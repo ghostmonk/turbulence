@@ -6,28 +6,24 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-backend:
+    if: ${{ github.event_name == 'push' && contains(join(github.event.commits.*.modified, ','), 'backend/') }}
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Authenticate with GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      # Install Google Cloud CLI with beta components
       - name: Install Google Cloud CLI
         run: |
           echo "Installing Google Cloud CLI..."
           sudo apt-get update
           sudo apt-get install -y google-cloud-cli
 
-      # Build and deploy the backend
       - name: Deploy Backend
         run: |
           gcloud builds submit ./backend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-backend
@@ -39,7 +35,24 @@ jobs:
             --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }} \
             --timeout=600s
 
-      # Build and deploy the frontend
+  deploy-frontend:
+    if: ${{ github.event_name == 'push' && contains(join(github.event.commits.*.modified, ','), 'frontend/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Install Google Cloud CLI
+        run: |
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
+
       - name: Deploy Frontend
         run: |
           gcloud builds submit ./frontend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-frontend
@@ -50,7 +63,6 @@ jobs:
             --allow-unauthenticated \
             --timeout=600s
 
-      # Grant public access to the frontend service
       - name: Make Frontend Public
         run: |
           gcloud run services add-iam-policy-binding flexible-frontend \
