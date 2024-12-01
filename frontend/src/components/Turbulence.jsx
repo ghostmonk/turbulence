@@ -24,11 +24,10 @@ const Turbulence = () => {
 
     return (
         <div>
-            <h1>Turbulence</h1>
             {content.map(item => (
                 <div style={{margin: '1em 0'}}>
-                    <h1>{item.title}</h1>
-                    <h3>{formatDate(item.date)}</h3>
+                    <h3>{item.title}</h3>
+                    <h4>{formatDate(item.date)}</h4>
                     <p>{item.content}</p>
                 </div>
             ))}
