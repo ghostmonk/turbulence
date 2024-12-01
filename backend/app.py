@@ -13,14 +13,14 @@ CORS(app, resources={r"/api/*": {"origins": "https://api.ghostmonk.com"}})
 client = gcp_logging.Client()
 client.setup_logging()
 
-logger = logging.getLogger("my-app")
+logger = logging.getLogger("ghostmonk-turbulence")
 logger.setLevel(logging.INFO)
 
 # Connect to the database
 db = get_db()
 collection = db["posts"]
 
-@app.route('/api/data', methods=['GET'])
+@app.route('/data', methods=['GET'])
 def get_data():
     data = list(collection.find({}, {"_id": 0}))
     logger.info("Fetched data from DB", extra={"result":data})
