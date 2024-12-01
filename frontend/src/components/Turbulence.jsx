@@ -25,7 +25,7 @@ const Turbulence = () => {
     return (
         <div>
             {content.map(item => (
-                <div style={{margin: '1em 0'}}>
+                <div key={item.id} style={{margin: '1em 0'}}>
                     <h3>{item.title}</h3>
                     <h4>{formatDate(item.date)}</h4>
                     <p>{item.content}</p>

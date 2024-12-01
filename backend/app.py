@@ -22,8 +22,10 @@ collection = db["posts"]
 
 @app.route('/data', methods=['GET'])
 def get_data():
-    data = list(collection.find({}, {"_id": 0}))
-    logger.info("Fetched data from DB", extra={"result":data})
+    data = list(collection.find())
+    for doc in data:
+        doc["id"] = str(doc["_id"])
+        del doc["_id"]
     return jsonify(data)
 
 if __name__ == "__main__":
