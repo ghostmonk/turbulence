@@ -2,10 +2,13 @@ import os
 
 from flask import Flask, jsonify
 import logging
+
+from flask_cors import CORS
 from google.cloud import logging as gcp_logging
 from database import get_db
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "https://api.ghostmonk.com"}})
 
 client = gcp_logging.Client()
 client.setup_logging()
