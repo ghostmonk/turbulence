@@ -30,9 +30,9 @@ jobs:
       # Build and deploy the backend
       - name: Deploy Backend
         run: |
-          gcloud builds submit ./backend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-backend
-          gcloud run deploy flexible-backend \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-backend \
+          gcloud builds submit ./backend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-service
+          gcloud run deploy turbulent-service \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-service \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
@@ -42,9 +42,9 @@ jobs:
       # Build and deploy the frontend
       - name: Deploy Frontend
         run: |
-          gcloud builds submit ./frontend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-frontend
-          gcloud run deploy flexible-frontend \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flexible-frontend \
+          gcloud builds submit ./frontend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-frontend
+          gcloud run deploy turbulent-frontend \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-frontend \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
@@ -53,7 +53,7 @@ jobs:
       # Grant public access to the frontend service
       - name: Make Frontend Public
         run: |
-          gcloud run services add-iam-policy-binding flexible-frontend \
+          gcloud run services add-iam-policy-binding turbulent-frontend \
             --region us-central1 \
             --member="allUsers" \
             --role="roles/run.invoker" \
