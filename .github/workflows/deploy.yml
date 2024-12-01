@@ -9,7 +9,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        service: [backend/, frontend/] # Added trailing '/' in matrix values
+        service: [backend, frontend]  # Removed trailing slashes
     runs-on: ubuntu-latest
 
     steps:
@@ -27,10 +27,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-cloud-cli
 
+      - name: Debug Modified Files
+        run: echo "${{ join(github.event.commits.*.modified, ',') }}"
+
       - name: Deploy Service
         if: ${{ github.event_name == 'push' && contains(join(github.event.commits.*.modified, ','), matrix.service) }}
         run: |
-          if [[ "${{ matrix.service }}" == "backend/" ]]; then
+          if [[ "${{ matrix.service }}" == "backend" ]]; then
             gcloud builds submit ./backend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-backend
             gcloud run deploy flexible-backend \
               --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-backend \
@@ -39,7 +42,7 @@ jobs:
               --allow-unauthenticated \
               --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }} \
               --timeout=600s
-          elif [[ "${{ matrix.service }}" == "frontend/" ]]; then
+          elif [[ "${{ matrix.service }}" == "frontend" ]]; then
             gcloud builds submit ./frontend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-frontend
             gcloud run deploy flexible-frontend \
               --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-frontend \
@@ -47,7 +50,7 @@ jobs:
               --region us-central1 \
               --allow-unauthenticated \
               --timeout=600s
-            gcloud run services add-iam-policy-binding turbulent-frontend \
+            gcloud run services add-iam-policy-binding flexible-frontend \
               --region us-central1 \
               --member="allUsers" \
               --role="roles/run.invoker" \
