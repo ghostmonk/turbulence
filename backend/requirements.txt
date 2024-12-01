@@ -3,3 +3,4 @@ python-dotenv==1.0.0
 pymongo[srv]
 google-cloud-logging
 flask-cors
+gunicorn
