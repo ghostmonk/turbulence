@@ -2,7 +2,6 @@ from pymongo import MongoClient
 import os
 
 def get_db():
-    # MongoDB connection URI
     user = _get_variable("MONGO_USER")
     password = _get_variable("MONGO_PASSWORD")
     cluster = _get_variable("MONGO_CLUSTER")
