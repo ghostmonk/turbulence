@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '../components/Layout';
 import Head from 'next/head';
+import Posts from "@/components/Posts";
 
 const Home: React.FC = () => {
     return (
@@ -22,8 +23,7 @@ const Home: React.FC = () => {
             <Layout>
                 <div className="text-center">
                     <h1 className="text-4xl font-bold text-blue-600">Ghostmonk: Turbulence</h1>
-                    {/* Escape the single quote */}
-                    <p className="mt-4 text-lg text-gray-700">What&apos;s going on?</p>
+                    <Posts url="https://api.ghostmonk.com/data" />
                 </div>
             </Layout>
         </>
