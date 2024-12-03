@@ -5,3 +5,4 @@ pymongo[srv]
 google-cloud-logging
 flask-cors
 gunicorn
+pydantic

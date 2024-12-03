@@ -1,5 +1,7 @@
 import { Html, Head, Main, NextScript } from "next/document";
 
+const isDevelopment = process.env.NODE_ENV === "development";
+
 export default function Document() {
     return (
         <Html lang="en">
@@ -15,14 +17,14 @@ export default function Document() {
                 <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
                 <meta
                     httpEquiv="Content-Security-Policy"
-                    content="
+                    content={`
                         default-src 'self';
                         connect-src 'self' https://api.ghostmonk.com;
-                        script-src 'self';
+                        script-src 'self' ${isDevelopment ? "'unsafe-eval'" : ""};
                         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                         img-src 'self' data:;
                         font-src 'self' https://fonts.gstatic.com;
-    "
+                    `}
                 />
                 <meta name="referrer-policy" content="strict-origin-when-cross-origin"/>
             </Head>

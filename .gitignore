@@ -302,3 +302,4 @@ fabric.properties
 service-account-key.json
 
 .next/
+.env.local
