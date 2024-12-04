@@ -17,10 +17,10 @@ function MyApp({ Component, pageProps }: AppProps) {
                 <link rel="canonical" href="https://ghostmonk.com/"/>
             </Head>
             <Layout>
-                <Component {...pageProps} />;
+                <Component {...pageProps} />
             </Layout>
         </SessionProvider>
-)
-}
+    );
+};
 
 export default MyApp;

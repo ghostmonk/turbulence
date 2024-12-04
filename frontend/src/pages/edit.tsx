@@ -33,7 +33,6 @@ const EditPage: React.FC = () => {
 
     return (
         <div>
-            <h1>Create a New Story</h1>
             <form
                 onSubmit={handleSubmit}
                 className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md space-y-4"

@@ -29,4 +29,4 @@ def requires_auth(f):
         except ValueError as e:
             return jsonify({'error': str(e)}), 401
             
-    return decorated 
+    return decorated
