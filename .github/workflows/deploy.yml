@@ -36,17 +36,7 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-env-vars \
-              MONGO_USER=${{ secrets.MONGO_USER }},\
-              MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},\
-              MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},\
-              MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},\
-              MONGO_HOST=${{ secrets.MONGO_HOST }},\
-              GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},\
-              GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},\
-              NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},\
-              MONGO_DB_NAME=${{ secrets.MONGO_DB_NAME }},\
-              MONGODB_URI=${{ secrets.MONGODB_URI }} \
+            --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},MONGO_DB_NAME=${{ secrets.MONGO_DB_NAME }},MONGODB_URI=${{ secrets.MONGODB_URI }} \
             --timeout=600s
 
       # Build and deploy the frontend
