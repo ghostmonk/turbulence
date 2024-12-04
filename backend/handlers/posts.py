@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from database import get_db
 from decorators.cache import cached
+from decorators.auth import requires_auth
 
 data_blueprint = Blueprint("data", __name__)
 
@@ -17,6 +18,7 @@ def get_data():
     return jsonify(data)
 
 @data_blueprint.route("/data", methods=["POST"])
+@requires_auth
 def add_data():
     try:
         payload = request.get_json()
