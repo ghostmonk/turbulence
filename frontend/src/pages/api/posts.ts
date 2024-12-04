@@ -9,6 +9,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(401).json({ message: "Unauthorized" });
         }
 
+        if (!session.accessToken) {
+            return res.status(500).json({ message: "Access token is missing" });
+        }
+
         const { title, content } = req.body;
 
         if (!title || !content) {
@@ -16,12 +20,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         try {
-            // Send data to another endpoint
             const response = await fetch("https://api.example.com/posts", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${session.accessToken}`, // Include authorization if needed
+                    Authorization: `Bearer ${session.accessToken}`,
                 },
                 body: JSON.stringify({ title, content }),
             });
@@ -32,13 +35,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
             const responseData = await response.json();
-            return res.status(200).json(responseData); // Forward the response from the endpoint
+            return res.status(200).json(responseData);
         } catch (error) {
             console.error("Error forwarding request:", error);
-            res.status(500).json({ message: "Internal server error" });
+            return res.status(500).json({ message: "Internal server error" });
         }
     } else {
         res.setHeader("Allow", ["POST"]);
-        res.status(405).json({ message: `Method ${req.method} not allowed` });
+        return res.status(405).json({ message: `Method ${req.method} not allowed` });
     }
 }
