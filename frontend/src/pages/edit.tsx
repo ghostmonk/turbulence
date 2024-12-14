@@ -16,6 +16,7 @@ const EditPage: React.FC = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.accessToken || ""}`,
                 },
                 credentials: "include",
                 body: JSON.stringify({ title, content }),
