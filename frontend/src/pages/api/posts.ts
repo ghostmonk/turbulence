@@ -4,6 +4,7 @@ import { getSession } from "next-auth/react";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const session = await getSession({ req });
+        console.log("Server-side session:", session);
 
         if (!session) {
             return res.status(401).json({ message: "Unauthorized" });
@@ -26,7 +27,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${session.accessToken}`,
                 },
-                credentials: "include",
                 body: JSON.stringify({ title, content }),
             });
 

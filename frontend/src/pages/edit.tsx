@@ -10,12 +10,14 @@ const EditPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        console.log("Session data:", session);
         try {
             const response = await fetch("/api/posts", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
+                credentials: "include",
                 body: JSON.stringify({ title, content }),
             });
 
