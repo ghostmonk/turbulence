@@ -4,6 +4,11 @@ import { getSession } from "next-auth/react";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     console.log("Request headers:", req.headers);
     console.log("Request cookies:", req.cookies);
+    console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET);
+    console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
+    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+    console.log("GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET);
+
     if (req.method !== "POST") {
         res.setHeader("Allow", ["POST"]);
         return res.status(405).json({ message: `Method ${req.method} not allowed` });
