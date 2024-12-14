@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    console.log("Request headers:", req.headers);
+    console.log("Request cookies:", req.cookies);
     if (req.method !== "POST") {
         res.setHeader("Allow", ["POST"]);
         return res.status(405).json({ message: `Method ${req.method} not allowed` });
