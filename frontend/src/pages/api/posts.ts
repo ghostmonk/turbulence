@@ -26,6 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${session.accessToken}`,
                 },
+                credentials: "include",
                 body: JSON.stringify({ title, content }),
             });
 
