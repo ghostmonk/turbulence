@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         try {
-            const response = await fetch("https://api.example.com/posts", {
+            const response = await fetch("https://api.ghostmonk.com/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

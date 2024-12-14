@@ -5,20 +5,34 @@ const EditPage: React.FC = () => {
     const { data: session } = useSession();
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const response = await fetch("/api/posts", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ title, content, email: session?.user?.email }),
-        });
-        if (response.ok) {
-            alert("Story posted!");
-        } else {
-            alert("Error posting story.");
+        setIsLoading(true);
+        try {
+            const response = await fetch("/api/posts", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ title, content }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert(`Story posted! ID: ${data.id}`);
+                setTitle("");
+                setContent("");
+            } else {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.message || "Failed to post story"}`);
+            }
+        } catch (error) {
+            console.error("Error submitting story:", error);
+            alert("An unexpected error occurred.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -76,7 +90,7 @@ const EditPage: React.FC = () => {
                     type="submit"
                     className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                    Post
+                    {isLoading ? "Posting..." : "Post"}
                 </button>
             </form>
             <button onClick={() => signOut()}>Sign out</button>
