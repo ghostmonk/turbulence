@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from flask import Blueprint, jsonify, request
 from database import get_db
 from decorators.cache import cached
@@ -25,6 +27,8 @@ def add_data():
 
         if not payload or "title" not in payload or "content" not in payload:
             return jsonify({"error": "Invalid input. 'title' and 'content' are required."}), 400
+
+        payload["date"] = datetime.now(timezone.utc)
 
         result = collection.insert_one(payload)
         new_document = collection.find_one({"_id": result.inserted_id})
