@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { parse } from "cookie"
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "POST") {
@@ -8,13 +8,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ message: `Method ${req.method} not allowed` });
     }
 
-    const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
-    console.log("Parsed Cookies:", cookies);
-
-    const token = await getToken({req, secret: process.env.NEXTAUTH_SECRET});
-    console.log("Decoded Token:", token);
-
-    if (!token) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session || !session.accessToken) {
         console.error("Session validation failed.");
         return res.status(401).json({ message: "Unauthorized" });
     }
@@ -25,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token.accessToken}`,
+                Authorization: `Bearer ${session.accessToken}`,
             },
             body: JSON.stringify({ title, content }),
         });
