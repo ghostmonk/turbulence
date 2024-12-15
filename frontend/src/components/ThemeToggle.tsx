@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { FaSun, FaMoon } from "react-icons/fa";
 
 export default function ThemeToggle() {
-    const [theme, setTheme] = useState("light");
+    const [theme, setTheme] = useState(() => {
+        return localStorage.getItem("theme") || "dark";
+    });
 
     useEffect(() => {
         document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
     }, [theme]);
 
     const toggleTheme = () => {
