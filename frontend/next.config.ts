@@ -5,15 +5,15 @@ const nextConfig: NextConfig = {
     async headers() {
         return [
             {
-                source: "/api/:path*", // Apply headers to all API routes
+                source: "/api/:path*",
                 headers: [
                     {
                         key: "Access-Control-Allow-Origin",
-                        value: "https://ghostmonk.com", // Your production domain
+                        value: "https://ghostmonk.com",
                     },
                     {
                         key: "Access-Control-Allow-Credentials",
-                        value: "true", // Allow cookies
+                        value: "true",
                     },
                     {
                         key: "Access-Control-Allow-Methods",

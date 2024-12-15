@@ -1,35 +1,31 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getSession } from "next-auth/react";
+import { parse } from "cookie"
+import { getToken } from "next-auth/jwt";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    console.log("Request headers:", req.headers);
-    console.log("Request cookies:", req.cookies);
-    console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET);
-    console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
-    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
-    console.log("GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET);
-
     if (req.method !== "POST") {
         res.setHeader("Allow", ["POST"]);
         return res.status(405).json({ message: `Method ${req.method} not allowed` });
     }
 
-    const session = await getSession({ req });
-    console.log("Server-side session:", session);
+    const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
+    console.log("Parsed Cookies:", cookies);
 
-    if (!session || !session.accessToken) {
-        console.error("Session or accessToken is missing");
+    const token = await getToken({req, secret: process.env.NEXTAUTH_SECRET});
+    console.log("Decoded Token:", token);
+
+    if (!token) {
+        console.error("Session validation failed.");
         return res.status(401).json({ message: "Unauthorized" });
     }
 
     try {
-        console.log("Access Token:", session.accessToken);
         const { title, content } = req.body;
         const response = await fetch("https://api.ghostmonk.com/data", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${session.accessToken}`,
+                Authorization: `Bearer ${token.accessToken}`,
             },
             body: JSON.stringify({ title, content }),
         });
