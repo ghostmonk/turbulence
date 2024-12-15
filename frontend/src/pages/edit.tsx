@@ -1,8 +1,12 @@
-import { useSession, signIn, signOut } from "next-auth/react";
-import React, { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/router";
+import React, { useState, useEffect } from "react";
 
 const EditPage: React.FC = () => {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    useEffect(() => { if (status === "unauthenticated") { router.replace("/") } }, [status, router]);
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -10,7 +14,6 @@ const EditPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        console.log("Session data:", session);
         try {
             const response = await fetch("/api/posts", {
                 method: "POST",
@@ -42,8 +45,7 @@ const EditPage: React.FC = () => {
     if (!session) {
         return (
             <div>
-                <h1>Please sign in</h1>
-                <button onClick={() => signIn("google")}>Sign in with Google</button>
+                <button onClick={() => signIn("google")}>Sign in</button>
             </div>
         );
     }
@@ -96,7 +98,6 @@ const EditPage: React.FC = () => {
                     {isLoading ? "Posting..." : "Post"}
                 </button>
             </form>
-            <button onClick={() => signOut()}>Sign out</button>
         </div>
     );
 };

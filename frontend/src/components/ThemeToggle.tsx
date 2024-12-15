@@ -36,7 +36,7 @@ export default function ThemeToggle() {
             </div>
 
             <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <FaMoon className={`text-gray-300 ${theme === "light" ? "opacity-50" : "opacity-100"}`} size={16}/>
+                <FaMoon className={`text-yellow-500 ${theme === "light" ? "opacity-50" : "opacity-100"}`} size={16}/>
             </div>
         </div>
     );
