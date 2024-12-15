@@ -1,15 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import useClientSideStorage from "../hooks/useClientSideStorage";
 import { FaSun, FaMoon } from "react-icons/fa";
 
-export default function ThemeToggle() {
-    const [theme, setTheme] = useState(() => {
-        return localStorage.getItem("theme") || "dark";
-    });
+type Theme = "light" | "dark";
 
-    useEffect(() => {
-        document.documentElement.setAttribute("data-theme", theme);
-        localStorage.setItem("theme", theme);
-    }, [theme]);
+export default function ThemeToggle() {
+    const [theme, setTheme] = useClientSideStorage<Theme>("theme", "light");
+
+    useEffect(() => { document.documentElement.setAttribute("data-theme", theme) }, [theme]);
 
     const toggleTheme = () => {
         setTheme((prev) => (prev === "light" ? "dark" : "light"));
