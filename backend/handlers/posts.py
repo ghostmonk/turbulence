@@ -13,7 +13,7 @@ collection = db["posts"]
 @data_blueprint.route("/data", methods=["GET"])
 @cached(maxsize=100, ttl=86400)
 def get_data():
-    data = list(collection.find())
+    data = list(collection.find().sort("date", -1))
     for doc in data:
         doc["id"] = str(doc["_id"])
         del doc["_id"]
