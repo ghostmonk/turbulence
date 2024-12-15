@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ClipLoader from 'react-spinners/ClipLoader';
+import DOMPurify from "dompurify";
 import { fetchContent } from '@/utils/api';
 import {formatDate} from "@/utils/formatDate";
 
@@ -50,7 +51,12 @@ const Posts: React.FC<ContentListProps> = ({ url }) => {
                 <div key={item.id} className="border p-4 my-4">
                     <h2 className="text-2xl font-bold">{item.title}</h2>
                     <h3 className="text-xl font-bold">{formatDate(item.date)}</h3>
-                    <p className="mt-2">{item.content}</p>
+                    <div
+                        className="mt-2 prose max-w-none"
+                        dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(item.content),
+                        }}
+                    />
                 </div>
             ))}
         </div>

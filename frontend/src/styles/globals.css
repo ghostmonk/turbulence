@@ -3,18 +3,98 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme Variables */
 :root {
     --background: #ffffff; /* Light theme background */
-    --foreground: #000000; /* Light theme foreground */
+    --foreground: #000000; /* Light theme text */
 }
 
 [data-theme="dark"] {
     --background: #000000; /* Dark theme background */
-    --foreground: #ffffff; /* Dark theme foreground */
+    --foreground: #ffffff; /* Dark theme text */
 }
 
 body {
     background-color: var(--background);
     color: var(--foreground);
     transition: background-color 0.3s, color 0.3s;
+}
+
+/* =========================================
+   Light Mode Styles for ReactQuill
+   ========================================= */
+.ql-toolbar,
+.ql-container {
+    background-color: #f9fafb; /* Tailwind gray-50 */
+    border-color: #e5e7eb; /* Tailwind gray-200 */
+}
+
+.ql-editor {
+    background-color: #ffffff; /* White background */
+    color: #1f2937; /* Tailwind gray-800 for text */
+    min-height: 400px;
+}
+
+.ql-editor p {
+    color: #374151; /* Tailwind gray-700 */
+}
+
+/* Toolbar Buttons and Icons */
+.ql-toolbar button,
+.ql-toolbar .ql-picker {
+    color: #4b5563; /* Tailwind gray-600 */
+}
+
+.ql-toolbar button:hover,
+.ql-toolbar .ql-picker:hover,
+.ql-toolbar .ql-active {
+    color: #1f2937; /* Tailwind gray-800 */
+}
+
+.ql-toolbar button svg {
+    fill: #4b5563; /* Tailwind gray-600 for icons */
+}
+
+.ql-toolbar button:hover svg,
+.ql-toolbar .ql-active svg {
+    fill: #1f2937; /* Tailwind gray-800 for active/hover */
+}
+
+/* =========================================
+   Dark Mode Styles for ReactQuill
+   ========================================= */
+[data-theme="dark"] .ql-toolbar,
+[data-theme="dark"] .ql-container {
+    background-color: #1f2937; /* Tailwind gray-800 */
+    border-color: #374151; /* Tailwind gray-700 */
+}
+
+[data-theme="dark"] .ql-editor {
+    background-color: #1f2937; /* Tailwind gray-800 */
+    color: #f9fafb; /* Tailwind gray-50 */
+}
+
+[data-theme="dark"] .ql-editor p {
+    color: #e5e7eb; /* Tailwind gray-300 */
+}
+
+/* Dark Mode: Toolbar Buttons and Icons */
+[data-theme="dark"] .ql-toolbar button,
+[data-theme="dark"] .ql-toolbar .ql-picker {
+    color: #e5e7eb; /* Light gray for text/icons */
+}
+
+[data-theme="dark"] .ql-toolbar button:hover,
+[data-theme="dark"] .ql-toolbar .ql-picker:hover,
+[data-theme="dark"] .ql-toolbar .ql-active {
+    color: #f9fafb; /* White for hover/active states */
+}
+
+[data-theme="dark"] .ql-toolbar button svg {
+    fill: #e5e7eb; /* Light gray for icons */
+}
+
+[data-theme="dark"] .ql-toolbar button:hover svg,
+[data-theme="dark"] .ql-toolbar .ql-active svg {
+    fill: #f9fafb; /* White for hover/active icons */
 }

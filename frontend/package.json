@@ -13,11 +13,14 @@
     "@tailwindcss/typography": "^0.5.15",
     "autoprefixer": "^10.4.20",
     "cookie": "^1.0.2",
+    "dompurify": "^3.2.3",
     "next": "15.0.3",
     "next-auth": "^4.24.10",
+    "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.4.0",
+    "react-quill": "^2.0.0",
     "react-spinners": "^0.14.1"
   },
   "devDependencies": {
