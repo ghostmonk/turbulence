@@ -9,6 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const session = await getServerSession(req, res, authOptions);
+    console.log("Session in handler:", session);
     if (!session || !session.accessToken) {
         console.error("Session validation failed.");
         return res.status(401).json({ message: "Unauthorized" });
