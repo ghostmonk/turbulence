@@ -1,32 +1,38 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi.responses import JSONResponse
+from pymongo.collection import Collection
 from database import get_db
 from decorators.cache import cached
 from decorators.auth import requires_auth
 
-data_blueprint = Blueprint("data", __name__)
+router = APIRouter()
 
-db = get_db()
-collection = db["posts"]
+def get_collection() -> Collection:
+    db = get_db()
+    return db["posts"]
 
-@data_blueprint.route("/data", methods=["GET"])
+@router.get("/data")
 @cached(maxsize=100, ttl=86400)
-def get_data():
-    data = list(collection.find().sort("date", -1))
-    for doc in data:
-        doc["id"] = str(doc["_id"])
-        del doc["_id"]
-    return jsonify(data)
-
-@data_blueprint.route("/data", methods=["POST"])
-@requires_auth
-def add_data():
+async def get_data(collection: Collection = Depends(get_collection)):
     try:
-        payload = request.get_json()
+        data = list(collection.find().sort("date", -1))
+        for doc in data:
+            doc["id"] = str(doc["_id"])
+            del doc["_id"]
+        return JSONResponse(content=data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/data")
+@requires_auth
+async def add_data(request: Request, collection: Collection = Depends(get_collection)):
+    try:
+        payload = await request.json()
 
         if not payload or "title" not in payload or "content" not in payload:
-            return jsonify({"error": "Invalid input. 'title' and 'content' are required."}), 400
+            raise HTTPException(status_code=400, detail="Invalid input. 'title' and 'content' are required.")
 
         payload["date"] = datetime.now(timezone.utc)
 
@@ -35,6 +41,6 @@ def add_data():
         new_document["id"] = str(new_document["_id"])
         del new_document["_id"]
 
-        return jsonify(new_document), 201
+        return JSONResponse(content=new_document, status_code=201)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

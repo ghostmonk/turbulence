@@ -1,24 +1,26 @@
-from flask import Blueprint, request, jsonify
-import requests
 import time
+import requests
 from functools import wraps
-
-data_blueprint = Blueprint("data", __name__)
+from fastapi import HTTPException, Request
 
 def requires_auth(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get("Authorization", None)
+    async def decorated(*args, **kwargs):
+        request: Request = kwargs.get("request")
+        if not request:
+            raise HTTPException(status_code=500, detail="Request object is missing.")
+
+        auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return jsonify({"error": "Authorization header is missing"}), 401
+            raise HTTPException(status_code=401, detail="Authorization header is missing.")
 
         parts = auth_header.split()
         if parts[0].lower() != "bearer":
-            return jsonify({"error": "Authorization header must start with Bearer"}), 401
+            raise HTTPException(status_code=401, detail="Authorization header must start with Bearer.")
         elif len(parts) == 1:
-            return jsonify({"error": "Token not found"}), 401
+            raise HTTPException(status_code=401, detail="Token not found.")
         elif len(parts) > 2:
-            return jsonify({"error": "Authorization header must be a single Bearer token"}), 401
+            raise HTTPException(status_code=401, detail="Authorization header must be a single Bearer token.")
 
         token = parts[1]
 
@@ -28,22 +30,19 @@ def requires_auth(f):
                 params={"access_token": token},
             )
             if response.status_code != 200:
-                return jsonify({"error": "Invalid token"}), 401
+                raise HTTPException(status_code=401, detail="Invalid token.")
 
             token_info = response.json()
-            print("Token info:", token_info)
-
-            # Validate token expiration
             if "exp" in token_info and time.time() > int(token_info["exp"]):
-                return jsonify({"error": "Token has expired"}), 401
+                raise HTTPException(status_code=401, detail="Token has expired.")
 
-            # Validate required scopes
             required_scopes = {"https://www.googleapis.com/auth/userinfo.email"}
             if not required_scopes.issubset(set(token_info.get("scope", "").split())):
-                return jsonify({"error": "Insufficient token scopes"}), 403
+                raise HTTPException(status_code=403, detail="Insufficient token scopes.")
 
         except Exception as e:
-            return jsonify({"error": f"Token validation failed: {str(e)}"}), 500
+            raise HTTPException(status_code=500, detail=f"Token validation failed: {str(e)}")
 
-        return f(*args, **kwargs)
+        return await f(*args, **kwargs)
+
     return decorated
