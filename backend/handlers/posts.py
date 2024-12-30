@@ -10,7 +10,7 @@ from decorators.auth import requires_auth
 router = APIRouter()
 
 async def get_collection() -> Collection:
-    db = get_db()
+    db = await get_db()
     return db["posts"]
 
 @router.get("/data")
