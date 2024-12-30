@@ -9,7 +9,7 @@ from decorators.auth import requires_auth
 
 router = APIRouter()
 
-def get_collection() -> Collection:
+async def get_collection() -> Collection:
     db = get_db()
     return db["posts"]
 
@@ -21,7 +21,7 @@ async def get_data(collection: Collection = Depends(get_collection)):
         for doc in data:
             doc["id"] = str(doc["_id"])
             del doc["_id"]
-        return JSONResponse(content=data)
+        return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

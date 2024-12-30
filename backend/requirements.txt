@@ -1,10 +1,10 @@
 fastapi
 cachetools
 python-dotenv==1.0.0
-pymongo[srv]
 google-cloud-logging
 uvicorn
 pydantic
 google-auth
 requests
 google
+motor

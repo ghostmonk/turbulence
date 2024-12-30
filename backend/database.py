@@ -1,17 +1,21 @@
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
-def get_db():
-    user = _get_variable("MONGO_USER")
-    password = _get_variable("MONGO_PASSWORD")
-    cluster = _get_variable("MONGO_CLUSTER")
-    app_name = _get_variable("MONGO_APP_NAME")
-    host = _get_variable("MONGO_HOST")
+client = None
+
+async def get_db():
+    global client
+    if not client:
+        user = _get_variable("MONGO_USER")
+        password = _get_variable("MONGO_PASSWORD")
+        cluster = _get_variable("MONGO_CLUSTER")
+        app_name = _get_variable("MONGO_APP_NAME")
+        host = _get_variable("MONGO_HOST")
+
+        mongo_uri = f"mongodb+srv://{user}:{password}@{cluster}.{host}/?retryWrites=true&w=majority&appName={app_name}"
+        client = AsyncIOMotorClient(mongo_uri)
+
     db_name = os.getenv("MONGO_DB_NAME", "ghostmonk")
-
-    mongo_uri = f"mongodb+srv://{user}:{password}@{cluster}.{host}/?retryWrites=true&w=majority&appName={app_name}"
-    client = MongoClient(mongo_uri)
-
     return client[db_name]
 
 def _get_variable(key: str) -> str:
