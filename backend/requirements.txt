@@ -6,3 +6,5 @@ google-cloud-logging
 uvicorn
 pydantic
 google-auth
+requests
+google
