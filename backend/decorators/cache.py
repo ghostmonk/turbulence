@@ -15,6 +15,9 @@ def dynamic_cached(maxsize: int, ttl: int):
             cache[key] = result
             return result
 
+        wrapper.invalidate = lambda *args, **kwargs: cache.pop((args, frozenset(kwargs.items())), None)
+        wrapper.clear = cache.clear
+
         return wrapper
 
     return decorator

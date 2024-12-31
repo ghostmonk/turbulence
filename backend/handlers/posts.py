@@ -41,6 +41,8 @@ async def add_data(request: Request, collection: AsyncIOMotorCollection = Depend
         result = await collection.insert_one(payload)
         logger.info("Inserted document with ID: %s", result.inserted_id)
 
+        get_data.invalidate(collection)
+
         new_document = await collection.find_one({"_id": result.inserted_id})
         new_document["id"] = str(new_document["_id"])
         new_document["date"] = new_document["date"].isoformat()
