@@ -2,17 +2,17 @@ from functools import wraps
 
 from cachetools import TTLCache
 
-def cached(maxsize=50, ttl=3600):
-    cache = TTLCache(maxsize=maxsize, ttl=ttl)
+def dynamic_cached(maxsize: int, ttl: int):
     def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            cache_key = f"{func.__name__}:{args}:{kwargs}"
-            if cache_key in cache:
-                return cache[cache_key]
+        cache = TTLCache(maxsize=maxsize, ttl=ttl)
 
-            result = func(*args, **kwargs)
-            cache[cache_key] = result
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            key = (args, frozenset(kwargs.items()))
+            if key in cache:
+                return cache[key]
+            result = await func(*args, **kwargs)
+            cache[key] = result
             return result
 
         return wrapper

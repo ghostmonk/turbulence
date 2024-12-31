@@ -4,14 +4,14 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from database import get_db, get_collection
-from decorators.cache import cached
+from database import get_collection
 from decorators.auth import requires_auth
+from decorators.cache import dynamic_cached
 
 router = APIRouter()
 
 @router.get("/data")
-@cached(maxsize=100, ttl=86400)
+@dynamic_cached(maxsize=100, ttl=86400)
 async def get_data(collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
         cursor = collection.find().sort("date", -1)
