@@ -43,6 +43,7 @@ async def add_data(request: Request, collection: AsyncIOMotorCollection = Depend
 
         new_document = await collection.find_one({"_id": result.inserted_id})
         new_document["id"] = str(new_document["_id"])
+        new_document["date"] = new_document["date"].isoformat()
         del new_document["_id"]
 
         return JSONResponse(content=new_document, status_code=201)
