@@ -303,3 +303,5 @@ service-account-key.json
 
 .next/
 .env.local
+
+*.zip
