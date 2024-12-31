@@ -1,10 +1,9 @@
 import os
-import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from google.cloud import logging as gcp_logging
 
 from handlers.posts import router
+from logger import logger
 
 app = FastAPI()
 
@@ -22,14 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = gcp_logging.Client()
-client.setup_logging()
-
-logger = logging.getLogger("ghostmonk-turbulence")
-logger.setLevel(logging.INFO)
-logger.info("Starting application turbulent")
-
 app.include_router(router)
+logger.info("Starting application turbulent")
 
 if __name__ == "__main__":
     import uvicorn
