@@ -1,6 +1,6 @@
 import '../styles/globals.css';
 import { AppProps } from 'next/app';
-import {SessionProvider} from "next-auth/react";
+import { SessionProvider } from "next-auth/react";
 import Layout from "@/components/Layout";
 import React from "react";
 import Head from "next/head";

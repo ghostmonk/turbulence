@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ClipLoader from 'react-spinners/ClipLoader';
 import DOMPurify from "dompurify";
 import { fetchContent } from '@/utils/api';
-import {formatDate} from "@/utils/formatDate";
+import { formatDate } from "@/utils/formatDate";
 
 interface ContentItem {
     id: string;
