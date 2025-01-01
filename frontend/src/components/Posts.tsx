@@ -48,11 +48,11 @@ const Posts: React.FC<ContentListProps> = ({ url }) => {
     return (
         <div className="mt-4 text-left">
             {data.map((item) => (
-                <div key={item.id} className="border p-4 my-4">
-                    <h2 className="text-2xl font-bold">{item.title}</h2>
-                    <h3 className="text-xl font-bold">{formatDate(item.date)}</h3>
+                <div key={item.id} className="card">
+                    <h2>{item.title}</h2>
+                    <h3>{formatDate(item.date)}</h3>
                     <div
-                        className="mt-2 prose max-w-none"
+                        className="card-content"
                         dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(item.content),
                         }}

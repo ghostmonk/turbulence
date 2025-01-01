@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Merriweather:wght@300;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@300;400;700&family=Roboto+Slab:wght@400;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,17 +7,30 @@
 :root {
     --background: #ffffff; /* Light theme background */
     --foreground: #000000; /* Light theme text */
+    --card-background: #f9fafb; /* Light theme card background (Tailwind gray-50) */
+    --card-foreground: #1f2937; /* Light theme card text (Tailwind gray-800) */
+    --card-border: #e5e7eb; /* Light theme card border (Tailwind gray-200) */
+    --card-shadow: rgba(0, 0, 0, 0.1); /* Light theme card shadow */
 }
 
 [data-theme="dark"] {
     --background: #000000; /* Dark theme background */
     --foreground: #ffffff; /* Dark theme text */
+    --card-background: #1f2937; /* Dark theme card background (Tailwind gray-800) */
+    --card-foreground: #f9fafb; /* Dark theme card text (Tailwind gray-50) */
+    --card-border: #374151; /* Dark theme card border (Tailwind gray-700) */
+    --card-shadow: rgba(255, 255, 255, 0.1); /* Dark theme card shadow */
 }
 
 body {
+    font-family: 'Poppins', sans-serif;
     background-color: var(--background);
     color: var(--foreground);
     transition: background-color 0.3s, color 0.3s;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Roboto Slab', serif;
 }
 
 /* =========================================
@@ -98,3 +111,37 @@ body {
 [data-theme="dark"] .ql-toolbar .ql-active svg {
     fill: #f9fafb; /* White for hover/active icons */
 }
+
+.card {
+    background-color: var(--card-background);
+    color: var(--card-foreground);
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px var(--card-shadow);
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.card h2 {
+    font-family: 'Roboto Slab', serif;
+    color: var(--card-foreground);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.card h3 {
+    font-family: 'Poppins', sans-serif;
+    color: var(--card-foreground);
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.card-content {
+    font-family: 'Poppins', sans-serif;
+    color: var(--card-foreground);
+    line-height: 1.6;
+}
+
