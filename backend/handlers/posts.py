@@ -7,12 +7,11 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from logger import logger
 from database import get_collection
 from decorators.auth import requires_auth
-from decorators.cache import dynamic_cached
 
 router = APIRouter()
 
 @router.get("/data")
-@dynamic_cached(maxsize=100, ttl=86400)
+# @dynamic_cached(maxsize=100, ttl=86400)
 async def get_data(collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
         cursor = collection.find().sort("date", -1)
@@ -41,7 +40,7 @@ async def add_data(request: Request, collection: AsyncIOMotorCollection = Depend
         result = await collection.insert_one(payload)
         logger.info("Inserted document with ID: %s", result.inserted_id)
 
-        get_data.invalidate(collection)
+        # get_data.invalidate(collection)
 
         new_document = await collection.find_one({"_id": result.inserted_id})
         new_document["id"] = str(new_document["_id"])
