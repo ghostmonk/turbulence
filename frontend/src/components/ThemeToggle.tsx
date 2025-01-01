@@ -24,7 +24,6 @@ export default function ThemeToggle() {
             className="relative flex items-center w-16 h-8 bg-blue-500 rounded-full cursor-pointer"
             onClick={toggleTheme}
         >
-            {/* Toggle Handle */}
             <div
                 className={`absolute w-6 h-6 bg-white rounded-full transition-transform duration-300 shadow-md ${
                     theme === "light" ? "translate-x-1" : "translate-x-9"

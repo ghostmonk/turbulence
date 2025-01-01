@@ -11,6 +11,7 @@ origins = [
     "https://api.ghostmonk.com",
     "https://ghostmonk.com",
     "https://www.ghostmonk.com",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(

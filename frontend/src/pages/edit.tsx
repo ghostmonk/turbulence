@@ -1,25 +1,34 @@
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
 import RichTextEditor, { sanitizeHtml } from "../components/RichTextEditor";
+import { isTokenExpired } from "@/utils/isTokenExpired";
 
 const EditPage: React.FC = () => {
     const { data: session, status } = useSession();
     const router = useRouter();
 
-    // Redirect unauthenticated users
     useEffect(() => {
         if (status === "unauthenticated") {
             router.replace("/");
         }
     }, [status, router]);
 
-    // State
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (session?.accessToken && isTokenExpired(session.accessToken)) {
+                alert("Session expired. Logging out.");
+                signOut();
+            }
+        }, 5 * 60 * 1000);
+
+        return () => clearInterval(interval);
+    }, [session?.accessToken]);
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    // Submit Handler
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -67,7 +76,6 @@ const EditPage: React.FC = () => {
                 Create a Post
             </h1>
 
-            {/* Title Input */}
             <div className="mb-4">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Title
@@ -82,7 +90,6 @@ const EditPage: React.FC = () => {
                 />
             </div>
 
-            {/* Rich Text Editor */}
             <div className="h-[500px] mb-4"> {/* Adjust height here */}
                 <RichTextEditor
                     onSave={(updatedContent) => setContent(updatedContent)}
@@ -90,7 +97,6 @@ const EditPage: React.FC = () => {
                 />
             </div>
 
-            {/* Submit Button */}
             <div className="mt-4 flex justify-end">
                 <button
                     onClick={handleSubmit}
@@ -100,7 +106,6 @@ const EditPage: React.FC = () => {
                 </button>
             </div>
 
-            {/* Rendered Content Preview */}
             {content && (
                 <div className="mt-8">
                     <h2 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-100">Preview</h2>

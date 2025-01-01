@@ -7,9 +7,7 @@ export default function TopNav() {
 
     return (
         <nav className="bg-gray-800 text-white p-4">
-            {/* Flex container for the entire navigation */}
             <div className="flex justify-between items-center">
-                {/* Left: Navigation Links */}
                 <div className="flex space-x-4">
                     <Link href="/" className="hover:underline">
                         Home
@@ -20,8 +18,6 @@ export default function TopNav() {
                         </Link>
                     )}
                 </div>
-
-                {/* Right: Theme Toggle and Login/Logout */}
                 <div className="flex items-center space-x-4">
                     {session ? (
                         <div className="flex items-center space-x-4">

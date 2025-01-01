@@ -16,7 +16,7 @@ function useClientSideStorage<T>(
                 console.warn(`Error reading localStorage key "${key}":`, error);
                 setValue(defaultValue);
             } finally {
-                setIsLoading(false); // Mark as loaded
+                setIsLoading(false);
             }
         }
     }, [key, defaultValue]);
