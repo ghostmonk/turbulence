@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import ValidationError
 
@@ -32,7 +32,7 @@ async def get_data(collection: AsyncIOMotorCollection = Depends(get_collection))
 
 @router.post("/data", response_model=PostResponse, status_code=201)
 @requires_auth
-async def add_data(post: PostCreate, collection: AsyncIOMotorCollection = Depends(get_collection)):
+async def add_data(request: Request, post: PostCreate, collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
         # Create a new document with the post data and current timestamp
         document = {
