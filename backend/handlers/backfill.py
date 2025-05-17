@@ -4,12 +4,15 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from logger import logger
 from database import get_collection
 
-async def backfill_published_flag(collection: AsyncIOMotorCollection = Depends(get_collection)):
+async def backfill_published_flag():
     """
     Set is_published=True for all existing posts that don't have this field.
     Runs once at application startup.
     """
     try:
+        # Get the collection
+        collection = await get_collection()
+        
         # Find all posts without an is_published field
         cursor = collection.find({"is_published": {"$exists": False}})
         update_count = 0
