@@ -1,53 +1,73 @@
 from datetime import datetime, timezone
+from typing import List
 
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Depends
 from motor.motor_asyncio import AsyncIOMotorCollection
+from pydantic import ValidationError
 
 from logger import logger
 from database import get_collection
 from decorators.auth import requires_auth
+from models import PostCreate, PostResponse
+from utils import find_many_and_convert, find_one_and_convert
 
 router = APIRouter()
 
-@router.get("/data")
+@router.get("/data", response_model=List[PostResponse])
 # @dynamic_cached(maxsize=100, ttl=86400)
 async def get_data(collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
-        cursor = collection.find().sort("date", -1)
-        data = []
-        async for doc in cursor:
-            doc["id"] = str(doc["_id"])
-            del doc["_id"]
-            data.append(doc)
-        return data
+        # Only return published posts
+        query = {"is_published": True}
+        sort = {"date": -1}
+        
+        return await find_many_and_convert(collection, query, PostResponse, sort)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error fetching data")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while fetching posts"
+        )
 
 
-@router.post("/data")
+@router.post("/data", response_model=PostResponse, status_code=201)
 @requires_auth
-async def add_data(request: Request, collection: AsyncIOMotorCollection = Depends(get_collection)):
+async def add_data(post: PostCreate, collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
-        payload = await request.json()
-        logger.info("Received payload: %s", payload)
-
-        if not payload or "title" not in payload or "content" not in payload:
-            logger.error("Invalid payload: %s", payload)
-            raise HTTPException(status_code=400, detail="Invalid input. 'title' and 'content' are required.")
-
-        payload["date"] = datetime.now(timezone.utc)
-        result = await collection.insert_one(payload)
+        # Create a new document with the post data and current timestamp
+        document = {
+            **post.model_dump(),
+            "date": datetime.now(timezone.utc)
+        }
+        
+        # Insert into database
+        result = await collection.insert_one(document)
         logger.info("Inserted document with ID: %s", result.inserted_id)
 
-        # get_data.invalidate(collection)
-
-        new_document = await collection.find_one({"_id": result.inserted_id})
-        new_document["id"] = str(new_document["_id"])
-        new_document["date"] = new_document["date"].isoformat()
-        del new_document["_id"]
-
-        return JSONResponse(content=new_document, status_code=201)
+        # Fetch and return the created document
+        created_post = await find_one_and_convert(
+            collection,
+            {"_id": result.inserted_id},
+            PostResponse
+        )
+        
+        if not created_post:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to retrieve created post"
+            )
+            
+        return created_post
+        
+    except ValidationError as e:
+        logger.error("Validation error: %s", str(e))
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid post data"
+        )
     except Exception as e:
-        logger.exception("Error while processing POST /data")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error adding data")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while creating the post"
+        )

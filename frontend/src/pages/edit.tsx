@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
 import RichTextEditor, { sanitizeHtml } from "../components/RichTextEditor";
 import { isTokenExpired } from "@/utils/isTokenExpired";
+import { ApiError } from "@/types/api";
 
 const EditPage: React.FC = () => {
     const { data: session, status } = useSession();
@@ -14,44 +15,68 @@ const EditPage: React.FC = () => {
         }
     }, [status, router]);
 
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Check for token expiration and save as draft if needed
     useEffect(() => {
         const interval = setInterval(() => {
-            if (session?.accessToken && isTokenExpired(session.accessToken)) {
-                alert("Session expired. Logging out.");
-                signOut();
+            if (session?.accessToken && isTokenExpired(session.accessToken) && (title || content)) {
+                savePost(false).then(() => {
+                    alert("Session expired. Your post has been saved as a draft. Logging out.");
+                    signOut();
+                });
             }
         }, 5 * 60 * 1000);
 
         return () => clearInterval(interval);
-    }, [session?.accessToken]);
+    }, [session?.accessToken, title, content]);
 
-    const [title, setTitle] = useState("");
-    const [content, setContent] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
+    const savePost = async (isPublished: boolean = true) => {
         try {
+            setError(null);
             const response = await fetch("/api/posts", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${session?.accessToken || ""}`,
                 },
-                body: JSON.stringify({ title, content }),
+                body: JSON.stringify({ 
+                    title, 
+                    content,
+                    is_published: isPublished 
+                }),
             });
 
-            if (response.ok) {
+            if (!response.ok) {
+                const errorData = await response.json() as ApiError;
+                throw new Error(errorData.detail || "Error saving post");
+            }
+
+            return true;
+        } catch (error) {
+            setError(error instanceof Error ? error.message : "An unexpected error occurred");
+            return false;
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const success = await savePost(true);
+            
+            if (success) {
                 alert("Post created successfully!");
                 setTitle("");
                 setContent("");
-            } else {
-                alert("Error creating post.");
             }
         } catch (error) {
-            console.error(error);
-            alert("An unexpected error occurred.");
+            setError(error instanceof Error ? error.message : "An unexpected error occurred");
         } finally {
             setIsLoading(false);
         }
@@ -76,6 +101,12 @@ const EditPage: React.FC = () => {
                 Create a Post
             </h1>
 
+            {error && (
+                <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {error}
+                </div>
+            )}
+
             <div className="mb-4">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Title
@@ -87,10 +118,11 @@ const EditPage: React.FC = () => {
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter post title"
                     className="mt-1 p-2 w-full border rounded bg-gray-50 dark:bg-gray-700 dark:text-gray-200"
+                    maxLength={200}
                 />
             </div>
 
-            <div className="h-[500px] mb-4"> {/* Adjust height here */}
+            <div className="h-[500px] mb-4">
                 <RichTextEditor
                     onSave={(updatedContent) => setContent(updatedContent)}
                     initialContent={content}
@@ -100,7 +132,10 @@ const EditPage: React.FC = () => {
             <div className="mt-4 flex justify-end">
                 <button
                     onClick={handleSubmit}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={isLoading || !title || !content}
+                    className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${
+                        (isLoading || !title || !content) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
                     {isLoading ? "Posting..." : "Submit Post"}
                 </button>
@@ -116,7 +151,6 @@ const EditPage: React.FC = () => {
                 </div>
             )}
         </div>
-
     );
 };
 

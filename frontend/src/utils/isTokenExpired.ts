@@ -6,7 +6,6 @@ interface DecodedToken {
 
 export const isTokenExpired = (token: string | undefined): boolean => {
     if (!token) {
-        console.error("No token provided.");
         return true;
     }
 
@@ -15,7 +14,7 @@ export const isTokenExpired = (token: string | undefined): boolean => {
         const currentTime = Date.now() / 1000;
         return decoded.exp < currentTime;
     } catch (error) {
-        console.error("Failed to decode token:", error);
+        console.error("Error decoding token");
         return true;
     }
 };
