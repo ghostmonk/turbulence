@@ -4,7 +4,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 
 export default function Document() {
     return (
-        <Html lang="en">
+        <Html lang="en" className="dark" data-theme="dark" style={{backgroundColor: '#0f172a'}}>
             <Head>
                 {/* Meta tags */}
                 <meta charSet="utf-8" />
@@ -28,7 +28,7 @@ export default function Document() {
                 />
                 <meta name="referrer-policy" content="strict-origin-when-cross-origin"/>
             </Head>
-            <body>
+            <body style={{backgroundColor: '#0f172a'}} className="text-foreground">
             <Main/>
             <NextScript/>
             </body>

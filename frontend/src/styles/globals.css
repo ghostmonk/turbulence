@@ -13,8 +13,8 @@
     --card-shadow: rgba(0, 0, 0, 0.1); /* Light theme card shadow */
 }
 
-[data-theme="dark"] {
-    --background: #000000; /* Dark theme background */
+.dark {
+    --background: #0f172a; /* Dark theme background - slightly darker than before (Tailwind gray-900) */
     --foreground: #ffffff; /* Dark theme text */
     --card-background: #1f2937; /* Dark theme card background (Tailwind gray-800) */
     --card-foreground: #f9fafb; /* Dark theme card text (Tailwind gray-50) */
@@ -23,93 +23,34 @@
 }
 
 body {
+    margin: 0;
+    padding: 0;
     font-family: 'Poppins', sans-serif;
     background-color: var(--background);
     color: var(--foreground);
     transition: background-color 0.3s, color 0.3s;
 }
 
+/* Explicitly set dark mode background */
+.dark body, 
+html.dark {
+    background-color: #0f172a;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Roboto Slab', serif;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
 }
 
-/* =========================================
-   Light Mode Styles for ReactQuill
-   ========================================= */
-.ql-toolbar,
-.ql-container {
-    background-color: #f9fafb; /* Tailwind gray-50 */
-    border-color: #e5e7eb; /* Tailwind gray-200 */
-}
-
-.ql-editor {
-    background-color: #ffffff; /* White background */
-    color: #1f2937; /* Tailwind gray-800 for text */
-    min-height: 400px;
-}
-
-.ql-editor p {
-    color: #374151; /* Tailwind gray-700 */
-}
-
-/* Toolbar Buttons and Icons */
-.ql-toolbar button,
-.ql-toolbar .ql-picker {
-    color: #4b5563; /* Tailwind gray-600 */
-}
-
-.ql-toolbar button:hover,
-.ql-toolbar .ql-picker:hover,
-.ql-toolbar .ql-active {
-    color: #1f2937; /* Tailwind gray-800 */
-}
-
-.ql-toolbar button svg {
-    fill: #4b5563; /* Tailwind gray-600 for icons */
-}
-
-.ql-toolbar button:hover svg,
-.ql-toolbar .ql-active svg {
-    fill: #1f2937; /* Tailwind gray-800 for active/hover */
-}
-
-/* =========================================
-   Dark Mode Styles for ReactQuill
-   ========================================= */
-[data-theme="dark"] .ql-toolbar,
-[data-theme="dark"] .ql-container {
-    background-color: #1f2937; /* Tailwind gray-800 */
-    border-color: #374151; /* Tailwind gray-700 */
-}
-
-[data-theme="dark"] .ql-editor {
-    background-color: #1f2937; /* Tailwind gray-800 */
-    color: #f9fafb; /* Tailwind gray-50 */
-}
-
-[data-theme="dark"] .ql-editor p {
-    color: #e5e7eb; /* Tailwind gray-300 */
-}
-
-/* Dark Mode: Toolbar Buttons and Icons */
-[data-theme="dark"] .ql-toolbar button,
-[data-theme="dark"] .ql-toolbar .ql-picker {
-    color: #e5e7eb; /* Light gray for text/icons */
-}
-
-[data-theme="dark"] .ql-toolbar button:hover,
-[data-theme="dark"] .ql-toolbar .ql-picker:hover,
-[data-theme="dark"] .ql-toolbar .ql-active {
-    color: #f9fafb; /* White for hover/active states */
-}
-
-[data-theme="dark"] .ql-toolbar button svg {
-    fill: #e5e7eb; /* Light gray for icons */
-}
-
-[data-theme="dark"] .ql-toolbar button:hover svg,
-[data-theme="dark"] .ql-toolbar .ql-active svg {
-    fill: #f9fafb; /* White for hover/active icons */
+h1 {
+    font-size: 2.5rem;
 }
 
 .card {
@@ -117,10 +58,56 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--card-foreground);
     border: 1px solid var(--card-border);
     border-radius: 0.5rem;
-    padding: 1rem;
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 2px 4px var(--card-shadow);
     transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+    outline: none;
+    min-height: 200px;
+}
+
+.ProseMirror p {
+    margin-bottom: 1em;
+}
+
+.ProseMirror h1 {
+    font-size: 1.75rem;
+    margin: 1em 0;
+    font-weight: bold;
+}
+
+.ProseMirror h2 {
+    font-size: 1.5rem;
+    margin: 0.75em 0;
+    font-weight: bold;
+}
+
+.ProseMirror ul {
+    list-style-type: disc;
+    padding-left: 1.5em;
+    margin: 1em 0;
+}
+
+.ProseMirror ol {
+    list-style-type: decimal;
+    padding-left: 1.5em;
+    margin: 1em 0;
+}
+
+.ProseMirror blockquote {
+    border-left: 3px solid #ccc;
+    padding-left: 1em;
+    margin: 1em 0;
+    color: #666;
+}
+
+.dark .ProseMirror blockquote {
+    border-left-color: #666;
+    color: #ccc;
 }
 
 .card h2 {

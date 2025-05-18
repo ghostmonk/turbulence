@@ -13,8 +13,10 @@ export const isTokenExpired = (token: string | undefined): boolean => {
         const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
         const currentTime = Date.now() / 1000;
         return decoded.exp < currentTime;
-    } catch (error) {
+    } catch {
         console.error("Error decoding token");
         return true;
     }
 };
+
+export default isTokenExpired;

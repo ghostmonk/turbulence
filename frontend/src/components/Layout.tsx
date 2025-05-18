@@ -7,9 +7,12 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
     return (
-        <div>
+        <div 
+            className="min-h-screen text-foreground" 
+            style={{ backgroundColor: 'var(--background)' }}
+        >
             <TopNav />
-            <main className="p-6">{children}</main>
+            <main className="container mx-auto p-6">{children}</main>
         </div>
     );
 };

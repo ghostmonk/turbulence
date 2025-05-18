@@ -7,9 +7,18 @@ type Theme = "light" | "dark";
 export default function ThemeToggle() {
     const [theme, setTheme, isLoading] = useClientSideStorage<Theme>("theme", "dark");
 
+    // Apply theme to HTML element
     useEffect(() => {
-        if (!isLoading){
+        if (!isLoading) {
+            // Apply the theme to the HTML element via data-theme attribute
             document.documentElement.setAttribute("data-theme", theme);
+            
+            // Handle Tailwind dark mode class
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         }
     }, [theme, isLoading]);
 
@@ -23,6 +32,9 @@ export default function ThemeToggle() {
         <div
             className="relative flex items-center w-16 h-8 bg-blue-500 rounded-full cursor-pointer"
             onClick={toggleTheme}
+            role="button"
+            tabIndex={0}
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
         >
             <div
                 className={`absolute w-6 h-6 bg-white rounded-full transition-transform duration-300 shadow-md ${

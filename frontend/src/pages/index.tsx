@@ -1,11 +1,8 @@
 import React from 'react';
 import Head from 'next/head';
-import { useSession } from 'next-auth/react';
 import Posts from '@/components/Posts';
 
 const Home: React.FC = () => {
-    const { data: session } = useSession();
-
     return (
         <>
             <Head>

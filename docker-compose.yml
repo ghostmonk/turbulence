@@ -30,11 +30,12 @@ services:
       - PORT=3000
       - NEXT_PUBLIC_API_URL=http://backend:5001
       - NODE_ENV=development
+      - TAILWIND_MODE=watch
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
-    command: npm run dev
+    command: npm run dev:docker
 
   mongo:
     image: mongo:6.0

@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     reactStrictMode: true,
+    output: 'standalone',
+    experimental: {
+        // Enable the latest features
+        serverActions: {
+            bodySizeLimit: '4mb'
+        },
+    },
     async headers() {
         return [
             {

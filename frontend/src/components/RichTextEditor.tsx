@@ -1,10 +1,8 @@
-import React, { useState } from "react";
-import dynamic from "next/dynamic";
+import React, { useEffect } from "react";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
 import DOMPurify from "dompurify";
-
-// Dynamically load ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css";
 
 interface RichTextEditorProps {
     onSave: (content: string) => void;
@@ -12,30 +10,78 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ onSave, initialContent = "" }: RichTextEditorProps) {
-    const [editorContent, setEditorContent] = useState(initialContent);
+    const editor = useEditor({
+        extensions: [
+            StarterKit,
+            Link.configure({
+                openOnClick: false,
+            }),
+        ],
+        content: initialContent,
+        onUpdate: ({ editor }) => {
+            const html = editor.getHTML();
+            onSave(html);
+        },
+    });
 
-    const handleChange = (content: string) => {
-        setEditorContent(content);
-        onSave(content);
-    };
+    // Set initial content when editor is ready
+    useEffect(() => {
+        if (editor && initialContent) {
+            editor.commands.setContent(initialContent);
+        }
+    }, [editor, initialContent]);
+
+    if (!editor) {
+        return <div>Loading editor...</div>;
+    }
 
     return (
-        <div className="w-full h-full overflow-hidden rounded border dark:border-gray-700">
-            <ReactQuill
-                value={editorContent}
-                onChange={handleChange}
-                modules={{
-                    toolbar: [
-                        ["bold", "italic", "underline", "strike"],
-                        [{ header: [1, 2, 3, false] }],
-                        [{ list: "ordered" }, { list: "bullet" }],
-                        ["blockquote", "link"],
-                        ["clean"],
-                    ],
-                }}
-                placeholder="Write your post content here..."
-                className="h-full"
-            />
+        <div className="w-full border rounded dark:border-gray-700 p-2">
+            <div className="mb-2 flex flex-wrap gap-2">
+                <button
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    Bold
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    Italic
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    H1
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    H2
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    Bullet List
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    Ordered List
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                    className={`px-2 py-1 rounded ${editor.isActive('blockquote') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+                >
+                    Blockquote
+                </button>
+            </div>
+            <EditorContent editor={editor} className="border p-3 rounded min-h-[400px] dark:bg-gray-800 dark:text-white" />
         </div>
     );
 }

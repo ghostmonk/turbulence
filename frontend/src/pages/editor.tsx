@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
@@ -88,7 +88,7 @@ export default function EditorPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent, shouldPublish: boolean = true) => {
+    const handleSubmit = useCallback(async (e: React.FormEvent, shouldPublish: boolean = true) => {
         e.preventDefault();
         console.log('handleSubmit called', { session, post });
         
@@ -132,7 +132,7 @@ export default function EditorPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [session, post, router, setError, setLoading]);
 
     useEffect(() => {
         const interval = setInterval(() => {
