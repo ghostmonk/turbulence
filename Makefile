@@ -1,4 +1,4 @@
-.PHONY: format format-check test clean docker-build docker-up docker-down docker-logs install venv env venv-clean
+.PHONY: format format-check test clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke
 
 # Virtual environment configuration
 VENV_DEFAULT := $(HOME)/Documents/venvs/turbulence
@@ -96,6 +96,11 @@ clean:
 	find . -type d -name "dist" -exec rm -r {} +
 	find . -type d -name "build" -exec rm -r {} +
 
+# Nuke all Docker resources for a clean slate
+docker-nuke:
+	docker-compose down -v --rmi all --remove-orphans
+	docker system prune -af --volumes
+
 # Help
 help:
 	@echo "Available targets:"
@@ -112,4 +117,5 @@ help:
 	@echo "  docker-logs  - Show Docker container logs"
 	@echo "  dev-backend  - Start backend development server"
 	@echo "  dev-frontend - Start frontend development server"
-	@echo "  clean        - Clean up Python cache files and build artifacts" 
+	@echo "  clean        - Clean up Python cache files and build artifacts"
+	@echo "  docker-nuke  - Nuke all Docker resources for a clean slate" 

@@ -3,7 +3,6 @@ import ClipLoader from 'react-spinners/ClipLoader';
 import DOMPurify from "dompurify";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import { fetchContent } from '@/utils/api';
 import { formatDate } from "@/utils/formatDate";
 import { Post } from '@/types/api';
 
@@ -15,7 +14,13 @@ const Posts: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchContent(session?.accessToken)
+        fetch('/api/posts')
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch posts');
+                }
+                return response.json();
+            })
             .then((response) => {
                 setData(response);
             })
@@ -25,10 +30,10 @@ const Posts: React.FC = () => {
             .finally(() => {
                 setLoading(false);
             });
-    }, [session?.accessToken]);
+    }, []);
 
     const handleEdit = (post: Post) => {
-        if (!session?.accessToken) {
+        if (!session) {
             router.push('/api/auth/signin');
             return;
         }
@@ -53,14 +58,19 @@ const Posts: React.FC = () => {
     }
 
     if (error) {
-        return <p>Error: {error}</p>;
+        return (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                <h3 className="text-red-800 font-semibold">Error Loading Posts</h3>
+                <p className="text-red-600 mt-2">{error}</p>
+            </div>
+        );
     }
 
     return (
         <div className="mt-4 text-left">
             {data.map((item) => (
                 <div key={item.id} className="card relative">
-                    {session?.accessToken && (
+                    {session && (
                         <button
                             onClick={() => handleEdit(item)}
                             className="absolute top-4 right-4 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"

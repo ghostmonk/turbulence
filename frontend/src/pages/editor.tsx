@@ -2,12 +2,80 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import { Post } from '@/types/api';
-import { fetchPost, createPost, updatePost } from '@/utils/api';
+import { Post, ApiError } from '@/types/api';
 import { isTokenExpired } from '@/utils/isTokenExpired';
 import { sanitizeHtml } from '@/components/RichTextEditor';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
+
+// Define API functions directly in this file
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ghostmonk.com';
+
+async function fetchPost(id: string, token: string): Promise<Post> {
+    console.log('fetchPost called with id:', id);
+    const response = await fetch(`/api/posts/${id}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json() as ApiError;
+        throw new Error(error.detail || 'Failed to fetch post');
+    }
+
+    return response.json();
+}
+
+async function createPost(post: Partial<Post>, token: string): Promise<Post> {
+    try {
+        console.log('createPost called with post:', post);
+        console.log('API_BASE_URL:', API_BASE_URL);
+        console.log('Authorization token present:', !!token);
+        
+        const response = await fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(post),
+        });
+
+        console.log('Create post response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Create post error response:', errorData);
+            throw new Error(errorData.detail || 'Failed to create post');
+        }
+
+        return response.json();
+    } catch (err) {
+        console.error('Create post exception:', err);
+        throw err;
+    }
+}
+
+async function updatePost(id: string, post: Partial<Post>, token: string): Promise<Post> {
+    console.log('updatePost called with id:', id, 'post:', post);
+    const response = await fetch(`/api/posts/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(post),
+    });
+
+    if (!response.ok) {
+        const error = await response.json() as ApiError;
+        console.error('Update post error:', error);
+        throw new Error(error.detail || 'Failed to update post');
+    }
+
+    return response.json();
+}
 
 export default function EditorPage() {
     const router = useRouter();
@@ -22,7 +90,18 @@ export default function EditorPage() {
 
     const handleSubmit = async (e: React.FormEvent, shouldPublish: boolean = true) => {
         e.preventDefault();
-        if (!session?.accessToken) return;
+        console.log('handleSubmit called', { session, post });
+        
+        if (!session) {
+            setError("You must be logged in to save a post");
+            return;
+        }
+        
+        if (!session.accessToken) {
+            setError("No access token found. Please log in again.");
+            console.error("Missing access token in session:", session);
+            return;
+        }
 
         setLoading(true);
         setError(null);
@@ -32,16 +111,24 @@ export default function EditorPage() {
                 ...post,
                 is_published: shouldPublish ? post.is_published : false
             };
+            console.log('Attempting to save post:', postToSave);
+            console.log('Access token present:', !!session.accessToken);
 
-            await (post.id
-                ? updatePost(post.id, postToSave, session.accessToken)
-                : createPost(postToSave, session.accessToken));
+            if (post.id) {
+                console.log('Updating existing post');
+                await updatePost(post.id, postToSave, session.accessToken);
+            } else {
+                console.log('Creating new post');
+                await createPost(postToSave, session.accessToken);
+            }
 
             if (shouldPublish) {
                 router.push('/');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            console.error('Error saving post:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+            setError(`Error: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
@@ -70,10 +157,10 @@ export default function EditorPage() {
         if (id && typeof id === 'string' && session?.accessToken) {
             setLoading(true);
             fetchPost(id, session.accessToken)
-                .then(data => {
+                .then((data: Post) => {
                     setPost(data);
                 })
-                .catch(err => {
+                .catch((err: Error) => {
                     setError(err.message);
                 })
                 .finally(() => {

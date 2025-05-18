@@ -1,48 +1,61 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "./auth/[...nextauth]";
-import { Post, ApiError, CreatePostRequest } from "@/types/api";
+import { getToken } from "next-auth/jwt";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Post | ApiError>) {
-    if (req.method !== "POST") {
-        res.setHeader("Allow", ["POST"]);
-        return res.status(405).json({ detail: `Method ${req.method} not allowed` });
-    }
-
-    const session = await getServerSession(req, res, authOptions);
-    if (!session || !session.accessToken) {
-        return res.status(401).json({ detail: "Unauthorized" });
-    }
-
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        const { title, content, is_published } = req.body as CreatePostRequest;
-        
-        // Validate required fields
-        if (!title || !content || is_published === undefined) {
-            return res.status(400).json({ 
-                detail: "Missing required fields. 'title', 'content', and 'is_published' are required." 
+        // Check authentication for non-GET requests
+        if (req.method !== 'GET') {
+            const token = await getToken({ req });
+            
+            console.log("Token from NextAuth:", {
+                hasToken: !!token,
+                accessToken: token?.accessToken ? "exists" : "missing",
             });
+            
+            if (!token || !token.accessToken) {
+                return res.status(401).json({ 
+                    error: 'Not authenticated',
+                    details: 'No access token found in session'
+                });
+            }
         }
+
+        // Prepare API call to backend
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/data`;
+        console.log(`Making ${req.method} request to:`, apiUrl);
+        console.log('Request body:', req.body);
         
-        const response = await fetch("https://api.ghostmonk.com/data", {
-            method: "POST",
+        const token = await getToken({ req });
+        const accessToken = token?.accessToken as string;
+        
+        const response = await fetch(apiUrl, {
+            method: req.method,
             headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.accessToken}`,
+                'Content-Type': 'application/json',
+                ...(req.method !== 'GET' && accessToken && {
+                    Authorization: `Bearer ${accessToken}`,
+                }),
             },
-            body: JSON.stringify({ title, content, is_published }),
+            ...(req.method !== 'GET' && { body: JSON.stringify(req.body) }),
         });
 
         if (!response.ok) {
-            const errorData = await response.json() as ApiError;
-            return res.status(response.status).json({ 
-                detail: errorData.detail || "Error forwarding data" 
+            const errorData = await response.json().catch(() => null);
+            console.error('Backend error:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorData
             });
+            throw new Error(`Backend error: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
         }
 
-        const responseData = await response.json() as Post;
-        return res.status(201).json(responseData);
+        const data = await response.json();
+        return res.status(200).json(data);
     } catch (error) {
-        return res.status(500).json({ detail: "Internal server error" });
+        console.error('Error in /api/posts:', error);
+        return res.status(500).json({ 
+            error: 'Failed to fetch posts',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 }

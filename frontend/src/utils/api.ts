@@ -1,8 +1,10 @@
 import { Post, ApiError } from '@/types/api';
 
-const API_BASE_URL = 'https://api.ghostmonk.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ghostmonk.com';
 
+// Define standalone functions first
 export async function fetchContent(token?: string): Promise<Post[]> {
+    console.log('fetchContent called with token:', !!token);
     const headers: HeadersInit = {};
     if (token) {
         headers.Authorization = `Bearer ${token}`;
@@ -17,7 +19,8 @@ export async function fetchContent(token?: string): Promise<Post[]> {
 }
 
 export async function fetchPost(id: string, token: string): Promise<Post> {
-    const response = await fetch(`${API_BASE_URL}/data/${id}`, {
+    console.log('fetchPost called with id:', id);
+    const response = await fetch(`/api/posts/${id}`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -32,7 +35,9 @@ export async function fetchPost(id: string, token: string): Promise<Post> {
 }
 
 export async function createPost(post: Partial<Post>, token: string): Promise<Post> {
-    const response = await fetch(`${API_BASE_URL}/data`, {
+    console.log('createPost called with post:', post);
+    console.log('API_BASE_URL:', API_BASE_URL);
+    const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -43,6 +48,7 @@ export async function createPost(post: Partial<Post>, token: string): Promise<Po
 
     if (!response.ok) {
         const error = await response.json() as ApiError;
+        console.error('Create post error:', error);
         throw new Error(error.detail || 'Failed to create post');
     }
 
@@ -50,7 +56,8 @@ export async function createPost(post: Partial<Post>, token: string): Promise<Po
 }
 
 export async function updatePost(id: string, post: Partial<Post>, token: string): Promise<Post> {
-    const response = await fetch(`${API_BASE_URL}/data/${id}`, {
+    console.log('updatePost called with id:', id, 'post:', post);
+    const response = await fetch(`/api/posts/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -61,8 +68,13 @@ export async function updatePost(id: string, post: Partial<Post>, token: string)
 
     if (!response.ok) {
         const error = await response.json() as ApiError;
+        console.error('Update post error:', error);
         throw new Error(error.detail || 'Failed to update post');
     }
 
     return response.json();
-} 
+}
+
+// Also export an api object for backward compatibility
+const api = { fetchContent, fetchPost, createPost, updatePost };
+export default api;

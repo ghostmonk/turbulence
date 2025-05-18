@@ -13,7 +13,7 @@ export default function TopNav() {
                         Home
                     </Link>
                     {session && (
-                        <Link href="/edit" className="hover:underline">
+                        <Link href="/editor" className="hover:underline">
                             Add Post
                         </Link>
                     )}
