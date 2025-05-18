@@ -31,6 +31,13 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
+/* Ensure theme transitions are smooth */
+.transition-colors {
+    transition-property: background-color, border-color, color, fill, stroke !important;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition-duration: 300ms !important;
+}
+
 /* Explicitly set dark mode background */
 .dark body, 
 html.dark {
@@ -130,5 +137,50 @@ h1 {
     font-family: 'Poppins', sans-serif;
     color: var(--card-foreground);
     line-height: 1.6;
+}
+
+/* Direct grid styling */
+.grid {
+    display: grid !important;
+}
+
+.grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+    .grid-cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .grid-cols-3 {
+        grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+}
+
+.gap-6 {
+    gap: 1.5rem !important;
+}
+
+/* Cleaner dark/light mode support */
+.dark .dark\:bg-gray-800 {
+    background-color: #1f2937 !important;
+}
+
+.dark .dark\:text-white {
+    color: white !important;
+}
+
+/* Fix for first post padding */
+.flex-col > .card:first-child {
+    margin-bottom: 0;
+}
+
+/* Fix for last post padding */
+.flex-col > .card:last-child {
+    margin-bottom: 2rem;
 }
 

@@ -5,11 +5,11 @@ import Link from '@tiptap/extension-link';
 import DOMPurify from "dompurify";
 
 interface RichTextEditorProps {
-    onSave: (content: string) => void;
-    initialContent?: string;
+    onChange: (content: string) => void;
+    content?: string;
 }
 
-export default function RichTextEditor({ onSave, initialContent = "" }: RichTextEditorProps) {
+export default function RichTextEditor({ onChange, content = "" }: RichTextEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -17,19 +17,18 @@ export default function RichTextEditor({ onSave, initialContent = "" }: RichText
                 openOnClick: false,
             }),
         ],
-        content: initialContent,
+        content: content,
         onUpdate: ({ editor }) => {
             const html = editor.getHTML();
-            onSave(html);
+            onChange(html);
         },
     });
 
-    // Set initial content when editor is ready
     useEffect(() => {
-        if (editor && initialContent) {
-            editor.commands.setContent(initialContent);
+        if (editor && content !== editor.getHTML()) {
+            editor.commands.setContent(content);
         }
-    }, [editor, initialContent]);
+    }, [editor, content]);
 
     if (!editor) {
         return <div>Loading editor...</div>;

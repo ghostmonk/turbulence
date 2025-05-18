@@ -6,15 +6,15 @@ export default function TopNav() {
     const { data: session } = useSession();
 
     return (
-        <nav className="bg-gray-800 dark:bg-gray-900 text-white p-4 shadow-md">
+        <nav className="dark:bg-gray-900 bg-gray-100 dark:text-white text-gray-800 p-4 shadow-md transition-colors duration-300">
             <div className="container mx-auto flex justify-between items-center">
                 <div className="flex space-x-4">
                     <div className="hidden md:flex space-x-4 items-center">
-                        <Link href="/" className="hover:text-blue-300 transition-colors">
+                        <Link href="/" className="hover:text-blue-500 transition-colors">
                         Home
                     </Link>
                     {session && (
-                            <Link href="/editor" className="hover:text-blue-300 transition-colors">
+                            <Link href="/editor" className="hover:text-blue-500 transition-colors">
                                 New Post
                         </Link>
                     )}
@@ -26,7 +26,7 @@ export default function TopNav() {
                             <span className="hidden md:inline">Welcome, {session.user?.name || "User"}!</span>
                             <button
                                 onClick={() => signOut()}
-                                className="px-3 py-1 bg-gray-700 dark:bg-gray-800 text-white hover:bg-gray-600 dark:hover:bg-gray-700 rounded transition duration-200"
+                                className="px-3 py-1 dark:bg-gray-800 bg-gray-200 dark:text-white text-gray-800 dark:hover:bg-gray-700 hover:bg-gray-300 rounded transition duration-200"
                             >
                                 Logout
                             </button>

@@ -15,6 +15,13 @@ function MyApp({ Component, pageProps }: AppProps) {
                 />
                 <meta name="author" content="Ghostmonk"/>
                 <link rel="canonical" href="https://ghostmonk.com/"/>
+                <style>{`
+                    .grid { display: grid !important; }
+                    .border-b { border-bottom-width: 1px !important; }
+                    .border-gray-700 { border-color: rgb(55, 65, 81) !important; }
+                    .leading-relaxed { line-height: 1.625 !important; }
+                    .pb-10 { padding-bottom: 2.5rem !important; }
+                `}</style>
             </Head>
             <Layout>
                 <Component {...pageProps} />
