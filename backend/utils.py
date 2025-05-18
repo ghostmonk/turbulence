@@ -1,7 +1,6 @@
 from typing import TypeVar, Type, List
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorCollection
-from bson import ObjectId
 
 T = TypeVar('T', bound=BaseModel)
 

@@ -7,12 +7,8 @@ import { fetchContent } from '@/utils/api';
 import { formatDate } from "@/utils/formatDate";
 import { Post } from '@/types/api';
 
-interface ContentListProps {
-    url: string;
-}
-
-const Posts: React.FC<ContentListProps> = ({ url }) => {
-    const { data: session, status } = useSession();
+const Posts: React.FC = () => {
+    const { data: session } = useSession();
     const router = useRouter();
     const [data, setData] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);

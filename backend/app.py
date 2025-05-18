@@ -1,12 +1,13 @@
 import os
-import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from dotenv import load_dotenv
 from handlers.posts import router
 from handlers.backfill import backfill_published_flag
 from logger import logger
+
+load_dotenv()
 
 # Define lifespan context manager for startup/shutdown events
 @asynccontextmanager

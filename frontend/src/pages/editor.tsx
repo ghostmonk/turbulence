@@ -20,10 +20,37 @@ export default function EditorPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const handleSubmit = async (e: React.FormEvent, shouldPublish: boolean = true) => {
+        e.preventDefault();
+        if (!session?.accessToken) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const postToSave = {
+                ...post,
+                is_published: shouldPublish ? post.is_published : false
+            };
+
+            await (post.id
+                ? updatePost(post.id, postToSave, session.accessToken)
+                : createPost(postToSave, session.accessToken));
+
+            if (shouldPublish) {
+                router.push('/');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         const interval = setInterval(() => {
             if (session?.accessToken && isTokenExpired(session.accessToken) && (post.title || post.content)) {
-                handleSubmit(new Event('submit') as any, false).then(() => {
+                handleSubmit(new Event('submit') as unknown as React.FormEvent, false).then(() => {
                     alert("Session expired. Your post has been saved as a draft. Logging out.");
                     signOut();
                 });
@@ -31,7 +58,7 @@ export default function EditorPage() {
         }, 5 * 60 * 1000);
 
         return () => clearInterval(interval);
-    }, [session?.accessToken, post.title, post.content]);
+    }, [session?.accessToken, post.title, post.content, handleSubmit]);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -59,34 +86,7 @@ export default function EditorPage() {
                 is_published: is_published === 'true'
             });
         }
-    }, [router.query, status, session?.accessToken]);
-
-    const handleSubmit = async (e: React.FormEvent, shouldPublish: boolean = true) => {
-        e.preventDefault();
-        if (!session?.accessToken) return;
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const postToSave = {
-                ...post,
-                is_published: shouldPublish ? post.is_published : false
-            };
-
-            const savedPost = post.id
-                ? await updatePost(post.id, postToSave, session.accessToken)
-                : await createPost(postToSave, session.accessToken);
-
-            if (shouldPublish) {
-                router.push('/');
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [router.query, status, session?.accessToken, router]);
 
     if (status === 'loading' || loading) {
         return <div>Loading...</div>;
