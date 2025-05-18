@@ -3,11 +3,11 @@
     "python.analysis.extraPaths": [
         "${workspaceFolder}/backend"
     ],
+    "git.ignoreLimitWarning": true,
+    "editor.rulers": [100],
+    "editor.renderWhitespace": "boundary",
     "[python]": {
-        "editor.defaultFormatter": "ms-python.python",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
+        "editor.formatOnSave": false,
+        "editor.rulers": [100]
     }
 }
