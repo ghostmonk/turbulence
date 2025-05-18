@@ -4,6 +4,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Request
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import ValidationError
+from bson import ObjectId
 
 from logger import logger
 from database import get_collection
@@ -29,6 +30,100 @@ async def get_data(collection: AsyncIOMotorCollection = Depends(get_collection))
             detail="An error occurred while fetching posts"
         )
 
+@router.get("/data/{post_id}", response_model=PostResponse)
+@requires_auth
+async def get_post(request: Request, post_id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
+    try:
+        if not ObjectId.is_valid(post_id):
+            raise HTTPException(status_code=400, detail="Invalid post ID format")
+            
+        post = await find_one_and_convert(
+            collection,
+            {"_id": ObjectId(post_id)},
+            PostResponse
+        )
+        
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+            
+        return post
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error fetching post")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while fetching the post"
+        )
+
+@router.put("/data/{post_id}", response_model=PostResponse)
+@requires_auth
+async def update_post(
+    request: Request,
+    post_id: str,
+    post: PostCreate,
+    collection: AsyncIOMotorCollection = Depends(get_collection)
+):
+    try:
+        if not ObjectId.is_valid(post_id):
+            raise HTTPException(status_code=400, detail="Invalid post ID format")
+
+        # Check if post exists
+        existing_post = await find_one_and_convert(
+            collection,
+            {"_id": ObjectId(post_id)},
+            PostResponse
+        )
+        
+        if not existing_post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        # Update the post
+        update_data = {
+            **post.model_dump(),
+            "date": datetime.now(timezone.utc)
+        }
+        
+        result = await collection.update_one(
+            {"_id": ObjectId(post_id)},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to update post"
+            )
+
+        # Fetch and return the updated post
+        updated_post = await find_one_and_convert(
+            collection,
+            {"_id": ObjectId(post_id)},
+            PostResponse
+        )
+        
+        if not updated_post:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to retrieve updated post"
+            )
+            
+        return updated_post
+        
+    except ValidationError as e:
+        logger.error("Validation error: %s", str(e))
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid post data"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error updating post")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while updating the post"
+        )
 
 @router.post("/data", response_model=PostResponse, status_code=201)
 @requires_auth

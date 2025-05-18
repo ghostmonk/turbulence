@@ -23,11 +23,10 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/node_modules ./node_modules
 
-# Expose port 8080 for cloud deployment
-EXPOSE 8080
-
-# Set the PORT environment variable for Next.js
+# Use environment variable for port, default to 8080 for Cloud Run
 ENV PORT=8080
 
+EXPOSE ${PORT}
+
 # Start the Next.js server
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npm start -- -p ${PORT}"]

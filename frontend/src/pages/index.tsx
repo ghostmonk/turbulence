@@ -1,8 +1,11 @@
 import React from 'react';
 import Head from 'next/head';
-import Posts from "@/components/Posts";
+import { useSession } from 'next-auth/react';
+import Posts from '@/components/Posts';
 
 const Home: React.FC = () => {
+    const { data: session } = useSession();
+
     return (
         <>
             <Head>
@@ -13,7 +16,7 @@ const Home: React.FC = () => {
 
             <div className="text-center">
                 <h1 className="text-4xl font-bold text-blue-600">Ghostmonk: Turbulence</h1>
-                <Posts url="https://api.ghostmonk.com/data" />
+                <Posts />
             </div>
         </>
     );

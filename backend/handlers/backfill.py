@@ -1,5 +1,4 @@
 from fastapi import Depends
-from motor.motor_asyncio import AsyncIOMotorCollection
 
 from logger import logger
 from database import get_collection
