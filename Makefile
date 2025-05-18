@@ -50,12 +50,12 @@ venv-clean:
 
 # Python formatting
 format:
-	. $(VENV_ACTIVATE) && black backend/
 	. $(VENV_ACTIVATE) && isort backend/
+	. $(VENV_ACTIVATE) && black backend/
 
 format-check:
-	. $(VENV_ACTIVATE) && black backend/ --check
 	. $(VENV_ACTIVATE) && isort backend/ --check-only
+	. $(VENV_ACTIVATE) && black backend/ --check
 
 # Testing
 test:

@@ -73,7 +73,7 @@ export async function updatePost(id: string, post: Partial<Post>, token: string)
     }
 
     return response.json();
-}
+} 
 
 // Also export an api object for backward compatibility
 const api = { fetchContent, fetchPost, createPost, updatePost };

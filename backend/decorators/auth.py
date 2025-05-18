@@ -1,7 +1,9 @@
 import time
-import requests
 from functools import wraps
+
+import requests
 from fastapi import HTTPException, Request
+
 
 def requires_auth(f):
     @wraps(f)
@@ -16,11 +18,15 @@ def requires_auth(f):
 
         parts = auth_header.split()
         if parts[0].lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Authorization header must start with Bearer.")
+            raise HTTPException(
+                status_code=401, detail="Authorization header must start with Bearer."
+            )
         elif len(parts) == 1:
             raise HTTPException(status_code=401, detail="Token not found.")
         elif len(parts) > 2:
-            raise HTTPException(status_code=401, detail="Authorization header must be a single Bearer token.")
+            raise HTTPException(
+                status_code=401, detail="Authorization header must be a single Bearer token."
+            )
 
         token = parts[1]
 

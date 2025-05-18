@@ -11,13 +11,13 @@ export default function TopNav() {
                 <div className="flex space-x-4">
                     <div className="hidden md:flex space-x-4 items-center">
                         <Link href="/" className="hover:text-blue-300 transition-colors">
-                            Home
-                        </Link>
-                        {session && (
+                        Home
+                    </Link>
+                    {session && (
                             <Link href="/editor" className="hover:text-blue-300 transition-colors">
                                 New Post
-                            </Link>
-                        )}
+                        </Link>
+                    )}
                     </div>
                 </div>
                 <div className="flex items-center space-x-4">

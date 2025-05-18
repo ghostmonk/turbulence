@@ -1,7 +1,9 @@
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 import os
 
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+
 client = None
+
 
 async def get_db():
     global client
@@ -18,9 +20,11 @@ async def get_db():
     db_name = os.getenv("MONGO_DB_NAME", "ghostmonk")
     return client[db_name]
 
+
 async def get_collection() -> AsyncIOMotorCollection:
     db = await get_db()
     return db["posts"]
+
 
 def _get_variable(key: str) -> str:
     output = os.getenv(key)

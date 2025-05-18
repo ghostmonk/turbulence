@@ -2,6 +2,7 @@ from functools import wraps
 
 from cachetools import TTLCache
 
+
 def dynamic_cached(maxsize: int, ttl: int):
     def decorator(func):
         cache = TTLCache(maxsize=maxsize, ttl=ttl)
@@ -15,7 +16,9 @@ def dynamic_cached(maxsize: int, ttl: int):
             cache[key] = result
             return result
 
-        wrapper.invalidate = lambda *args, **kwargs: cache.pop((args, frozenset(kwargs.items())), None)
+        wrapper.invalidate = lambda *args, **kwargs: cache.pop(
+            (args, frozenset(kwargs.items())), None
+        )
         wrapper.clear = cache.clear
 
         return wrapper

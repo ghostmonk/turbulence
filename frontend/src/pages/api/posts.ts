@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     error: 'Not authenticated',
                     details: 'No access token found in session'
                 });
-            }
+    }
         }
 
         // Prepare API call to backend
