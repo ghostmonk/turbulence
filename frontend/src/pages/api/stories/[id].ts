@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Determine API endpoint and method
-        const url = `${API_BASE_URL}/data/${id}`;
+        const url = `${API_BASE_URL}/stories/${id}`;
         const method = req.method || 'GET';
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
             
-            console.error(`Error ${method} post:`, {
+            console.error(`Error ${method} story:`, {
                 status: response.status,
                 data: errorData
             });
@@ -50,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
-        console.error(`Error in /api/posts/${id}:`, error);
+        console.error(`Error in /api/stories/${id}:`, error);
         
         return res.status(500).json({ 
             detail: error instanceof Error ? error.message : 'Internal server error',

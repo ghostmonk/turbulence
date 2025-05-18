@@ -1,74 +1,74 @@
 /**
- * Post-related hooks for data operations
+ * Story-related hooks for data operations
  */
 import { useState, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import apiClient, { ApiRequestError } from '@/lib/api-client';
-import { Post, CreatePostRequest } from '@/types/api';
+import { Story, CreateStoryRequest } from '@/types/api';
 import { handleAuthError } from '@/lib/auth';
 
 /**
- * Hook for fetching posts
+ * Hook for fetching stories
  */
-export function useFetchPosts() {
+export function useFetchStories() {
   const { data: session } = useSession();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchStories = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const data = await apiClient.posts.list(session?.accessToken);
-      setPosts(data);
+      const data = await apiClient.stories.list(session?.accessToken);
+      setStories(data);
     } catch (err) {
-      console.error('Error fetching posts:', err);
+      console.error('Error fetching stories:', err);
       setError(err instanceof ApiRequestError 
         ? err.message 
-        : 'Failed to fetch posts');
+        : 'Failed to fetch stories');
     } finally {
       setLoading(false);
     }
   }, [session?.accessToken]);
 
   return {
-    posts,
+    stories,
     loading,
     error,
-    fetchPosts,
+    fetchStories,
   };
 }
 
 /**
- * Hook for fetching a single post
+ * Hook for fetching a single story
  */
-export function useFetchPost(id?: string) {
+export function useFetchStory(id?: string) {
   const { data: session } = useSession();
-  const [post, setPost] = useState<Post | null>(null);
+  const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPost = useCallback(async (postId: string) => {
-    if (!postId || !session?.accessToken) return;
+  const fetchStory = useCallback(async (storyId: string) => {
+    if (!storyId || !session?.accessToken) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const data = await apiClient.posts.getById(postId, session.accessToken);
-      setPost(data);
+      const data = await apiClient.stories.getById(storyId, session.accessToken);
+      setStory(data);
     } catch (err) {
-      console.error('Error fetching post:', err);
+      console.error('Error fetching story:', err);
       
       if (err instanceof ApiRequestError) {
         setError(err.status === 404 
-          ? 'Post not found' 
+          ? 'Story not found' 
           : err.message);
       } else {
-        setError('Failed to fetch post');
+        setError('Failed to fetch story');
       }
     } finally {
       setLoading(false);
@@ -78,31 +78,31 @@ export function useFetchPost(id?: string) {
   // Auto-fetch if ID is provided
   useEffect(() => {
     if (id) {
-      fetchPost(id);
+      fetchStory(id);
     }
-  }, [id, fetchPost]);
+  }, [id, fetchStory]);
 
   return {
-    post,
+    story,
     loading,
     error,
-    fetchPost,
+    fetchStory,
   };
 }
 
 /**
- * Hook for post operations (create, update)
+ * Hook for story operations (create, update)
  */
-export function usePostOperations() {
+export function useStoryOperations() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const createPost = useCallback(async (postData: CreatePostRequest) => {
+  const createStory = useCallback(async (storyData: CreateStoryRequest) => {
     if (!session?.accessToken) {
-      setError('You must be logged in to create a post');
+      setError('You must be logged in to create a story');
       return null;
     }
     
@@ -111,22 +111,22 @@ export function usePostOperations() {
     setSuccess(false);
     
     try {
-      const newPost = await apiClient.posts.create(
-        postData,
+      const newStory = await apiClient.stories.create(
+        storyData,
         session.accessToken
       );
       
       setSuccess(true);
-      return newPost;
+      return newStory;
     } catch (err) {
-      console.error('Error creating post:', err);
+      console.error('Error creating story:', err);
       
       if (err instanceof ApiRequestError) {
         setError(err.status === 401 
           ? handleAuthError(err) 
           : err.message);
       } else {
-        setError('Failed to create post');
+        setError('Failed to create story');
       }
       
       return null;
@@ -135,9 +135,9 @@ export function usePostOperations() {
     }
   }, [session?.accessToken]);
 
-  const updatePost = useCallback(async (id: string, postData: Partial<Post>) => {
+  const updateStory = useCallback(async (id: string, storyData: Partial<Story>) => {
     if (!session?.accessToken) {
-      setError('You must be logged in to update a post');
+      setError('You must be logged in to update a story');
       return null;
     }
     
@@ -146,23 +146,23 @@ export function usePostOperations() {
     setSuccess(false);
     
     try {
-      const updatedPost = await apiClient.posts.update(
+      const updatedStory = await apiClient.stories.update(
         id,
-        postData,
+        storyData,
         session.accessToken
       );
       
       setSuccess(true);
-      return updatedPost;
+      return updatedStory;
     } catch (err) {
-      console.error('Error updating post:', err);
+      console.error('Error updating story:', err);
       
       if (err instanceof ApiRequestError) {
         setError(err.status === 401 
           ? handleAuthError(err) 
           : err.message);
       } else {
-        setError('Failed to update post');
+        setError('Failed to update story');
       }
       
       return null;
@@ -171,16 +171,16 @@ export function usePostOperations() {
     }
   }, [session?.accessToken]);
 
-  const savePost = useCallback(async (postData: Partial<Post>, shouldRedirect = true) => {
+  const saveStory = useCallback(async (storyData: Partial<Story>, shouldRedirect = true) => {
     try {
       let result = null;
       
-      if (postData.id) {
-        // Update existing post
-        result = await updatePost(postData.id, postData);
+      if (storyData.id) {
+        // Update existing story
+        result = await updateStory(storyData.id, storyData);
       } else {
-        // Create new post
-        result = await createPost(postData as CreatePostRequest);
+        // Create new story
+        result = await createStory(storyData as CreateStoryRequest);
       }
       
       if (result && shouldRedirect) {
@@ -189,18 +189,18 @@ export function usePostOperations() {
       
       return result;
     } catch (err) {
-      console.error('Error saving post:', err);
+      console.error('Error saving story:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       return null;
     }
-  }, [createPost, updatePost, router]);
+  }, [createStory, updateStory, router]);
 
   return {
     loading,
     error,
     success,
-    createPost,
-    updatePost,
-    savePost,
+    createStory,
+    updateStory,
+    saveStory,
   };
 } 

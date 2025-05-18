@@ -15,7 +15,7 @@ export default function TopNav() {
                     </Link>
                     {session && (
                             <Link href="/editor" className="hover:text-blue-500 transition-colors">
-                                New Post
+                                New Story
                         </Link>
                     )}
                     </div>

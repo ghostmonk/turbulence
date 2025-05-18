@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from handlers.backfill import backfill_published_flag
-from handlers.posts import router
+from handlers.stories import router
 from logger import logger
 
 load_dotenv()
@@ -16,9 +16,9 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # Startup: run before the application starts
     logger.info("Starting application turbulent")
-    # Run backfill to ensure all posts have is_published flag
+    # Run backfill to ensure all stories have is_published flag
     updated_count = await backfill_published_flag()
-    logger.info(f"Startup complete. Backfilled {updated_count} posts.")
+    logger.info(f"Startup complete. Backfilled {updated_count} stories.")
 
     yield  # This is where the app runs
 

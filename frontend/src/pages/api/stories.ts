@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Prepare API call to backend
-        const apiUrl = `${API_BASE_URL}/data`;
+        const apiUrl = `${API_BASE_URL}/stories`;
         console.log(`Making ${req.method} request to:`, apiUrl);
         
         const token = await getToken({ req });
@@ -58,10 +58,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
-        console.error('Error in /api/posts:', error);
+        console.error('Error in /api/stories:', error);
         return res.status(500).json({ 
             detail: error instanceof Error ? error.message : 'Internal server error',
             error: 'Failed to process request'
         });
     }
-}
+} 

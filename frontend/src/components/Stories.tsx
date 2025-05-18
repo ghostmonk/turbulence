@@ -4,20 +4,20 @@ import DOMPurify from "dompurify";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { formatDate } from "@/utils/formatDate";
-import { Post } from '@/types/api';
-import { useFetchPosts } from '@/hooks/usePosts';
+import { Story } from '@/types/api';
+import { useFetchStories } from '@/hooks/useStories';
 
-const Posts: React.FC = () => {
+const Stories: React.FC = () => {
     const { data: session } = useSession();
     const router = useRouter();
-    const { posts, loading, error, fetchPosts } = useFetchPosts();
+    const { stories, loading, error, fetchStories } = useFetchStories();
     
-    // Fetch posts on component mount
+    // Fetch stories on component mount
     useEffect(() => {
-        fetchPosts();
-    }, [fetchPosts]);
+        fetchStories();
+    }, [fetchStories]);
 
-    const handleEdit = (post: Post) => {
+    const handleEdit = (story: Story) => {
         if (!session) {
             router.push('/api/auth/signin');
             return;
@@ -25,7 +25,7 @@ const Posts: React.FC = () => {
         
         router.push({
             pathname: '/editor',
-            query: { id: post.id }
+            query: { id: story.id }
         });
     };
 
@@ -40,10 +40,10 @@ const Posts: React.FC = () => {
     if (error) {
         return (
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                <h3 className="text-red-800 font-semibold">Error Loading Posts</h3>
+                <h3 className="text-red-800 font-semibold">Error Loading Stories</h3>
                 <p className="text-red-600 mt-2">{error}</p>
                 <button 
-                    onClick={() => fetchPosts()}
+                    onClick={() => fetchStories()}
                     className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                 >
                     Try Again
@@ -52,16 +52,16 @@ const Posts: React.FC = () => {
         );
     }
 
-    if (posts.length === 0) {
+    if (stories.length === 0) {
         return (
             <div className="text-center p-8">
-                <h2 className="text-2xl font-semibold text-gray-700">No posts found</h2>
+                <h2 className="text-2xl font-semibold text-gray-700">No stories found</h2>
                 {session && (
                     <button
                         onClick={() => router.push('/editor')}
                         className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                     >
-                        Create Your First Post
+                        Create Your First Story
                     </button>
                 )}
             </div>
@@ -71,22 +71,22 @@ const Posts: React.FC = () => {
     return (
         <div className="mt-4">            
             <div className="flex flex-col space-y-6">
-                {posts.map((post) => (
-                    <div key={post.id} className="card relative">
+                {stories.map((story) => (
+                    <div key={story.id} className="card relative">
                         {session && (
                             <button
-                                onClick={() => handleEdit(post)}
+                                onClick={() => handleEdit(story)}
                                 className="absolute top-4 right-4 px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
                             >
                                 Edit
                             </button>
                         )}
-                        <h2 className="text-xl font-bold mb-2 dark:text-white text-gray-800">{post.title}</h2>
-                        <h3 className="text-sm text-gray-400 mb-4">{formatDate(post.date)}</h3>
+                        <h2 className="text-xl font-bold mb-2">{story.title}</h2>
+                        <h3 className="text-sm text-gray-400 mb-4">{formatDate(story.date)}</h3>
                         <div
-                            className="dark:text-white text-gray-700"
+                            className="card-content"
                             dangerouslySetInnerHTML={{
-                                __html: DOMPurify.sanitize(post.content),
+                                __html: DOMPurify.sanitize(story.content),
                             }}
                         />
                     </div>
@@ -96,4 +96,4 @@ const Posts: React.FC = () => {
     );
 };
 
-export default Posts;
+export default Stories;

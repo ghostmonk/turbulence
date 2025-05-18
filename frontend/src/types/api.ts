@@ -3,9 +3,9 @@
  */
 
 /**
- * Represents a blog post
+ * Represents a story
  */
-export interface Post {
+export interface Story {
     id: string;
     title: string;
     content: string;
@@ -23,15 +23,15 @@ export interface ApiError {
 }
 
 /**
- * Request payload for creating a new post
+ * Request payload for creating a new story
  */
-export interface CreatePostRequest {
+export interface CreateStoryRequest {
     title: string;
     content: string;
     is_published: boolean;
 }
 
 /**
- * Request payload for updating an existing post
+ * Request payload for updating an existing story
  */
-export type UpdatePostRequest = Partial<CreatePostRequest>; 
+export type UpdateStoryRequest = Partial<CreateStoryRequest>; 

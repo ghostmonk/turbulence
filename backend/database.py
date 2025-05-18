@@ -23,7 +23,7 @@ async def get_db():
 
 async def get_collection() -> AsyncIOMotorCollection:
     db = await get_db()
-    return db["posts"]
+    return db["stories"]
 
 
 def _get_variable(key: str) -> str:
