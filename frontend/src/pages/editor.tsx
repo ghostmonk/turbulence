@@ -15,7 +15,7 @@ export default function EditorPage() {
   const storyId = typeof id === 'string' ? id : undefined;
   
   // Custom hooks
-  const { story: fetchedStory, loading: fetchLoading } = useFetchStory(storyId);
+  const { story: fetchedStory, loading: fetchLoading, error: fetchError } = useFetchStory(storyId);
   const { saveStory, loading: saveLoading, error: saveError } = useStoryOperations();
   
   // Local state
@@ -27,12 +27,43 @@ export default function EditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   
+  // Reset form to create a new story
+  const resetForm = useCallback(() => {
+    setStory({
+      title: '',
+      content: '',
+      is_published: true
+    });
+    setError(null);
+    // Clear the id from the URL without full page reload
+    router.push('/editor', undefined, { shallow: true });
+  }, [router]);
+  
   // Update local state when story is fetched
   useEffect(() => {
     if (fetchedStory) {
       setStory(fetchedStory);
+      setError(null);
     }
   }, [fetchedStory]);
+
+  // Handle fetch errors
+  useEffect(() => {
+    if (fetchError && storyId) {
+      setError(fetchError);
+    }
+  }, [fetchError, storyId]);
+  
+  // Reset form when storyId becomes undefined (new story mode)
+  useEffect(() => {
+    if (!storyId) {
+      // Only reset the form if we're explicitly in "new story" mode
+      // and not just on initial component mount
+      if (Object.keys(router.query).length > 0 || story.id) {
+        resetForm();
+      }
+    }
+  }, [storyId, router.query, story.id, resetForm]);
   
   // Set story data from URL params if available (for new stories from other pages)
   useEffect(() => {
@@ -132,9 +163,20 @@ export default function EditorPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-4">
-        {story.id ? 'Edit Story' : 'New Story'}
-      </h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">
+          {story.id ? 'Edit Story' : 'New Story'}
+        </h1>
+        {story.id && (
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          >
+            New Story
+          </button>
+        )}
+      </div>
 
       {(error || saveError) && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
