@@ -36,6 +36,9 @@ services:
       - BACKEND_URL=http://backend:5001
       - NODE_ENV=development
       - TAILWIND_MODE=watch
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      # Enable proxy in Docker dev by default, set to 'false' in production to use direct API calls
+      - ENABLE_PROXY_UPLOADS=${ENABLE_PROXY_UPLOADS}
     volumes:
       - ./frontend:/app
       - /app/node_modules

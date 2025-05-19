@@ -17,12 +17,21 @@ const nextConfig: NextConfig = {
             bodySizeLimit: '4mb'
         },
     },
-    // Add rewrites to proxy static uploads to the backend
+    // Add rewrites to proxy static uploads to backend API based on explicit env var
     async rewrites() {
+        // Check if proxy is explicitly disabled with "false"
+        const enableProxy = process.env.ENABLE_PROXY_UPLOADS !== 'false';
+        
+        if (!enableProxy) {
+            console.log('Proxy disabled: Image requests will go directly to backend');
+            return [];
+        }
+        
+        console.log('Proxy enabled: Proxying static uploads through Next.js');
         return [
             {
                 source: '/static/uploads/:path*',
-                destination: `${process.env.BACKEND_URL || 'http://backend:5001'}/static/uploads/:path*`,
+                destination: `${process.env.BACKEND_URL}/static/uploads/:path*`,
             },
         ];
     },
