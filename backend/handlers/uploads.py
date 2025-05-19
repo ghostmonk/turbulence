@@ -2,13 +2,13 @@ import os
 import uuid
 from datetime import datetime
 from typing import List
-import io
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Request
 from fastapi.responses import JSONResponse
 from logger import logger
 from decorators.auth import requires_auth
 from google.cloud import storage
+import io
 
 # Create uploads router
 router = APIRouter()
@@ -24,40 +24,33 @@ ALLOWED_MIME_TYPES = [
 # Define maximum file size (5MB)
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
-# Google Cloud Storage configuration
-# Get bucket name from environment variable or use default
-BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "turbulence-uploads")
+# Define upload directory (create if it doesn't exist) - moved outside the conditional
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+logger.info(f"Upload directory created at: {UPLOAD_DIR}")
 
-# Initialize GCS client
-try:
-    storage_client = storage.Client()
-    # Check if bucket exists, create if it doesn't
-    try:
-        bucket = storage_client.get_bucket(BUCKET_NAME)
-    except Exception:
-        logger.info(f"Bucket {BUCKET_NAME} does not exist. You need to create it manually in GCP console.")
-        bucket = None
-    logger.info(f"Successfully connected to GCS bucket: {BUCKET_NAME}")
-except Exception as e:
-    logger.error(f"Failed to initialize GCS client: {str(e)}")
-    storage_client = None
-    bucket = None
+# GCS bucket name from environment variable
+GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
+if not GCS_BUCKET_NAME:
+    logger.warning("GCS_BUCKET_NAME environment variable not set. Falling back to local storage.")
 
 
 @router.post("/uploads", response_model=List[str])
 @requires_auth
-async def upload_files(files: List[UploadFile] = File(...)):
+async def upload_files(request: Request, files: List[UploadFile] = File(...)):
     """
-    Upload one or more image files to Google Cloud Storage
+    Upload one or more image files to Google Cloud Storage or local storage
     """
-    # Check if GCS client is initialized
-    if not storage_client or not bucket:
-        raise HTTPException(status_code=500, detail="Google Cloud Storage not configured properly")
+    logger.info(f"Upload request received from {request.client.host}")
+    logger.info(f"Request headers: {dict(request.headers)}")
     
     uploaded_files = []
     
     try:
-        for file in files:
+        logger.info(f"Processing {len(files)} files")
+        for i, file in enumerate(files):
+            logger.info(f"File {i+1}: {file.filename}, {file.content_type}")
+            
             # Check mime type
             if file.content_type not in ALLOWED_MIME_TYPES:
                 logger.warning(f"Invalid file type: {file.content_type}")
@@ -65,8 +58,11 @@ async def upload_files(files: List[UploadFile] = File(...)):
             
             # Check file size
             contents = await file.read()
-            if len(contents) > MAX_FILE_SIZE:
-                logger.warning(f"File too large: {len(contents)} bytes")
+            file_size = len(contents)
+            logger.info(f"File size: {file_size} bytes")
+            
+            if file_size > MAX_FILE_SIZE:
+                logger.warning(f"File too large: {file_size} bytes")
                 raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_FILE_SIZE/1024/1024}MB")
             
             # Generate unique filename to avoid collisions
@@ -75,26 +71,74 @@ async def upload_files(files: List[UploadFile] = File(...)):
             unique_id = str(uuid.uuid4())[:8]
             new_filename = f"{timestamp}_{unique_id}{extension}"
             
-            # Create a blob in the bucket and upload the file contents
-            blob = bucket.blob(f"uploads/{new_filename}")
-            blob.upload_from_string(
-                contents,
-                content_type=file.content_type
-            )
+            # Create a static proxy path that will work through our Next.js proxy
+            proxy_path = f"/static/uploads/{new_filename}"
             
-            # Make the blob publicly accessible
-            blob.make_public()
+            # Try to upload to GCS if bucket name is set
+            if GCS_BUCKET_NAME:
+                try:
+                    logger.info(f"Attempting to upload to GCS bucket: {GCS_BUCKET_NAME}")
+                    
+                    # Initialize GCS client
+                    storage_client = storage.Client()
+                    
+                    # Get bucket
+                    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+                    
+                    # Create blob and upload
+                    blob_path = f"uploads/{new_filename}"
+                    blob = bucket.blob(blob_path)
+                    
+                    # Set content type
+                    blob.content_type = file.content_type
+                    
+                    # Upload from memory
+                    blob.upload_from_string(contents, content_type=file.content_type)
+                    
+                    # Store the real GCS URL in logs for reference
+                    gcs_url = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{blob_path}"
+                    logger.info(f"Successfully uploaded to GCS: {gcs_url}")
+                    
+                    # But return a proxy URL that will be served through Next.js
+                    uploaded_files.append(proxy_path)
+                    
+                    # Also save a local copy for the proxy to serve
+                    try:
+                        file_path = os.path.join(UPLOAD_DIR, new_filename)
+                        logger.info(f"Also saving a local copy at: {file_path}")
+                        with open(file_path, "wb") as f:
+                            f.write(contents)
+                    except Exception as e:
+                        logger.warning(f"Failed to save local copy: {str(e)}, but GCS upload succeeded")
+                        
+                    continue  # Skip the rest of the loop
+                except Exception as e:
+                    logger.error(f"Error uploading to GCS: {str(e)}")
+                    logger.info("Falling back to local storage")
+                    # Continue to local upload as fallback
             
-            # Get the public URL
-            file_url = blob.public_url
-            uploaded_files.append(file_url)
-            
-            logger.info(f"File uploaded to GCS: {file_url}")
+            # If GCS upload failed or not configured, store locally
+            try:
+                # Write file to disk
+                file_path = os.path.join(UPLOAD_DIR, new_filename)
+                logger.info(f"Writing file to local storage: {file_path}")
+                
+                with open(file_path, "wb") as f:
+                    f.write(contents)
+                
+                # Add file URL to response
+                uploaded_files.append(proxy_path)
+                
+                logger.info(f"File uploaded successfully to local storage: {proxy_path}")
+            except Exception as e:
+                logger.error(f"Error writing file locally: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Error writing file: {str(e)}")
         
+        logger.info(f"Upload complete, returning URLs: {uploaded_files}")
         return uploaded_files
     
     except Exception as e:
         if not isinstance(e, HTTPException):
-            logger.exception(f"Error uploading files to GCS: {str(e)}")
+            logger.exception(f"Error uploading files: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
         raise 

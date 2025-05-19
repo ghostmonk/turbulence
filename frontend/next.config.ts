@@ -17,11 +17,33 @@ const nextConfig: NextConfig = {
             bodySizeLimit: '4mb'
         },
     },
+    // Add rewrites to proxy static uploads to the backend
+    async rewrites() {
+        return [
+            {
+                source: '/static/uploads/:path*',
+                destination: `${process.env.BACKEND_URL || 'http://backend:5001'}/static/uploads/:path*`,
+            },
+        ];
+    },
     async headers() {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         return [
             {
                 source: "/api/:path*",
                 headers: [
+                    {
+                        key: "Content-Security-Policy",
+                        value: `
+                            default-src 'self';
+                            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
+                            style-src 'self' 'unsafe-inline';
+                            img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
+                            connect-src 'self' ${apiUrl};
+                            font-src 'self';
+                            frame-src 'self';
+                        `.replace(/\n/g, '').trim(),
+                    },
                     {
                         key: "Access-Control-Allow-Origin",
                         value: "https://ghostmonk.com",
@@ -40,6 +62,24 @@ const nextConfig: NextConfig = {
                     },
                 ],
             },
+            {
+                // Add CSP headers for all pages, not just API routes
+                source: "/(.*)",
+                headers: [
+                    {
+                        key: "Content-Security-Policy",
+                        value: `
+                            default-src 'self';
+                            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
+                            style-src 'self' 'unsafe-inline';
+                            img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
+                            connect-src 'self' ${apiUrl};
+                            font-src 'self';
+                            frame-src 'self';
+                        `.replace(/\n/g, '').trim(),
+                    }
+                ]
+            }
         ];
     },
 };

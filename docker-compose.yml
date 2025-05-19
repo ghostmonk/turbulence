@@ -17,6 +17,7 @@ services:
       - ENVIRONMENT=development
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
     volumes:
       - ./backend:/app
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
@@ -31,7 +32,8 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - NEXT_PUBLIC_API_URL=http://backend:5001
+      - NEXT_PUBLIC_API_URL=http://localhost:5001
+      - BACKEND_URL=http://backend:5001
       - NODE_ENV=development
       - TAILWIND_MODE=watch
     volumes:
