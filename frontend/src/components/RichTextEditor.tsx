@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
 import DOMPurify from "dompurify";
 
 interface RichTextEditorProps {
@@ -10,12 +11,15 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ onChange, content = "" }: RichTextEditorProps) {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
     const editor = useEditor({
         extensions: [
             StarterKit,
             Link.configure({
                 openOnClick: false,
             }),
+            Image,
         ],
         content: content,
         onUpdate: ({ editor }) => {
@@ -30,6 +34,61 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         }
     }, [editor, content]);
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files.length) return;
+        
+        try {
+            const file = e.target.files[0];
+            
+            // Create a FormData object
+            const formData = new FormData();
+            formData.append('files', file);
+            
+            // Show loading indicator
+            const loadingText = `![Uploading ${file.name}...]()`;
+            editor?.commands.insertContent(loadingText);
+            
+            // Upload the image to the server
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/uploads`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include',
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to upload image');
+            }
+            
+            // Get the image URL from the response
+            const urls = await response.json();
+            
+            if (urls && urls.length > 0) {
+                // Remove the loading text and insert the image
+                const content = editor?.getHTML() || '';
+                const updatedContent = content.replace(loadingText, '');
+                editor?.commands.setContent(updatedContent);
+                
+                // Insert the image at the current cursor position
+                editor?.commands.insertContent(`<img src="${urls[0]}" alt="${file.name}" />`);
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            
+            // Remove the loading text if there was an error
+            const content = editor?.getHTML() || '';
+            const loadingPattern = /!\[Uploading .*?\]\(\)/g;
+            const updatedContent = content.replace(loadingPattern, '');
+            editor?.commands.setContent(updatedContent);
+            
+            alert('Failed to upload image. Please try again.');
+        }
+        
+        // Reset the file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+    
     if (!editor) {
         return <div>Loading editor...</div>;
     }
@@ -86,6 +145,20 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 >
                     Blockquote
                 </button>
+                <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800"
+                >
+                    Image
+                </button>
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handleImageUpload}
+                />
             </div>
             <EditorContent editor={editor} className="border p-3 rounded min-h-[400px] dark:bg-gray-800 dark:text-white" />
         </div>

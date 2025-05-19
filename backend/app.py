@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from handlers.backfill import backfill_published_flag
-from handlers.stories import router
+from handlers.stories import router as stories_router
+from handlers.uploads import router as uploads_router
 from logger import logger
 
 load_dotenv()
@@ -45,7 +47,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+# Set up static file serving
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# Include routers
+app.include_router(stories_router)
+app.include_router(uploads_router)
 
 if __name__ == "__main__":
     import uvicorn

@@ -15,8 +15,11 @@ services:
       - MONGO_APP_NAME=${MONGO_APP_NAME}
       - MONGO_HOST=l0j2o.mongodb.net
       - ENVIRONMENT=development
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     volumes:
       - ./backend:/app
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     depends_on:
       - mongo
 

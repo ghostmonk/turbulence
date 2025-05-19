@@ -7,6 +7,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Google Cloud credentials
+gcp-credentials.json
+*-credentials.json
+
 # Distribution / packaging
 .Python
 build/
