@@ -1,6 +1,6 @@
 import { Html, Head, Main, NextScript } from "next/document";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isUnsafeEval = process.env.UNSAFE_EVAL === "true";
 
 export default function Document() {
     return (
@@ -20,10 +20,10 @@ export default function Document() {
                     content={`
                         default-src 'self';
                         connect-src 'self' https://api.ghostmonk.com;
-                        script-src 'self' ${isDevelopment ? "'unsafe-eval'" : ""};
+                        script-src 'self' ${isUnsafeEval ? "'unsafe-eval'" : ""};
                         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                        img-src 'self' data:;
                         font-src 'self' https://fonts.gstatic.com;
+                        img-src 'self' data: blob:;
                     `}
                 />
                 <meta name="referrer-policy" content="strict-origin-when-cross-origin"/>

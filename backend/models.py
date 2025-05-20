@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class StoryBase(BaseModel):
@@ -16,6 +16,12 @@ class StoryCreate(StoryBase):
 class StoryResponse(StoryBase):
     id: str
     date: datetime
+
+    @field_validator('date')
+    def ensure_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
     class Config:
         from_attributes = True

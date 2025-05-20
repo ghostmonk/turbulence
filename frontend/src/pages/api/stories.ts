@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getToken } from "next-auth/jwt";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ghostmonk.com';
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
     
     try {
         // Check authentication for non-GET requests
@@ -19,7 +19,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Prepare API call to backend
         const apiUrl = `${API_BASE_URL}/stories`;
-        console.log(`Making ${req.method} request to:`, apiUrl);
         
         const token = await getToken({ req });
         const headers: HeadersInit = {
@@ -41,11 +40,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Handle error responses
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            console.error('Backend error:', {
-                status: response.status,
-                statusText: response.statusText,
-                errorData
-            });
             
             // Return appropriate status code and error message
             return res.status(response.status).json({

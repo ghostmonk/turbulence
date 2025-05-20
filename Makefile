@@ -76,7 +76,7 @@ docker-logs:
 
 # Development server
 dev-backend:
-	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5000
+	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5001
 
 dev-frontend:
 	cd frontend && npm run dev

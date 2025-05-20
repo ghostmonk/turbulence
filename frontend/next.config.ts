@@ -27,11 +27,15 @@ const nextConfig: NextConfig = {
             return [];
         }
         
+        // Get the backend URL, ensuring it starts with a valid URL protocol
+        // 
+        let backendUrl = process.env.BACKEND_URL || 'http://default-backend-url';
+        
         console.log('Proxy enabled: Proxying static uploads through Next.js');
         return [
             {
                 source: '/static/uploads/:path*',
-                destination: `${process.env.BACKEND_URL}/static/uploads/:path*`,
+                destination: `${backendUrl}/uploads/:path*`,
             },
         ];
     },
@@ -46,10 +50,10 @@ const nextConfig: NextConfig = {
                         value: `
                             default-src 'self';
                             script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
-                            style-src 'self' 'unsafe-inline';
+                            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                             img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
                             connect-src 'self' ${apiUrl};
-                            font-src 'self';
+                            font-src 'self' https://fonts.gstatic.com;
                             frame-src 'self';
                         `.replace(/\n/g, '').trim(),
                     },
@@ -80,10 +84,10 @@ const nextConfig: NextConfig = {
                         value: `
                             default-src 'self';
                             script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
-                            style-src 'self' 'unsafe-inline';
+                            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                             img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
                             connect-src 'self' ${apiUrl};
-                            font-src 'self';
+                            font-src 'self' https://fonts.gstatic.com;
                             frame-src 'self';
                         `.replace(/\n/g, '').trim(),
                     }

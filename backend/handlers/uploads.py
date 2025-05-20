@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from logger import logger
 from decorators.auth import requires_auth
 from google.cloud import storage
@@ -26,18 +26,28 @@ if not GCS_BUCKET_NAME:
     raise ValueError("GCS_BUCKET_NAME environment variable not set")
 
 
-@router.get("/static/uploads/{filename:path}")
+@router.get("/uploads/{filename:path}")
 async def get_image(filename: str):
     try:
         bucket = get_gcs_bucket()
         blob_path = construct_blob_path(filename)
         blob = bucket.blob(blob_path)
         
-        if not blob.exists():
+        exists = blob.exists()
+        
+        if not exists:
             raise HTTPException(status_code=404, detail="Image not found")
         
-        gcs_url = construct_gcs_url(blob_path)
-        return RedirectResponse(url=gcs_url)
+        content_type = blob.content_type
+        if not content_type:
+            content_type = "application/octet-stream"
+        
+        image_data = blob.download_as_bytes()
+        
+        return StreamingResponse(
+            io.BytesIO(image_data),
+            media_type=content_type
+        )
         
     except Exception as e:
         handle_error(e, "accessing image")
@@ -84,9 +94,7 @@ async def upload_to_gcs(file_content, filename, content_type, bucket) -> Tuple[s
     blob = bucket.blob(blob_path)
     blob.content_type = content_type
     blob.upload_from_string(file_content, content_type=content_type)
-    
     gcs_url = construct_gcs_url(blob_path)
-    
     return blob_path, gcs_url
 
 

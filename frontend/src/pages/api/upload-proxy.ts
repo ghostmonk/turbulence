@@ -24,7 +24,7 @@ export default async function handler(
     }
 
     // Get the backend URL
-    const backendUrl = process.env.BACKEND_URL || 'http://backend:5001';
+    const backendUrl = process.env.BACKEND_URL;
     
     // Stream the request to the backend
     const response = await fetch(`${backendUrl}/uploads`, {
