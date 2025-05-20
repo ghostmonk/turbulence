@@ -24,7 +24,7 @@ export default async function handler(
     }
 
     // Get the backend URL
-    const backendUrl = process.env.BACKEND_URL;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
     
     // Stream the request to the backend
     const response = await fetch(`${backendUrl}/uploads`, {

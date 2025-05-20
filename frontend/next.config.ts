@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
         
         // Get the backend URL, ensuring it starts with a valid URL protocol
         // 
-        let backendUrl = process.env.BACKEND_URL || 'http://default-backend-url';
+        let backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://default-backend-url';
         
         console.log('Proxy enabled: Proxying static uploads through Next.js');
         return [
