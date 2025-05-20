@@ -14,7 +14,6 @@ def mongo_to_pydantic(doc: dict, model_class: Type[T]) -> T:
     if doc is None:
         return None
 
-    # Convert _id to id and ensure it's a string
     if "_id" in doc:
         doc["id"] = str(doc["_id"])
         del doc["_id"]

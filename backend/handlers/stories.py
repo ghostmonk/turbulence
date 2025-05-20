@@ -18,7 +18,6 @@ router = APIRouter()
 # @dynamic_cached(maxsize=100, ttl=86400)
 async def get_stories(collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
-        # Only return published stories
         query = {"is_published": True}
         sort = {"date": -1}
 
@@ -62,7 +61,6 @@ async def update_story(
         if not ObjectId.is_valid(story_id):
             raise HTTPException(status_code=400, detail="Invalid story ID format")
 
-        # Check if story exists
         existing_story = await find_one_and_convert(
             collection, {"_id": ObjectId(story_id)}, StoryResponse
         )
@@ -70,7 +68,6 @@ async def update_story(
         if not existing_story:
             raise HTTPException(status_code=404, detail="Story not found")
 
-        # Update the story
         update_data = {**story.model_dump(), "date": datetime.now(timezone.utc)}
 
         result = await collection.update_one({"_id": ObjectId(story_id)}, {"$set": update_data})
@@ -78,7 +75,6 @@ async def update_story(
         if result.modified_count == 0:
             raise HTTPException(status_code=500, detail="Failed to update story")
 
-        # Fetch and return the updated story
         updated_story = await find_one_and_convert(
             collection, {"_id": ObjectId(story_id)}, StoryResponse
         )
@@ -106,14 +102,11 @@ async def add_story(
     collection: AsyncIOMotorCollection = Depends(get_collection),
 ):
     try:
-        # Create a new document with the story data and current timestamp
         document = {**story.model_dump(), "date": datetime.now(timezone.utc)}
 
-        # Insert into database
         result = await collection.insert_one(document)
         logger.info("Inserted document with ID: %s", result.inserted_id)
 
-        # Fetch and return the created document
         created_story = await find_one_and_convert(
             collection, {"_id": result.inserted_id}, StoryResponse
         )

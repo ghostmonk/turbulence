@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from handlers.backfill import backfill_published_flag
 from handlers.stories import router as stories_router
 from handlers.uploads import router as uploads_router

@@ -52,6 +52,7 @@ venv-clean:
 format:
 	. $(VENV_ACTIVATE) && isort backend/
 	. $(VENV_ACTIVATE) && black backend/
+	cd frontend && npx eslint --fix .
 
 format-check:
 	. $(VENV_ACTIVATE) && isort backend/ --check-only
