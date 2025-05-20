@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
         console.log('Proxy enabled: Proxying static uploads through Next.js');
         return [
             {
-                source: '/static/uploads/:path*',
+                source: '/uploads/:path*',
                 destination: `${backendUrl}/uploads/:path*`,
             },
         ];

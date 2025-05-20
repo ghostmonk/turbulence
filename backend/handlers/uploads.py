@@ -61,7 +61,7 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
 
             try:
                 _, _ = await upload_to_gcs(contents, new_filename, file.content_type, bucket)
-                proxy_path = f"/static/uploads/{new_filename}"
+                proxy_path = f"/uploads/{new_filename}"
                 uploaded_files.append(proxy_path)
             except Exception as e:
                 handle_error(e, "uploading image")

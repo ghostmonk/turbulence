@@ -47,10 +47,6 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             const loadingText = `![Uploading ${file.name}...]()`;
             editor?.commands.insertContent(loadingText);
             
-            // Use the Next.js API proxy instead of direct backend access
-            // This works around CSP issues since it's a same-origin request
-            console.log('Uploading via proxy');
-            
             const response = await fetch('/api/upload-proxy', {
                 method: 'POST',
                 body: formData,
@@ -70,27 +66,20 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             console.log('Upload successful, received URLs:', urls);
             
             if (urls && urls.length > 0) {
-                // Remove the loading text and insert the image
                 const content = editor?.getHTML() || '';
                 const updatedContent = content.replace(loadingText, '');
                 editor?.commands.setContent(updatedContent);
-                
-                // Insert the image at the current cursor position
                 editor?.commands.insertContent(`<img src="${urls[0]}" alt="${file.name}" />`);
             }
         } catch (error) {
             console.error('Error uploading image:', error);
-            
-            // Remove the loading text if there was an error
             const content = editor?.getHTML() || '';
             const loadingPattern = /!\[Uploading .*?\]\(\)/g;
             const updatedContent = content.replace(loadingPattern, '');
             editor?.commands.setContent(updatedContent);
-            
             alert('Failed to upload image. Please try again.');
         }
         
-        // Reset the file input
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
