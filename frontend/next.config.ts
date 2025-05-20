@@ -52,9 +52,9 @@ const nextConfig: NextConfig = {
                             script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
                             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                             img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
-                            connect-src 'self' ${apiUrl};
+                            connect-src 'self' ${apiUrl} https://accounts.google.com https://*.googleapis.com https://www.google.com;
                             font-src 'self' https://fonts.gstatic.com;
-                            frame-src 'self';
+                            frame-src 'self' https://accounts.google.com https://*.google.com;
                         `.replace(/\n/g, '').trim(),
                     },
                     {
@@ -86,9 +86,9 @@ const nextConfig: NextConfig = {
                             script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
                             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                             img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
-                            connect-src 'self' ${apiUrl};
+                            connect-src 'self' ${apiUrl} https://accounts.google.com https://*.googleapis.com https://www.google.com;
                             font-src 'self' https://fonts.gstatic.com;
-                            frame-src 'self';
+                            frame-src 'self' https://accounts.google.com https://*.google.com;
                         `.replace(/\n/g, '').trim(),
                     }
                 ]

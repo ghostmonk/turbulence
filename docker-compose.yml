@@ -16,6 +16,7 @@ services:
       - MONGO_HOST=${MONGO_HOST}
       - MONGO_DB_NAME=${MONGO_DB_NAME}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      - BACKEND_URL=${BACKEND_URL}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     volumes:
       - ./backend:/app

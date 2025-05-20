@@ -23,8 +23,15 @@ export default async function handler(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Get the backend URL
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+    // Use BACKEND_URL for server-to-server communication (in Docker)
+    // Fall back to NEXT_PUBLIC_API_URL if BACKEND_URL is not available
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    
+    if (!backendUrl) {
+      throw new Error('Backend URL not configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL');
+    }
+    
+    console.log('Proxying upload to:', backendUrl);
     
     // Stream the request to the backend
     const response = await fetch(`${backendUrl}/uploads`, {

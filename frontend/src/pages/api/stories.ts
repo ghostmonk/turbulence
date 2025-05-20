@@ -2,7 +2,16 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getToken } from "next-auth/jwt";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+    // Use BACKEND_URL for server-to-server communication (in Docker)
+    // Fall back to NEXT_PUBLIC_API_URL if BACKEND_URL is not available
+    const API_BASE_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    
+    if (!API_BASE_URL) {
+        return res.status(500).json({ 
+            detail: 'Backend URL not configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL',
+            error: 'Configuration error'
+        });
+    }
     
     try {
         // Check authentication for non-GET requests
