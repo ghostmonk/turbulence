@@ -4,31 +4,19 @@ const nextConfig: NextConfig = {
     reactStrictMode: true,
     output: 'standalone',
     typescript: {
-        // Be strict about type checking
         ignoreBuildErrors: false,
     },
     eslint: {
-        // Run ESLint as part of the build
         ignoreDuringBuilds: false,
     },
     experimental: {
-        // Enable the latest features
         serverActions: {
             bodySizeLimit: '4mb'
         },
     },
     // Add rewrites to proxy static uploads to backend API based on explicit env var
     async rewrites() {
-        // Check if proxy is explicitly disabled with "false"
-        const enableProxy = process.env.ENABLE_PROXY_UPLOADS !== 'false';
-        
-        if (!enableProxy) {
-            console.log('Proxy disabled: Image requests will go directly to backend');
-            return [];
-        }
-        
-        // Get the backend URL, ensuring it starts with a valid URL protocol
-        // 
+        // Default backend URL ensures valid protocol and prevents build errors
         let backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://default-backend-url';
         
         console.log('Proxy enabled: Proxying static uploads through Next.js');
@@ -76,7 +64,6 @@ const nextConfig: NextConfig = {
                 ],
             },
             {
-                // Add CSP headers for all pages, not just API routes
                 source: "/(.*)",
                 headers: [
                     {

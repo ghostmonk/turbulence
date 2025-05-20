@@ -42,7 +42,6 @@ services:
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_DEBUG=${NEXTAUTH_DEBUG}
-      - ENABLE_PROXY_UPLOADS=${ENABLE_PROXY_UPLOADS}
     volumes:
       - ./frontend:/app
       - /app/node_modules
