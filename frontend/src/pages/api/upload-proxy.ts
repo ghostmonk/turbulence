@@ -55,4 +55,4 @@ export default async function handler(
     console.error('Upload proxy error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
-} 
+}

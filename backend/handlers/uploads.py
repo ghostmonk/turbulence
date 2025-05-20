@@ -1,23 +1,18 @@
+import io
 import os
 import uuid
 from datetime import datetime
 from typing import List, Tuple
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, Request
-from fastapi.responses import RedirectResponse, StreamingResponse
-from logger import logger
 from decorators.auth import requires_auth
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
-import io
+from logger import logger
 
 router = APIRouter()
 
-ALLOWED_IMAGE_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp"
-]
+ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
@@ -32,23 +27,20 @@ async def get_image(filename: str):
         bucket = get_gcs_bucket()
         blob_path = construct_blob_path(filename)
         blob = bucket.blob(blob_path)
-        
+
         exists = blob.exists()
-        
+
         if not exists:
             raise HTTPException(status_code=404, detail="Image not found")
-        
+
         content_type = blob.content_type
         if not content_type:
             content_type = "application/octet-stream"
-        
+
         image_data = blob.download_as_bytes()
-        
-        return StreamingResponse(
-            io.BytesIO(image_data),
-            media_type=content_type
-        )
-        
+
+        return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
+
     except Exception as e:
         handle_error(e, "accessing image")
 
@@ -57,27 +49,27 @@ async def get_image(filename: str):
 @requires_auth
 async def upload_images(request: Request, files: List[UploadFile] = File(...)):
     uploaded_files = []
-    
+
     try:
         bucket = get_gcs_bucket()
-        
+
         for file in files:
             contents = await file.read()
             file_size = len(contents)
             validate_image(file.content_type, file_size)
             new_filename = generate_unique_filename(file.filename)
-            
+
             try:
                 _, _ = await upload_to_gcs(contents, new_filename, file.content_type, bucket)
                 proxy_path = f"/static/uploads/{new_filename}"
                 uploaded_files.append(proxy_path)
             except Exception as e:
                 handle_error(e, "uploading image")
-        
+
         return uploaded_files
-    
+
     except Exception as e:
-        handle_error(e, "processing uploads") 
+        handle_error(e, "processing uploads")
 
 
 def get_gcs_bucket():
@@ -85,7 +77,7 @@ def get_gcs_bucket():
         storage_client = storage.Client()
     except Exception as e:
         raise HTTPException(status_code=500, detail="Storage configuration error")
-    
+
     return storage_client.bucket(GCS_BUCKET_NAME)
 
 
@@ -116,9 +108,11 @@ def generate_unique_filename(original_filename):
 def validate_image(content_type, file_size):
     if content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid image type: {content_type}")
-    
+
     if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail=f"Image too large. Maximum size is {MAX_FILE_SIZE/1024/1024}MB")
+        raise HTTPException(
+            status_code=400, detail=f"Image too large. Maximum size is {MAX_FILE_SIZE/1024/1024}MB"
+        )
 
 
 def handle_error(e, context="operation"):

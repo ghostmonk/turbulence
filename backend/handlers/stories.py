@@ -101,7 +101,9 @@ async def update_story(
 @router.post("/stories", response_model=StoryResponse, status_code=201)
 @requires_auth
 async def add_story(
-    request: Request, story: StoryCreate, collection: AsyncIOMotorCollection = Depends(get_collection)
+    request: Request,
+    story: StoryCreate,
+    collection: AsyncIOMotorCollection = Depends(get_collection),
 ):
     try:
         # Create a new document with the story data and current timestamp
@@ -126,4 +128,4 @@ async def add_story(
         raise HTTPException(status_code=400, detail="Invalid story data")
     except Exception as e:
         logger.exception("Error adding story")
-        raise HTTPException(status_code=500, detail="An error occurred while creating the story") 
+        raise HTTPException(status_code=500, detail="An error occurred while creating the story")

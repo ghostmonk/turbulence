@@ -106,4 +106,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             error: 'Failed to process request'
         });
     }
-} 
+}

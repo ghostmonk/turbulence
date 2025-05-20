@@ -41,11 +41,9 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         try {
             const file = e.target.files[0];
             
-            // Create a FormData object
             const formData = new FormData();
             formData.append('files', file);
             
-            // Show loading indicator
             const loadingText = `![Uploading ${file.name}...]()`;
             editor?.commands.insertContent(loadingText);
             

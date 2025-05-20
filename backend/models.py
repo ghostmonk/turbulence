@@ -17,7 +17,7 @@ class StoryResponse(StoryBase):
     id: str
     date: datetime
 
-    @field_validator('date')
+    @field_validator("date")
     def ensure_utc(cls, value: datetime) -> datetime:
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)

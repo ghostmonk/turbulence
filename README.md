@@ -11,24 +11,60 @@ Turbulence is a modern blog/content management system built with Next.js and Fas
 - **MongoDB Integration**: Persistent storage with MongoDB Atlas
 - **Image Uploads**: Upload and embed images using Google Cloud Storage
 - **Docker Support**: Easy deployment with Docker and docker-compose
+- **Story Creation and Management**: Ability to create and manage stories
+- **Publication Status Control**: Publish or unpublish content
+- **Dark Mode Support**: Dark mode for better readability
 
-## Architecture
+## Tech Stack
+
+### Backend
+- **Framework**: FastAPI (Python)
+- **Database**: MongoDB (via motor - async MongoDB driver)
+- **Authentication**: Google OAuth token validation
+- **File Storage**: Google Cloud Storage for image uploads
+- **Logging**: Google Cloud Logging
+- **Python Version**: Python 3.11+
+- **Google Application Credentials**: Path to GCP service account credentials file
 
 ### Frontend
-
 - **Framework**: Next.js with TypeScript
 - **UI**: Tailwind CSS for styling
 - **Authentication**: NextAuth.js with Google provider
 - **Rich Text Editing**: TipTap editor with image support
 - **State Management**: React Hooks
 
-### Backend
+### Infrastructure
+- **Docker**: Easy deployment with Docker and docker-compose
+- **Google Cloud Run**: Containerized deployment on Google Cloud
 
-- **Framework**: FastAPI (Python)
-- **Database**: MongoDB (via motor - async MongoDB driver)
-- **Authentication**: Google OAuth token validation
-- **File Storage**: Google Cloud Storage for image uploads
-- **Logging**: Google Cloud Logging
+## Configuration
+
+### Environment Variables
+
+The application requires the following environment variables:
+
+#### Backend
+- `PORT`: Backend server port
+- `MONGO_USER`: MongoDB username
+- `MONGO_PASSWORD`: MongoDB password
+- `MONGO_CLUSTER`: MongoDB cluster name
+- `MONGO_APP_NAME`: MongoDB application name
+- `MONGO_HOST`: MongoDB host address
+- `MONGO_DB_NAME`: MongoDB database name
+- `GCS_BUCKET_NAME`: Google Cloud Storage bucket name for image uploads
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to GCP service account credentials file
+
+#### Frontend
+- `FE_PORT`: Frontend server port
+- `NEXT_PUBLIC_API_URL`: URL for the backend API (client-facing)
+- `BACKEND_URL`: URL for backend API (server-to-server, for Docker)
+- `GOOGLE_CLIENT_ID`: Google OAuth client ID
+- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
+- `NEXTAUTH_SECRET`: NextAuth secret key
+- `NEXTAUTH_URL`: NextAuth URL
+- `NEXTAUTH_DEBUG`: Enable NextAuth debug mode (true/false)
+- `UNSAFE_EVAL`: Enable unsafe-eval in CSP (true/false)
+- `ENABLE_PROXY_UPLOADS`: Enable image proxy through Next.js (true/false)
 
 ## Getting Started
 
@@ -39,29 +75,6 @@ Turbulence is a modern blog/content management system built with Next.js and Fas
 - Docker and docker-compose (optional)
 - MongoDB Atlas account (or local MongoDB instance)
 - Google Cloud Platform account (for image uploads)
-
-### Environment Variables
-
-#### Backend (.env)
-
-```
-MONGO_USER=your_mongo_user
-MONGO_PASSWORD=your_mongo_password
-MONGO_CLUSTER=your_mongo_cluster
-MONGO_APP_NAME=your_mongo_app_name
-MONGO_HOST=your_mongo_host
-MONGO_DB_NAME=your_db_name
-GCS_BUCKET_NAME=your_gcs_bucket_name
-```
-
-#### Frontend (.env.local)
-
-```
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
 
 ### Google Cloud Storage Setup
 
