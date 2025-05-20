@@ -19,7 +19,7 @@ export default function Document() {
                     httpEquiv="Content-Security-Policy"
                     content={`
                         default-src 'self';
-                        connect-src 'self' https://api.ghostmonk.com https://accounts.google.com https://*.googleapis.com https://www.google.com;
+                        connect-src 'self' http://localhost:5001 https://api.ghostmonk.com https://accounts.google.com https://*.googleapis.com https://www.google.com;
                         script-src 'self' ${isUnsafeEval ? "'unsafe-eval'" : ""};
                         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                         font-src 'self' https://fonts.gstatic.com;
