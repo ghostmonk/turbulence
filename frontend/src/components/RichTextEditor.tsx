@@ -61,7 +61,6 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 throw new Error(`Failed to upload image: ${response.status}`);
             }
             
-            // Get the image URL from the response
             const urls = await response.json();
             console.log('Upload successful, received URLs:', urls);
             

@@ -13,7 +13,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
     }
     
-    // Get the story ID from the route parameter
     const { id } = req.query;
     
     if (!id || typeof id !== 'string') {
@@ -26,14 +25,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             'Content-Type': 'application/json',
         };
         
-        // Add authorization header for authenticated requests
         if (token?.accessToken) {
             headers.Authorization = `Bearer ${token.accessToken}`;
         }
         
         const apiUrl = `${API_BASE_URL}/stories/${id}`;
         
-        // Handle DELETE request (delete a story)
         if (req.method === 'DELETE') {
             if (!token?.accessToken) {
                 return res.status(401).json({ detail: 'Authentication required', error: 'Unauthorized' });
@@ -53,10 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
             
             return res.status(204).end();
-        }
-        
-        // Handle PUT request (update a story)
-        else if (req.method === 'PUT') {
+        } else if (req.method === 'PUT') {
             if (!token?.accessToken) {
                 return res.status(401).json({ detail: 'Authentication required', error: 'Unauthorized' });
             }
@@ -77,10 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             const data = await response.json();
             return res.status(200).json(data);
-        }
-        
-        // Handle GET request (get a single story)
-        else if (req.method === 'GET') {
+        } else if (req.method === 'GET') {
             const response = await fetch(apiUrl, { headers });
             
             if (!response.ok) {
@@ -93,10 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             const data = await response.json();
             return res.status(200).json(data);
-        }
-        
-        // Handle unsupported methods
-        else {
+        } else {
             return res.status(405).json({ detail: 'Method not allowed', error: 'Invalid request' });
         }
     } catch (error) {
