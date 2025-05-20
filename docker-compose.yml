@@ -8,15 +8,19 @@ services:
     env_file:
       - .env
     environment:
-      - PORT=5001
+      - PORT=${PORT}
       - MONGO_USER=${MONGO_USER}
       - MONGO_PASSWORD=${MONGO_PASSWORD}
       - MONGO_CLUSTER=${MONGO_CLUSTER}
       - MONGO_APP_NAME=${MONGO_APP_NAME}
-      - MONGO_HOST=l0j2o.mongodb.net
-      - ENVIRONMENT=development
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      - BACKEND_URL=${BACKEND_URL}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     volumes:
       - ./backend:/app
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     depends_on:
       - mongo
 
@@ -26,11 +30,18 @@ services:
       target: build  # Use build stage for development
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      - PORT=3000
-      - NEXT_PUBLIC_API_URL=http://backend:5001
-      - NODE_ENV=development
-      - TAILWIND_MODE=watch
+      - PORT=${FE_PORT}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - BACKEND_URL=${BACKEND_URL}
+      - UNSAFE_EVAL=${UNSAFE_EVAL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_DEBUG=${NEXTAUTH_DEBUG}
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -30,25 +30,26 @@ jobs:
       # Build and deploy the backend
       - name: Deploy Backend
         run: |
-          gcloud builds submit ./backend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-service
+          gcloud builds submit ./backend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service
           gcloud run deploy turbulent-service \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-service \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ secrets.MONGO_CLUSTER }},MONGO_APP_NAME=${{ secrets.MONGO_APP_NAME }},MONGO_HOST=${{ secrets.MONGO_HOST }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},MONGO_DB_NAME=${{ secrets.MONGO_DB_NAME }} \
+            --service-account=${{ vars.GCP_SERVICE_ACCOUNT_NAME }} \
+            --set-env-vars MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ vars.MONGO_CLUSTER }},MONGO_APP_NAME=${{ vars.MONGO_APP_NAME }},MONGO_HOST=${{ vars.MONGO_HOST }},GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }},MONGO_DB_NAME=${{ vars.MONGO_DB_NAME }},GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }} \
             --timeout=600s
 
       # Build and deploy the frontend
       - name: Deploy Frontend
         run: |
-          gcloud builds submit ./frontend --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-frontend
+          gcloud builds submit ./frontend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend
           gcloud run deploy turbulent-frontend \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/turbulent-frontend \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-env-vars GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+            --set-env-vars GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }},NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }},NEXTAUTH_DEBUG=${{ vars.NEXTAUTH_DEBUG }},UNSAFE_EVAL=${{ vars.UNSAFE_EVAL }} \
             --timeout=600s
 
       # Grant public access to the frontend service

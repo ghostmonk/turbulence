@@ -5,24 +5,20 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from handlers.backfill import backfill_published_flag
-from handlers.stories import router
+from handlers.stories import router as stories_router
+from handlers.uploads import router as uploads_router
 from logger import logger
 
 load_dotenv()
 
 
-# Define lifespan context manager for startup/shutdown events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: run before the application starts
     logger.info("Starting application turbulent")
-    # Run backfill to ensure all stories have is_published flag
     updated_count = await backfill_published_flag()
     logger.info(f"Startup complete. Backfilled {updated_count} stories.")
 
     yield  # This is where the app runs
-
-    # Shutdown: run when the application is shutting down
     logger.info("Shutting down application")
 
 
@@ -35,6 +31,7 @@ origins = [
     "https://www.ghostmonk.com",
     "http://localhost:3000",
     "http://localhost:5001",
+    "http://frontend:3000",
 ]
 
 app.add_middleware(
@@ -45,7 +42,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(stories_router)
+app.include_router(uploads_router)
 
 if __name__ == "__main__":
     import uvicorn

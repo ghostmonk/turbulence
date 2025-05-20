@@ -1,5 +1,4 @@
 from database import get_collection
-from fastapi import Depends
 from logger import logger
 
 
@@ -9,15 +8,11 @@ async def backfill_published_flag():
     Runs once at application startup.
     """
     try:
-        # Get the collection
         collection = await get_collection()
-
-        # Find all stories without an is_published field
         cursor = collection.find({"is_published": {"$exists": False}})
         update_count = 0
 
         async for doc in cursor:
-            # Update each story to add is_published=True
             result = await collection.update_one(
                 {"_id": doc["_id"]}, {"$set": {"is_published": True}}
             )

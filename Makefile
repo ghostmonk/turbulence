@@ -52,6 +52,7 @@ venv-clean:
 format:
 	. $(VENV_ACTIVATE) && isort backend/
 	. $(VENV_ACTIVATE) && black backend/
+	cd frontend && npx eslint --fix .
 
 format-check:
 	. $(VENV_ACTIVATE) && isort backend/ --check-only
@@ -76,7 +77,7 @@ docker-logs:
 
 # Development server
 dev-backend:
-	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5000
+	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5001
 
 dev-frontend:
 	cd frontend && npm run dev
