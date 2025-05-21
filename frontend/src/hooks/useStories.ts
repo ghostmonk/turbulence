@@ -91,6 +91,7 @@ export function useFetchStories() {
     }
   }, []); // No dependencies to avoid recreation
   
+  /* eslint-disable react-hooks/exhaustive-deps */
   // Load initial data only once after mounting
   useEffect(() => {
     // Only fetch on first mount
@@ -107,6 +108,7 @@ export function useFetchStories() {
       fetchStoriesInternal(true);
     }
   }, [session?.accessToken]); // Only depend on session token
+  /* eslint-enable react-hooks/exhaustive-deps */
   
   // Expose stable functions that don't get recreated
   const loadMore = useCallback(() => {
