@@ -9,12 +9,14 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from google.cloud import storage
 from logger import logger
+from PIL import Image
 
 router = APIRouter()
 
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
+MAX_IMAGE_LENGTH = 1200
 
 GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
 if not GCS_BUCKET_NAME:
@@ -60,7 +62,8 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
             new_filename = generate_unique_filename(file.filename)
 
             try:
-                _, _ = await upload_to_gcs(contents, new_filename, file.content_type, bucket)
+                resized_image = resize_image(contents, MAX_IMAGE_LENGTH)
+                _, _ = await upload_to_gcs(resized_image, new_filename, file.content_type, bucket)
                 proxy_path = f"/uploads/{new_filename}"
                 uploaded_files.append(proxy_path)
             except Exception as e:
@@ -70,6 +73,27 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
 
     except Exception as e:
         handle_error(e, "processing uploads")
+
+
+def resize_image(content: bytes, max_length: int) -> bytes:
+    image = Image.open(io.BytesIO(content))
+    width, height = image.size
+
+    if max(width, height) <= max_length:
+        return content
+    
+    if height > width:
+        new_height = max_length
+        new_width = int(width * max_length / height)
+    else:
+        new_width = max_length
+        new_height = int(height * max_length / width)
+
+    image = image.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
+    output = io.BytesIO()
+    image.convert("RGB").save(output, format="JPEG", quality=85, optimize=True)
+    output.seek(0)
+    return output.read()
 
 
 def get_gcs_bucket():
