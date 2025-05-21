@@ -73,7 +73,7 @@ export default function EditorPage() {
         setStory({
           title: title as string || '',
           content: content as string || '',
-          is_published: is_published === undefined ? true : is_published === 'true'
+          is_published: is_published === 'true'
         });
       }
     }
