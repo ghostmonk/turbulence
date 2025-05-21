@@ -8,8 +8,7 @@ from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from google.cloud import storage
-from logger import logger
-from PIL import Image
+from PIL import Image, ImageOps
 
 router = APIRouter()
 
@@ -77,11 +76,12 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
 
 def resize_image(content: bytes, max_length: int) -> bytes:
     image = Image.open(io.BytesIO(content))
+    image = ImageOps.exif_transpose(image)
     width, height = image.size
 
     if max(width, height) <= max_length:
         return content
-    
+
     if height > width:
         new_height = max_length
         new_width = int(width * max_length / height)
@@ -91,7 +91,7 @@ def resize_image(content: bytes, max_length: int) -> bytes:
 
     image = image.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
     output = io.BytesIO()
-    image.convert("RGB").save(output, format="JPEG", quality=85, optimize=True)
+    image.convert("RGB").save(output, format="JPEG", quality=75, progressive=True, optimize=True)
     output.seek(0)
     return output.read()
 
