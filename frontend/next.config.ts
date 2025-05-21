@@ -18,7 +18,6 @@ const nextConfig: NextConfig = {
     async rewrites() {
         // Default backend URL ensures valid protocol and prevents build errors
         let backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ghostmonk.com';
-        console.log('Backend URL:', backendUrl);
         
         console.log('Proxy enabled: Proxying static uploads through Next.js');
         return [
