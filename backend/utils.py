@@ -32,13 +32,25 @@ async def find_one_and_convert(
 
 
 async def find_many_and_convert(
-    collection: AsyncIOMotorCollection, query: dict, model_class: Type[T], sort: dict = None
+    collection: AsyncIOMotorCollection,
+    query: dict,
+    model_class: Type[T],
+    sort: dict = None,
+    limit: int = None,
+    skip: int = 0,
 ) -> List[T]:
     """
     Find many documents and convert them to Pydantic models.
+    Supports pagination with limit and skip.
     """
     cursor = collection.find(query)
     if sort:
         cursor = cursor.sort(sort)
+
+    if skip:
+        cursor = cursor.skip(skip)
+
+    if limit:
+        cursor = cursor.limit(limit)
 
     return [mongo_to_pydantic(doc, model_class) async for doc in cursor]

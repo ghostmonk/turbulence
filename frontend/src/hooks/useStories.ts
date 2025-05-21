@@ -1,29 +1,85 @@
 /**
  * Story-related hooks for data operations
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import apiClient, { ApiRequestError } from '@/lib/api-client';
 import { Story, CreateStoryRequest } from '@/types/api';
 import { handleAuthError } from '@/lib/auth';
 
+const STORIES_PAGE_SIZE = 5;
+
 /**
- * Hook for fetching stories
+ * Hook for fetching stories with infinite scrolling support
  */
 export function useFetchStories() {
   const { data: session } = useSession();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchStories = useCallback(async () => {
+  const [hasMore, setHasMore] = useState(true);
+  const [totalStories, setTotalStories] = useState(0);
+  
+  // Use refs to avoid dependency issues
+  const offsetRef = useRef(0);
+  const isMountedRef = useRef(false);
+  const tokenRef = useRef(session?.accessToken);
+  const loadingRef = useRef(loading);
+  const hasMoreRef = useRef(hasMore);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+  
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+  
+  useEffect(() => {
+    tokenRef.current = session?.accessToken;
+  }, [session?.accessToken]);
+  
+  // Function to fetch stories that doesn't depend on state
+  const fetchStoriesInternal = useCallback(async (reset = false) => {
+    if (loadingRef.current) return;
+    
+    if (reset) {
+      offsetRef.current = 0;
+      setStories([]);
+      setHasMore(true);
+      hasMoreRef.current = true;
+    }
+    
+    // If we already know there are no more stories, don't fetch
+    if (!reset && !hasMoreRef.current) return;
+    
     setLoading(true);
+    loadingRef.current = true;
     setError(null);
     
     try {
-      const data = await apiClient.stories.list(session?.accessToken);
-      setStories(data);
+      console.log(`Fetching stories, offset: ${offsetRef.current}, reset: ${reset}`);
+      
+      const response = await apiClient.stories.list(tokenRef.current, {
+        limit: STORIES_PAGE_SIZE,
+        offset: offsetRef.current
+      });
+      
+      setTotalStories(response.total);
+      
+      if (reset) {
+        setStories(response.items);
+      } else {
+        setStories(prevStories => [...prevStories, ...response.items]);
+      }
+      
+      // Check if we've loaded all stories
+      offsetRef.current += response.items.length;
+      const newHasMore = offsetRef.current < response.total;
+      setHasMore(newHasMore);
+      hasMoreRef.current = newHasMore;
     } catch (err) {
       console.error('Error fetching stories:', err);
       setError(err instanceof ApiRequestError 
@@ -31,14 +87,46 @@ export function useFetchStories() {
         : 'Failed to fetch stories');
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  }, [session?.accessToken]);
+  }, []); // No dependencies to avoid recreation
+  
+  /* eslint-disable react-hooks/exhaustive-deps */
+  // Load initial data only once after mounting
+  useEffect(() => {
+    // Only fetch on first mount
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      fetchStoriesInternal(true);
+    }
+  }, []); // Empty dependency array = run once on mount
+  
+  // Refetch when token changes
+  useEffect(() => {
+    // Skip first render, already handled by mount effect
+    if (isMountedRef.current) {
+      fetchStoriesInternal(true);
+    }
+  }, [session?.accessToken]); // Only depend on session token
+  /* eslint-enable react-hooks/exhaustive-deps */
+  
+  // Expose stable functions that don't get recreated
+  const loadMore = useCallback(() => {
+    fetchStoriesInternal(false);
+  }, [fetchStoriesInternal]);
+  
+  const resetStories = useCallback(() => {
+    fetchStoriesInternal(true);
+  }, [fetchStoriesInternal]);
 
   return {
     stories,
     loading,
     error,
-    fetchStories,
+    fetchStories: loadMore,
+    hasMore,
+    totalStories,
+    resetStories,
   };
 }
 

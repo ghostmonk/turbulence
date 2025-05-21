@@ -2,7 +2,7 @@
  * API Client for making requests to the backend
  */
 
-import { ApiError, Story, CreateStoryRequest } from '@/types/api';
+import { ApiError, Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
 
 // Types
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -11,6 +11,7 @@ interface RequestOptions<T = unknown> {
   method?: HttpMethod;
   token?: string;
   body?: T;
+  params?: Record<string, string | number>;
 }
 
 // Error handling
@@ -31,7 +32,7 @@ class ApiRequestError extends Error {
  */
 async function fetchApi<T, B = unknown>(
   endpoint: string,
-  { method = 'GET', token, body }: RequestOptions<B> = {}
+  { method = 'GET', token, body, params }: RequestOptions<B> = {}
 ): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -41,16 +42,31 @@ async function fetchApi<T, B = unknown>(
     headers.Authorization = `Bearer ${token}`;
   }
 
+  // Add query parameters if provided
+  let url = endpoint;
+  if (params && Object.keys(params).length > 0) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, value.toString());
+      }
+    });
+    const queryString = searchParams.toString();
+    if (queryString) {
+      url = `${endpoint}?${queryString}`;
+    }
+  }
+
   const config: RequestInit = {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
   };
 
-  console.log(`${method} request to: ${endpoint}`, { hasToken: !!token });
+  console.log(`${method} request to: ${url}`, { hasToken: !!token });
 
   try {
-    const response = await fetch(endpoint, config);
+    const response = await fetch(url, config);
 
     // Handle non-JSON responses
     if (!response.headers.get('content-type')?.includes('application/json')) {
@@ -98,6 +114,12 @@ const apiRoutes = {
   },
 };
 
+// Pagination interface
+interface PaginationParams {
+  limit?: number;
+  offset?: number;
+}
+
 /**
  * Public API client object
  */
@@ -111,8 +133,11 @@ const apiClient = {
    * Story methods
    */
   stories: {
-    list: (token?: string) => 
-      fetchApi<Story[]>(apiRoutes.stories.list(), { token }),
+    list: (token?: string, pagination?: PaginationParams) => 
+      fetchApi<PaginatedResponse<Story>>(apiRoutes.stories.list(), { 
+        token,
+        params: pagination as Record<string, string | number>
+      }),
     
     getById: (id: string, token: string) => 
       fetchApi<Story>(apiRoutes.stories.getById(id), { token }),

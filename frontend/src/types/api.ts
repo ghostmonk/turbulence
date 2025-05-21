@@ -34,4 +34,14 @@ export interface CreateStoryRequest {
 /**
  * Request payload for updating an existing story
  */
-export type UpdateStoryRequest = Partial<CreateStoryRequest>; 
+export type UpdateStoryRequest = Partial<CreateStoryRequest>;
+
+/**
+ * Generic pagination response wrapper
+ */
+export interface PaginatedResponse<T> {
+    items: T[];
+    total: number;
+    limit: number;
+    offset: number;
+} 
