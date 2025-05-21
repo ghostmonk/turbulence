@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from bson import ObjectId
 from database import get_collection
 from decorators.auth import requires_auth
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from logger import logger
 from models import StoryCreate, StoryResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -18,7 +18,7 @@ router = APIRouter()
 async def get_stories(
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
-    collection: AsyncIOMotorCollection = Depends(get_collection)
+    collection: AsyncIOMotorCollection = Depends(get_collection),
 ):
     try:
         query = {"is_published": True}
@@ -26,24 +26,14 @@ async def get_stories(
 
         # Get total count for pagination
         total = await collection.count_documents(query)
-        
+
         # Get paginated stories
         stories = await find_many_and_convert(
-            collection, 
-            query, 
-            StoryResponse, 
-            sort,
-            limit=limit,
-            skip=offset
+            collection, query, StoryResponse, sort, limit=limit, skip=offset
         )
-        
+
         # Return paginated response
-        return {
-            "items": stories,
-            "total": total,
-            "limit": limit,
-            "offset": offset
-        }
+        return {"items": stories, "total": total, "limit": limit, "offset": offset}
     except Exception as e:
         logger.exception("Error fetching stories")
         raise HTTPException(status_code=500, detail="An error occurred while fetching stories")

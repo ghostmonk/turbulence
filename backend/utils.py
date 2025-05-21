@@ -32,12 +32,12 @@ async def find_one_and_convert(
 
 
 async def find_many_and_convert(
-    collection: AsyncIOMotorCollection, 
-    query: dict, 
-    model_class: Type[T], 
+    collection: AsyncIOMotorCollection,
+    query: dict,
+    model_class: Type[T],
     sort: dict = None,
     limit: int = None,
-    skip: int = 0
+    skip: int = 0,
 ) -> List[T]:
     """
     Find many documents and convert them to Pydantic models.
@@ -46,10 +46,10 @@ async def find_many_and_convert(
     cursor = collection.find(query)
     if sort:
         cursor = cursor.sort(sort)
-    
+
     if skip:
         cursor = cursor.skip(skip)
-    
+
     if limit:
         cursor = cursor.limit(limit)
 

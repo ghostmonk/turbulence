@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import apiClient, { ApiRequestError } from '@/lib/api-client';
-import { Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
+import { Story, CreateStoryRequest } from '@/types/api';
 import { handleAuthError } from '@/lib/auth';
 
 const STORIES_PAGE_SIZE = 5;
@@ -67,7 +67,7 @@ export function useFetchStories() {
   // Reset and fetch when session changes
   useEffect(() => {
     fetchStories(true);
-  }, [session?.accessToken]);
+  }, [session?.accessToken, fetchStories]);
 
   return {
     stories,

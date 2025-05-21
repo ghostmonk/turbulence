@@ -88,7 +88,7 @@ const Stories: React.FC = () => {
                 }
                 endMessage={
                     <div className="text-center py-4 text-gray-500">
-                        You've reached the end
+                        You&apos;ve reached the end
                     </div>
                 }
             >
