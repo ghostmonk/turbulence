@@ -1,29 +1,59 @@
 /**
  * Story-related hooks for data operations
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import apiClient, { ApiRequestError } from '@/lib/api-client';
-import { Story, CreateStoryRequest } from '@/types/api';
+import { Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
 import { handleAuthError } from '@/lib/auth';
 
+const STORIES_PAGE_SIZE = 5;
+
 /**
- * Hook for fetching stories
+ * Hook for fetching stories with infinite scrolling support
  */
 export function useFetchStories() {
   const { data: session } = useSession();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalStories, setTotalStories] = useState(0);
+  const offsetRef = useRef(0);
 
-  const fetchStories = useCallback(async () => {
+  const fetchStories = useCallback(async (reset = false) => {
+    if (loading) return;
+    
+    if (reset) {
+      offsetRef.current = 0;
+      setStories([]);
+      setHasMore(true);
+    }
+    
+    // If we already know there are no more stories, don't fetch
+    if (!reset && !hasMore) return;
+    
     setLoading(true);
     setError(null);
     
     try {
-      const data = await apiClient.stories.list(session?.accessToken);
-      setStories(data);
+      const response = await apiClient.stories.list(session?.accessToken, {
+        limit: STORIES_PAGE_SIZE,
+        offset: offsetRef.current
+      });
+      
+      setTotalStories(response.total);
+      
+      if (reset) {
+        setStories(response.items);
+      } else {
+        setStories(prevStories => [...prevStories, ...response.items]);
+      }
+      
+      // Check if we've loaded all stories
+      offsetRef.current += response.items.length;
+      setHasMore(offsetRef.current < response.total);
     } catch (err) {
       console.error('Error fetching stories:', err);
       setError(err instanceof ApiRequestError 
@@ -32,13 +62,21 @@ export function useFetchStories() {
     } finally {
       setLoading(false);
     }
+  }, [session?.accessToken, loading, hasMore]);
+
+  // Reset and fetch when session changes
+  useEffect(() => {
+    fetchStories(true);
   }, [session?.accessToken]);
 
   return {
     stories,
     loading,
     error,
-    fetchStories,
+    fetchStories: () => fetchStories(),
+    hasMore,
+    totalStories,
+    resetStories: () => fetchStories(true),
   };
 }
 

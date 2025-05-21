@@ -23,7 +23,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         }
 
-        const apiUrl = `${API_BASE_URL}/stories`;
+        // Build URL with query parameters for pagination
+        let apiUrl = `${API_BASE_URL}/stories`;
+        
+        // Forward pagination parameters if present
+        if (req.method === 'GET' && req.query) {
+            const params = new URLSearchParams();
+            
+            // Add pagination parameters if provided
+            if (req.query.limit) {
+                params.append('limit', req.query.limit.toString());
+            }
+            
+            if (req.query.offset) {
+                params.append('offset', req.query.offset.toString());
+            }
+            
+            // Add params to URL if any were set
+            if (params.toString()) {
+                apiUrl += `?${params.toString()}`;
+            }
+        }
         
         const token = await getToken({ req });
         const headers: HeadersInit = {
