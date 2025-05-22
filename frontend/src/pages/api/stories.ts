@@ -54,28 +54,70 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             headers.Authorization = `Bearer ${token.accessToken}`;
         }
         
+        // Log request details for debugging
+        const requestBody = req.method !== 'GET' ? req.body : undefined;
+        console.log(`Backend request: ${req.method} ${apiUrl}`, {
+            method: req.method,
+            hasToken: !!token?.accessToken,
+            bodyPreview: requestBody ? JSON.stringify(requestBody).substring(0, 150) + '...' : undefined
+        });
+        
         const response = await fetch(apiUrl, {
             method: req.method,
             headers,
             ...(req.method !== 'GET' && { body: JSON.stringify(req.body) }),
         });
 
+        // Handle error responses with more details
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            // Try to parse the error response as JSON
+            let errorData: any;
+            let responseText: string | undefined;
+            
+            try {
+                errorData = await response.json();
+            } catch (parseError) {
+                // If we can't parse JSON, get the text response instead
+                try {
+                    responseText = await response.text();
+                    errorData = { detail: 'Non-JSON error response', rawResponse: responseText };
+                } catch (textError) {
+                    errorData = { detail: 'Unable to read error response' };
+                }
+            }
+            
+            // Log detailed error information
+            console.error('Backend API error:', {
+                status: response.status,
+                statusText: response.statusText,
+                url: apiUrl,
+                errorData,
+                responseText: responseText?.substring(0, 500),
+                headers: Object.fromEntries(response.headers.entries())
+            });
             
             return res.status(response.status).json({
                 detail: errorData.detail || `Error: ${response.statusText}`,
-                status: response.status
+                status: response.status,
+                error: errorData,
+                url: apiUrl
             });
         }
 
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
-        console.error('Error in /api/stories:', error);
+        // Log detailed error with stack trace
+        console.error('Fatal error in /api/stories:', error);
+        
+        if (error instanceof Error) {
+            console.error('Error stack:', error.stack);
+        }
+        
         return res.status(500).json({ 
             detail: error instanceof Error ? error.message : 'Internal server error',
-            error: 'Failed to process request'
+            error: 'Failed to process request',
+            stack: error instanceof Error ? error.stack : undefined
         });
     }
 } 

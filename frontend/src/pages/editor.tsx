@@ -14,11 +14,10 @@ export default function EditorPage() {
   const { id } = router.query;
   const storyId = typeof id === 'string' ? id : undefined;
   
-  // Custom hooks
   const { story: fetchedStory, loading: fetchLoading, error: fetchError } = useFetchStory(storyId);
-  const { saveStory, loading: saveLoading, error: saveError } = useStoryOperations();
+  const { saveStory, loading: saveLoading, error: saveError, errorDetails } = useStoryOperations();
   
-  // Local state
+
   const [story, setStory] = useState<Partial<Story>>({
     title: '',
     content: '',
@@ -26,8 +25,8 @@ export default function EditorPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
   
-  // Reset form to create a new story
   const resetForm = useCallback(() => {
     setStory({
       title: '',
@@ -35,11 +34,9 @@ export default function EditorPage() {
       is_published: true
     });
     setError(null);
-    // Clear the id from the URL without full page reload
     router.push('/editor', undefined, { shallow: true });
   }, [router]);
   
-  // Update local state when story is fetched
   useEffect(() => {
     if (fetchedStory) {
       setStory(fetchedStory);
@@ -47,25 +44,20 @@ export default function EditorPage() {
     }
   }, [fetchedStory]);
 
-  // Handle fetch errors
   useEffect(() => {
     if (fetchError && storyId) {
       setError(fetchError);
     }
   }, [fetchError, storyId]);
   
-  // Reset form when storyId becomes undefined (new story mode)
   useEffect(() => {
     if (!storyId) {
-      // Only reset the form if we're explicitly in "new story" mode
-      // and not just on initial component mount
       if (Object.keys(router.query).length > 0 || story.id) {
         resetForm();
       }
     }
   }, [storyId, router.query, story.id, resetForm]);
   
-  // Set story data from URL params if available (for new stories from other pages)
   useEffect(() => {
     if (!storyId) {
       const { title, content, is_published } = router.query;
@@ -79,7 +71,6 @@ export default function EditorPage() {
     }
   }, [router.query, storyId]);
   
-  // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent, shouldPublish: boolean = true) => {
     e.preventDefault();
     
@@ -98,30 +89,50 @@ export default function EditorPage() {
     setIsSaving(true);
 
     try {
+      if (!story.title || story.title.trim() === '') {
+        setError("Story title is required");
+        setIsSaving(false);
+        return;
+      }
+      
+      console.log('Attempting to save story:', {
+        id: story.id,
+        title: story.title,
+        isPublished: shouldPublish ? story.is_published : false,
+        contentLength: story.content?.length || 0
+      });
+      
       const storyToSave = {
         ...story,
         is_published: shouldPublish ? story.is_published : false
       };
       
-      // Pass false to prevent automatic redirection in the saveStory hook
       const result = await saveStory(storyToSave, false);
       
       if (!result) {
         throw new Error("Failed to save story");
       }
       
-      // Manually redirect after successful save
+      console.log('Story saved successfully:', {
+        id: result.id,
+        title: result.title
+      });
+      
       router.push('/');
       
     } catch (err) {
       console.error('Error in handleSubmit:', err);
+      
+      if (err instanceof Error && err.stack) {
+        console.error('Error stack trace:', err.stack);
+      }
+      
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(`Error: ${errorMessage}`);
       setIsSaving(false);
     }
   }, [session, story, saveStory, router]);
   
-  // Auto-save and session expiry check
   useEffect(() => {
     const interval = setInterval(() => {
       if (session?.accessToken && isTokenExpired(session.accessToken) && (story.title || story.content)) {
@@ -135,14 +146,12 @@ export default function EditorPage() {
     return () => clearInterval(interval);
   }, [session?.accessToken, story.title, story.content, handleSubmit]);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/');
     }
   }, [status, router]);
 
-  // Update handlers
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStory(prev => ({ ...prev, title: e.target.value }));
   };
@@ -155,7 +164,10 @@ export default function EditorPage() {
     setStory(prev => ({ ...prev, is_published: e.target.checked }));
   };
 
-  // Loading state
+  const toggleDebugInfo = useCallback(() => {
+    setShowDebugInfo(prev => !prev);
+  }, []);
+
   const isLoading = fetchLoading || saveLoading || status === 'loading';
   if (isLoading && !isSaving) {
     return <div>Loading...</div>;
@@ -180,7 +192,20 @@ export default function EditorPage() {
 
       {(error || saveError) && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error || saveError}
+          <div className="font-bold">Error:</div>
+          <div>{error || saveError}</div>
+          <button 
+            onClick={toggleDebugInfo} 
+            className="mt-2 text-xs underline"
+          >
+            {showDebugInfo ? 'Hide' : 'Show'} Debug Info
+          </button>
+          
+          {showDebugInfo && errorDetails && (
+            <pre className="mt-2 p-2 bg-gray-800 text-white text-xs overflow-auto rounded">
+              {JSON.stringify(errorDetails, null, 2)}
+            </pre>
+          )}
         </div>
       )}
 
