@@ -187,6 +187,7 @@ export function useStoryOperations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<any | null>(null);
 
   const createStory = useCallback(async (storyData: CreateStoryRequest) => {
     if (!session?.accessToken) {
@@ -196,9 +197,16 @@ export function useStoryOperations() {
     
     setLoading(true);
     setError(null);
+    setErrorDetails(null);
     setSuccess(false);
     
     try {
+      console.log('Creating story:', {
+        title: storyData.title,
+        contentLength: storyData.content?.length || 0,
+        isPublished: storyData.is_published
+      });
+      
       const newStory = await apiClient.stories.create(
         storyData,
         session.accessToken
@@ -208,13 +216,38 @@ export function useStoryOperations() {
       return newStory;
     } catch (err) {
       console.error('Error creating story:', err);
+      console.log('Story data that failed:', {
+        title: storyData.title,
+        contentLength: storyData.content?.length || 0,
+        hasContent: !!storyData.content,
+        isPublished: storyData.is_published
+      });
       
       if (err instanceof ApiRequestError) {
-        setError(err.status === 401 
+        const errMsg = err.status === 401 
           ? handleAuthError(err) 
-          : err.message);
+          : err.message;
+        
+        setError(errMsg);
+        setErrorDetails({
+          status: err.status,
+          data: err.data,
+          requestDetails: err.requestDetails
+        });
+        
+        console.error('Complete API error details:', {
+          message: err.message,
+          status: err.status,
+          data: err.data,
+          requestDetails: err.requestDetails,
+          stack: err.stack
+        });
       } else {
         setError('Failed to create story');
+        setErrorDetails(err instanceof Error ? {
+          message: err.message,
+          stack: err.stack
+        } : err);
       }
       
       return null;
@@ -231,9 +264,17 @@ export function useStoryOperations() {
     
     setLoading(true);
     setError(null);
+    setErrorDetails(null);
     setSuccess(false);
     
     try {
+      console.log('Updating story:', {
+        id,
+        title: storyData.title,
+        contentLength: storyData.content?.length || 0,
+        isPublished: storyData.is_published
+      });
+      
       const updatedStory = await apiClient.stories.update(
         id,
         storyData,
@@ -246,11 +287,30 @@ export function useStoryOperations() {
       console.error('Error updating story:', err);
       
       if (err instanceof ApiRequestError) {
-        setError(err.status === 401 
+        const errMsg = err.status === 401 
           ? handleAuthError(err) 
-          : err.message);
+          : err.message;
+        
+        setError(errMsg);
+        setErrorDetails({
+          status: err.status,
+          data: err.data,
+          requestDetails: err.requestDetails
+        });
+        
+        console.error('Complete API error details:', {
+          message: err.message,
+          status: err.status,
+          data: err.data,
+          requestDetails: err.requestDetails,
+          stack: err.stack
+        });
       } else {
         setError('Failed to update story');
+        setErrorDetails(err instanceof Error ? {
+          message: err.message,
+          stack: err.stack
+        } : err);
       }
       
       return null;
@@ -278,7 +338,13 @@ export function useStoryOperations() {
       return result;
     } catch (err) {
       console.error('Error saving story:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      if (err instanceof Error) {
+        console.error('Error stack:', err.stack);
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('Unknown error occurred');
+      }
+      setErrorDetails(err);
       return null;
     }
   }, [createStory, updateStory, router]);
@@ -286,6 +352,7 @@ export function useStoryOperations() {
   return {
     loading,
     error,
+    errorDetails,
     success,
     createStory,
     updateStory,

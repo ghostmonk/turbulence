@@ -1,5 +1,6 @@
 import io
 import os
+import traceback
 import uuid
 from datetime import datetime
 from typing import List, Tuple
@@ -8,6 +9,7 @@ from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from google.cloud import storage
+from logger import logger
 from PIL import Image, ImageOps
 
 router = APIRouter()
@@ -140,6 +142,14 @@ def validate_image(content_type, file_size):
 
 
 def handle_error(e, context="operation"):
+    logger.exception_with_context(
+        f"Uploads: {context}",
+        {
+            "error_type": type(e).__name__,
+            "error_details": str(e),
+            "traceback": traceback.format_exc(),
+        },
+    )
     if not isinstance(e, HTTPException):
         raise HTTPException(status_code=500, detail=f"Error during {context}: {str(e)}")
     raise e

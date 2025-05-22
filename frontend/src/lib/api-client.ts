@@ -18,12 +18,29 @@ interface RequestOptions<T = unknown> {
 class ApiRequestError extends Error {
   status: number;
   data: unknown;
+  requestDetails?: {
+    url: string;
+    method: string;
+    hasToken: boolean;
+    bodyPreview?: string;
+  };
 
-  constructor(message: string, status: number, data?: unknown) {
+  constructor(
+    message: string, 
+    status: number, 
+    data?: unknown, 
+    requestDetails?: { url: string; method: string; hasToken: boolean; bodyPreview?: string }
+  ) {
     super(message);
     this.name = 'ApiRequestError';
     this.status = status;
     this.data = data;
+    this.requestDetails = requestDetails;
+    
+    // Capture stack trace for better debugging
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ApiRequestError);
+    }
   }
 }
 
@@ -63,7 +80,15 @@ async function fetchApi<T, B = unknown>(
     body: body ? JSON.stringify(body) : undefined,
   };
 
-  console.log(`${method} request to: ${url}`, { hasToken: !!token });
+  // Create request details for error reporting
+  const requestDetails = {
+    url,
+    method,
+    hasToken: !!token,
+    bodyPreview: body ? JSON.stringify(body).substring(0, 100) + (JSON.stringify(body).length > 100 ? '...' : '') : undefined
+  };
+
+  console.log(`${method} request to: ${url}`, requestDetails);
 
   try {
     const response = await fetch(url, config);
@@ -72,7 +97,9 @@ async function fetchApi<T, B = unknown>(
     if (!response.headers.get('content-type')?.includes('application/json')) {
       throw new ApiRequestError(
         `Invalid response format: ${response.headers.get('content-type')}`,
-        response.status
+        response.status,
+        undefined,
+        requestDetails
       );
     }
 
@@ -81,8 +108,12 @@ async function fetchApi<T, B = unknown>(
     // Handle API errors
     if (!response.ok) {
       const errorMessage = (data as ApiError).detail || `Error: ${response.status} ${response.statusText}`;
-      console.error('API error:', { status: response.status, data });
-      throw new ApiRequestError(errorMessage, response.status, data);
+      console.error('API error:', { 
+        status: response.status, 
+        data,
+        request: requestDetails
+      });
+      throw new ApiRequestError(errorMessage, response.status, data, requestDetails);
     }
 
     return data as T;
@@ -91,11 +122,17 @@ async function fetchApi<T, B = unknown>(
       throw error;
     }
 
-    // Handle network errors
-    console.error('Network error:', error);
+    // Handle network errors with more details
+    console.error('Network error:', error, {
+      request: requestDetails,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
     throw new ApiRequestError(
       error instanceof Error ? error.message : 'Unknown network error',
-      0
+      0,
+      undefined,
+      requestDetails
     );
   }
 }

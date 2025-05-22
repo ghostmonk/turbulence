@@ -16,10 +16,13 @@ const nextConfig: NextConfig = {
     },
     // Add rewrites to proxy static uploads to backend API based on explicit env var
     async rewrites() {
-        // Default backend URL ensures valid protocol and prevents build errors
-        let backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ghostmonk.com';
+        // For Docker: backend:5001, for local dev: localhost:5001
+        // BACKEND_URL should be specifically set for Docker environment
+        let backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.ghostmonk.com';
         
-        console.log('Proxy enabled: Proxying static uploads through Next.js');
+        // Log the backend URL for debugging
+        console.log('Backend URL for uploads proxy:', backendUrl);
+        
         return [
             {
                 source: '/uploads/:path*',
