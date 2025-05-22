@@ -1,7 +1,5 @@
-import sys
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, List
 
 from bson import ObjectId
 from database import get_collection
@@ -28,12 +26,14 @@ async def get_stories(
         query = {"is_published": True}
         sort = {"date": -1}
 
-        context = {
-            "query_params": {"limit": limit, "offset": offset},
-            "filter": query,
-            "sort": sort,
-        }
-        logger.info_with_context("Fetching stories", context)
+        logger.info_with_context(
+            "Fetching stories",
+            {
+                "query_params": {"limit": limit, "offset": offset},
+                "filter": query,
+                "sort": sort,
+            },
+        )
 
         total = await collection.count_documents(query)
 
@@ -52,13 +52,15 @@ async def get_stories(
 
         return {"items": stories, "total": total, "limit": limit, "offset": offset}
     except Exception as e:
-        error_context = {
-            "query_params": {"limit": limit, "offset": offset},
-            "error_type": type(e).__name__,
-            "error_details": str(e),
-            "traceback": traceback.format_exc(),
-        }
-        logger.exception_with_context("Error fetching stories", error_context)
+        logger.exception_with_context(
+            "Error fetching stories",
+            {
+                "query_params": {"limit": limit, "offset": offset},
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+                "traceback": traceback.format_exc(),
+            },
+        )
 
         logger.log_request_response(request, error=e)
 
@@ -99,12 +101,14 @@ async def get_story(
         )
         raise
     except Exception as e:
-        error_context = {
-            "story_id": story_id,
-            "error_type": type(e).__name__,
-            "error_details": str(e),
-        }
-        logger.exception_with_context("Error fetching story", error_context)
+        logger.exception_with_context(
+            "Error fetching story",
+            {
+                "story_id": story_id,
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+            },
+        )
 
         logger.log_request_response(request, error=e)
 
@@ -192,13 +196,15 @@ async def update_story(
     except HTTPException:
         raise
     except Exception as e:
-        error_context = {
-            "story_id": story_id,
-            "error_type": type(e).__name__,
-            "error_details": str(e),
-            "traceback": traceback.format_exc(),
-        }
-        logger.exception_with_context("Error updating story", error_context)
+        logger.exception_with_context(
+            "Error updating story",
+            {
+                "story_id": story_id,
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+                "traceback": traceback.format_exc(),
+            },
+        )
 
         # Log the request/response pair
         logger.log_request_response(request, error=e)
@@ -260,18 +266,18 @@ async def add_story(
             detail={"message": "Invalid story data", "validation_errors": error_details},
         )
     except Exception as e:
-        error_context = {
-            "error_type": type(e).__name__,
-            "error_details": str(e),
-            "traceback": traceback.format_exc(),
-            "story_title": getattr(story, "title", "Unknown"),
-            "content_length": (
-                len(getattr(story, "content", "")) if hasattr(story, "content") else 0
-            ),
-        }
-        logger.exception_with_context("Error adding story", error_context)
-
-        # Log the request/response pair
+        logger.exception_with_context(
+            "Error adding story",
+            {
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+                "traceback": traceback.format_exc(),
+                "story_title": getattr(story, "title", "Unknown"),
+                "content_length": (
+                    len(getattr(story, "content", "")) if hasattr(story, "content") else 0
+                ),
+            },
+        )
         logger.log_request_response(request, error=e)
 
         raise HTTPException(
