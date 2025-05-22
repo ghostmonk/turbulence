@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import DOMPurify from "dompurify";
+import { appLogger } from '@/utils/logger';
 
 interface RichTextEditorProps {
     onChange: (content: string) => void;
@@ -53,16 +54,17 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 credentials: 'include',
             });
             
-            console.log('Response status:', response.status);
+            appLogger.info('Image upload response received', { status: response.status });
             
             if (!response.ok) {
                 const errorText = await response.text().catch(() => 'No error details');
-                console.error('Upload failed:', response.status, errorText);
-                throw new Error(`Failed to upload image: ${response.status}`);
+                const error = new Error(`Failed to upload image: ${response.status}`);
+                appLogger.error('Image upload failed', error, { status: response.status, errorText });
+                throw error;
             }
             
             const urls = await response.json();
-            console.log('Upload successful, received URLs:', urls);
+            appLogger.info('Image upload successful', { urls });
             
             if (urls && urls.length > 0) {
                 const content = editor?.getHTML() || '';
@@ -71,7 +73,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 editor?.commands.insertContent(`<img src="${urls[0]}" alt="${file.name}" />`);
             }
         } catch (error) {
-            console.error('Error uploading image:', error);
+            appLogger.error('Error uploading image', error instanceof Error ? error : new Error(String(error)));
             const content = editor?.getHTML() || '';
             const loadingPattern = /!\[Uploading .*?\]\(\)/g;
             const updatedContent = content.replace(loadingPattern, '');

@@ -1,21 +1,34 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getToken } from "next-auth/jwt";
+import { apiLogger } from '@/utils/logger';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const API_BASE_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
     
     if (!API_BASE_URL) {
+        const error = new Error('Backend URL not configured');
+        apiLogger.error('Configuration error', error, { 
+            detail: 'Set BACKEND_URL or NEXT_PUBLIC_API_URL'
+        });
         return res.status(500).json({ 
             detail: 'Backend URL not configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL',
             error: 'Configuration error'
         });
     }
     
+    // Start logging the request
+    apiLogger.logApiRequest(req, res);
+    
     try {
         if (req.method !== 'GET') {
             const token = await getToken({ req });
             
             if (!token || !token.accessToken) {
+                const error = new Error('Authentication required');
+                apiLogger.error('Authentication failed', error, {
+                    path: req.url,
+                    method: req.method
+                });
                 return res.status(401).json({ 
                     detail: 'Not authenticated',
                     error: 'Authentication required'

@@ -9,5 +9,6 @@
     "[python]": {
         "editor.formatOnSave": false,
         "editor.rulers": [100]
-    }
+    },
+    "makefile.configureOnOpen": false
 }
