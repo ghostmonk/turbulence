@@ -32,21 +32,22 @@ const nextConfig: NextConfig = {
     },
     async headers() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const csp_value = `
+                            default-src 'self';
+                            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
+                            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                            img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com https://authjs.dev;
+                            connect-src 'self' ${apiUrl} https://accounts.google.com https://*.googleapis.com https://www.google.com;
+                            font-src 'self' https://fonts.gstatic.com;
+                            frame-src 'self' https://accounts.google.com https://*.google.com;
+                        `.replace(/\n/g, '').trim();
         return [
             {
                 source: "/api/:path*",
                 headers: [
                     {
                         key: "Content-Security-Policy",
-                        value: `
-                            default-src 'self';
-                            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
-                            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                            img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
-                            connect-src 'self' ${apiUrl} https://accounts.google.com https://*.googleapis.com https://www.google.com;
-                            font-src 'self' https://fonts.gstatic.com;
-                            frame-src 'self' https://accounts.google.com https://*.google.com;
-                        `.replace(/\n/g, '').trim(),
+                        value: csp_value,
                     },
                     {
                         key: "Access-Control-Allow-Origin",
@@ -71,15 +72,7 @@ const nextConfig: NextConfig = {
                 headers: [
                     {
                         key: "Content-Security-Policy",
-                        value: `
-                            default-src 'self';
-                            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiUrl};
-                            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                            img-src 'self' data: blob: ${apiUrl} https://storage.googleapis.com;
-                            connect-src 'self' ${apiUrl} https://accounts.google.com https://*.googleapis.com https://www.google.com;
-                            font-src 'self' https://fonts.gstatic.com;
-                            frame-src 'self' https://accounts.google.com https://*.google.com;
-                        `.replace(/\n/g, '').trim(),
+                        value: csp_value,
                     }
                 ]
             }
