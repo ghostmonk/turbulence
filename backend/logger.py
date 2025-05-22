@@ -1,13 +1,14 @@
 import logging
-import traceback
 import sys
+import traceback
 from functools import wraps
+
 
 class DetailedFormatter(logging.Formatter):
     def formatException(self, exc_info):
         formatted = super().formatException(exc_info)
         return f"{formatted}\n\nFull traceback:\n{''.join(traceback.format_exception(*exc_info))}"
-    
+
     def format(self, record):
         record_dict = {
             "timestamp": self.formatTime(record, self.datefmt),
@@ -16,20 +17,20 @@ class DetailedFormatter(logging.Formatter):
             "message": record.getMessage(),
             "path": record.pathname,
             "line": record.lineno,
-            "function": record.funcName
+            "function": record.funcName,
         }
-        
+
         if record.exc_info:
             record_dict["exception"] = self.formatException(record.exc_info)
-        
+
         if hasattr(record, "extra") and record.extra:
             record_dict["extra"] = record.extra
 
         output = f"{self.formatTime(record, self.datefmt)} - {record.levelname} - {record.name} - {record.getMessage()}"
-        
+
         if record.exc_info:
             return f"{output}\n{self.formatException(record.exc_info)}"
-        
+
         return output
 
 
@@ -86,39 +87,39 @@ def log_request_response(request, response=None, error=None):
             "client": getattr(request, "client", None) and str(getattr(request, "client")),
             "headers": dict(getattr(request, "headers", {})),
         }
-        
+
         if hasattr(request, "body") and request.body:
             try:
                 if isinstance(request.body, bytes):
-                    req_info["body"] = request.body.decode('utf-8')[:1000]  # Limit size
+                    req_info["body"] = request.body.decode("utf-8")[:1000]  # Limit size
                 else:
                     req_info["body"] = str(request.body)[:1000]
             except Exception:
                 req_info["body"] = "[Binary data]"
-        
+
         log_data = {"request": req_info}
-        
+
         if response:
             resp_info = {
                 "status_code": getattr(response, "status_code", 0),
                 "headers": dict(getattr(response, "headers", {})),
             }
             log_data["response"] = resp_info
-        
+
         if error:
             err_info = {
                 "type": type(error).__name__,
                 "message": str(error),
             }
             log_data["error"] = err_info
-        
+
         if error:
             error("Request failed", log_data, exc_info=error)
         elif response and getattr(response, "status_code", 200) >= 400:
             warning("Request resulted in error response", log_data)
         else:
             info("Request processed", log_data)
-            
+
     except Exception as e:
         logger.error(f"Error in log_request_response: {e}")
 
