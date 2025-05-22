@@ -120,4 +120,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             stack: error instanceof Error ? error.stack : undefined
         });
     }
-} 
+}
