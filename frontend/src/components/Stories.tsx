@@ -19,7 +19,7 @@ const Stories: React.FC = () => {
         hasMore, 
         totalStories, 
         resetStories 
-    } = useFetchStories(session?.accessToken ? true : false); // Include drafts when authenticated
+    } = useFetchStories();
     
     // Initialize data on component mount
     useEffect(() => {
