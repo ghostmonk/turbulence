@@ -219,6 +219,67 @@ async def update_story(
         )
 
 
+@router.get("/drafts")
+@requires_auth
+async def get_drafts(
+    request: Request,
+    response: Response,
+    limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    collection: AsyncIOMotorCollection = Depends(get_collection),
+):
+    try:
+        query = {"is_published": False}
+        sort = {"date": -1}
+
+        logger.info_with_context(
+            "Fetching drafts",
+            {
+                "query_params": {"limit": limit, "offset": offset},
+                "filter": query,
+                "sort": sort,
+            },
+        )
+
+        total = await collection.count_documents(query)
+
+        drafts = await find_many_and_convert(
+            collection, query, StoryResponse, sort, limit=limit, skip=offset
+        )
+
+        logger.info_with_context(
+            "Successfully fetched drafts",
+            {
+                "total_count": total,
+                "returned_count": len(drafts),
+                "pagination": {"limit": limit, "offset": offset},
+            },
+        )
+
+        return {"items": drafts, "total": total, "limit": limit, "offset": offset}
+    except Exception as e:
+        logger.exception_with_context(
+            "Error fetching drafts",
+            {
+                "query_params": {"limit": limit, "offset": offset},
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+                "traceback": traceback.format_exc(),
+            },
+        )
+
+        logger.log_request_response(request, error=e)
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An error occurred while fetching drafts",
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+            },
+        )
+
+
 @router.post("/stories", response_model=StoryResponse, status_code=201)
 @requires_auth
 async def add_story(

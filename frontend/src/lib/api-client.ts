@@ -149,6 +149,10 @@ const apiRoutes = {
     update: (id: string) => `/api/stories/${id}`,
     delete: (id: string) => `/api/stories/${id}`,
   },
+  // Draft-related endpoints
+  drafts: {
+    list: () => '/api/drafts',
+  },
 };
 
 // Pagination interface
@@ -197,6 +201,17 @@ const apiClient = {
       fetchApi<Story>(apiRoutes.stories.delete(id), { 
         method: 'DELETE', 
         token 
+      }),
+  },
+
+  /**
+   * Draft methods
+   */
+  drafts: {
+    list: (token: string, pagination?: PaginationParams) => 
+      fetchApi<PaginatedResponse<Story>>(apiRoutes.drafts.list(), { 
+        token,
+        params: pagination as Record<string, string | number>
       }),
   },
 };

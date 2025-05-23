@@ -179,6 +179,126 @@ export function useFetchStory(id?: string) {
 }
 
 /**
+ * Hook for fetching drafts with infinite scrolling support
+ */
+export function useFetchDrafts() {
+  const { data: session } = useSession();
+  const [drafts, setDrafts] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalDrafts, setTotalDrafts] = useState(0);
+  
+  // Use refs to avoid dependency issues
+  const offsetRef = useRef(0);
+  const isMountedRef = useRef(false);
+  const tokenRef = useRef(session?.accessToken);
+  const loadingRef = useRef(loading);
+  const hasMoreRef = useRef(hasMore);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+  
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+  
+  useEffect(() => {
+    tokenRef.current = session?.accessToken;
+  }, [session?.accessToken]);
+  
+  // Function to fetch drafts that doesn't depend on state
+  const fetchDraftsInternal = useCallback(async (reset = false) => {
+    if (loadingRef.current || !tokenRef.current) return;
+    
+    if (reset) {
+      offsetRef.current = 0;
+      setDrafts([]);
+      setHasMore(true);
+      hasMoreRef.current = true;
+    }
+    
+    // If we already know there are no more drafts, don't fetch
+    if (!reset && !hasMoreRef.current) return;
+    
+    setLoading(true);
+    loadingRef.current = true;
+    setError(null);
+    
+    try {
+      console.log(`Fetching drafts, offset: ${offsetRef.current}, reset: ${reset}`);
+      
+      const response = await apiClient.drafts.list(tokenRef.current!, {
+        limit: STORIES_PAGE_SIZE,
+        offset: offsetRef.current
+      });
+      
+      setTotalDrafts(response.total);
+      
+      if (reset) {
+        setDrafts(response.items);
+      } else {
+        setDrafts(prevDrafts => [...prevDrafts, ...response.items]);
+      }
+      
+      // Check if we've loaded all drafts
+      offsetRef.current += response.items.length;
+      const newHasMore = offsetRef.current < response.total;
+      setHasMore(newHasMore);
+      hasMoreRef.current = newHasMore;
+    } catch (err) {
+      console.error('Error fetching drafts:', err);
+      setError(err instanceof ApiRequestError 
+        ? err.message 
+        : 'Failed to fetch drafts');
+    } finally {
+      setLoading(false);
+      loadingRef.current = false;
+    }
+  }, []); // No dependencies to avoid recreation
+  
+  /* eslint-disable react-hooks/exhaustive-deps */
+  // Load initial data only once after mounting
+  useEffect(() => {
+    // Only fetch on first mount if we have a token
+    if (!isMountedRef.current && tokenRef.current) {
+      isMountedRef.current = true;
+      fetchDraftsInternal(true);
+    }
+  }, []); // Empty dependency array = run once on mount
+  
+  // Refetch when token changes
+  useEffect(() => {
+    // Skip first render, already handled by mount effect
+    if (isMountedRef.current) {
+      fetchDraftsInternal(true);
+    }
+  }, [session?.accessToken]); // Only depend on session token
+  /* eslint-enable react-hooks/exhaustive-deps */
+  
+  // Expose stable functions that don't get recreated
+  const loadMore = useCallback(() => {
+    fetchDraftsInternal(false);
+  }, [fetchDraftsInternal]);
+  
+  const resetDrafts = useCallback(() => {
+    fetchDraftsInternal(true);
+  }, [fetchDraftsInternal]);
+
+  return {
+    drafts,
+    loading,
+    error,
+    fetchDrafts: loadMore,
+    hasMore,
+    totalDrafts,
+    resetDrafts,
+  };
+}
+
+/**
  * Hook for story operations (create, update)
  */
 export function useStoryOperations() {
