@@ -13,7 +13,7 @@ const STORIES_PAGE_SIZE = 5;
 /**
  * Hook for fetching stories with infinite scrolling support
  */
-export function useFetchStories(includeDrafts = false) {
+export function useFetchStories() {
   const { data: session } = useSession();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,7 +103,7 @@ export function useFetchStories(includeDrafts = false) {
     if (isMountedRef.current) {
       fetchStoriesInternal(true);
     }
-  }, [session?.accessToken]); // Depend on session token
+  }, [session?.accessToken]);
   /* eslint-enable react-hooks/exhaustive-deps */
   // Expose stable functions that don't get recreated
   const loadMore = useCallback(() => {
