@@ -62,7 +62,9 @@ Required environment variables in `.env`:
 - MongoDB connection (`MONGO_USER`, `MONGO_PASSWORD`, etc.)
 - Google Cloud Storage (`GCS_BUCKET_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`)
 - Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
-- NextAuth (`NEXTAUTH_SECRET`, `NEXTAUTH_URL`)
+- NextAuth (`NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_COOKIE_DOMAIN`)
+
+For production with www subdomain support, set `NEXTAUTH_COOKIE_DOMAIN=.ghostmonk.com`
 
 Place `gcp-credentials.json` in project root.
 

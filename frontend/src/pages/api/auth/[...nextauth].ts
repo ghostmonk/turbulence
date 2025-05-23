@@ -21,6 +21,69 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
     },
+    cookies: {
+        sessionToken: {
+            name: "next-auth.session-token",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NEXTAUTH_COOKIE_DOMAIN || undefined,
+            },
+        },
+        callbackUrl: {
+            name: "next-auth.callback-url",
+            options: {
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NEXTAUTH_COOKIE_DOMAIN || undefined,
+            },
+        },
+        csrfToken: {
+            name: "next-auth.csrf-token",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NEXTAUTH_COOKIE_DOMAIN || undefined,
+            },
+        },
+        pkceCodeVerifier: {
+            name: "next-auth.pkce.code_verifier",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                maxAge: 900,
+                domain: process.env.NEXTAUTH_COOKIE_DOMAIN || undefined,
+            },
+        },
+        state: {
+            name: "next-auth.state",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                maxAge: 900,
+                domain: process.env.NEXTAUTH_COOKIE_DOMAIN || undefined,
+            },
+        },
+        nonce: {
+            name: "next-auth.nonce",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NEXTAUTH_COOKIE_DOMAIN || undefined,
+            },
+        },
+    },
     secret: process.env.NEXTAUTH_SECRET,
     debug: process.env.NEXTAUTH_DEBUG === 'true',
 };
