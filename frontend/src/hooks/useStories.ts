@@ -314,6 +314,52 @@ export function useStoryOperations() {
     }
   }, [session?.accessToken]);
 
+  const deleteStory = useCallback(async (id: string) => {
+    if (!session?.accessToken) {
+      setError('You must be logged in to delete a story');
+      return false;
+    }
+    
+    setLoading(true);
+    setError(null);
+    setErrorDetails(null);
+    setSuccess(false);
+    
+    try {
+      console.log('Deleting story:', { id });
+      
+      await apiClient.stories.delete(id, session.accessToken);
+      
+      setSuccess(true);
+      return true;
+    } catch (err) {
+      console.error('Error deleting story:', err);
+      
+      if (err instanceof ApiRequestError) {
+        const errMsg = err.status === 401 
+          ? handleAuthError(err) 
+          : err.message;
+        
+        setError(errMsg);
+        setErrorDetails({
+          status: err.status,
+          data: err.data,
+          requestDetails: err.requestDetails
+        });
+      } else {
+        setError('Failed to delete story');
+        setErrorDetails(err instanceof Error ? {
+          message: err.message,
+          stack: err.stack
+        } : err);
+      }
+      
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.accessToken]);
+
   const saveStory = useCallback(async (storyData: Partial<Story>, shouldRedirect = true) => {
     try {
       let result = null;
@@ -351,6 +397,7 @@ export function useStoryOperations() {
     success,
     createStory,
     updateStory,
+    deleteStory,
     saveStory,
   };
 } 

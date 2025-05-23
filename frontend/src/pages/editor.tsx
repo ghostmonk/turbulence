@@ -15,7 +15,7 @@ export default function EditorPage() {
   const storyId = typeof id === 'string' ? id : undefined;
   
   const { story: fetchedStory, loading: fetchLoading, error: fetchError } = useFetchStory(storyId);
-  const { saveStory, loading: saveLoading, error: saveError, errorDetails } = useStoryOperations();
+  const { saveStory, deleteStory, loading: saveLoading, error: saveError, errorDetails } = useStoryOperations();
   
 
   const [story, setStory] = useState<Partial<Story>>({
@@ -36,6 +36,27 @@ export default function EditorPage() {
     setError(null);
     router.push('/editor', undefined, { shallow: true });
   }, [router]);
+
+  const handleDelete = useCallback(async () => {
+    if (!story.id || !session) {
+      setError("Cannot delete story: missing ID or not logged in");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete "${story.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const success = await deleteStory(story.id);
+      if (success) {
+        router.push('/');
+      }
+    } catch (err) {
+      console.error('Error deleting story:', err);
+      setError('Failed to delete story');
+    }
+  }, [story.id, story.title, session, deleteStory, router]);
   
   useEffect(() => {
     if (fetchedStory) {
@@ -179,15 +200,27 @@ export default function EditorPage() {
         <h1 className="text-2xl font-bold">
           {story.id ? 'Edit Story' : 'New Story'}
         </h1>
-        {story.id && (
-          <button
-            type="button"
-            onClick={resetForm}
-            className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-          >
-            New Story
-          </button>
-        )}
+        <div className="flex gap-2">
+          {story.id && (
+            <>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+              >
+                New Story
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={saveLoading}
+                className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {(error || saveError) && (

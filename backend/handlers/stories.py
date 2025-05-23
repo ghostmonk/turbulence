@@ -24,7 +24,9 @@ async def get_stories(
     collection: AsyncIOMotorCollection = Depends(get_collection),
 ):
     try:
-        query = {} if include_drafts else {"is_published": True} 
+        query = {"deleted": {"$ne": True}}
+        if not include_drafts:
+            query["is_published"] = True
         sort = {"date": -1}
 
         logger.info_with_context(
@@ -86,7 +88,7 @@ async def get_story(
             raise HTTPException(status_code=400, detail="Invalid story ID format")
 
         logger.info_with_context("Fetching story by ID", {"story_id": story_id})
-        story = await find_one_and_convert(collection, {"_id": ObjectId(story_id)}, StoryResponse)
+        story = await find_one_and_convert(collection, {"_id": ObjectId(story_id), "deleted": {"$ne": True}}, StoryResponse)
 
         if not story:
             logger.warning_with_context("Story not found", {"story_id": story_id})
@@ -149,7 +151,7 @@ async def update_story(
         )
 
         existing_story = await find_one_and_convert(
-            collection, {"_id": ObjectId(story_id)}, StoryResponse
+            collection, {"_id": ObjectId(story_id), "deleted": {"$ne": True}}, StoryResponse
         )
 
         if not existing_story:
@@ -285,6 +287,70 @@ async def add_story(
             status_code=500,
             detail={
                 "message": "An error occurred while creating the story",
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+            },
+        )
+
+
+@router.delete("/stories/{story_id}", status_code=204)
+@requires_auth
+async def delete_story(
+    request: Request, story_id: str, collection: AsyncIOMotorCollection = Depends(get_collection)
+):
+    try:
+        if not ObjectId.is_valid(story_id):
+            logger.warning_with_context("Invalid story ID format for delete", {"story_id": story_id})
+            raise HTTPException(status_code=400, detail="Invalid story ID format")
+
+        logger.info_with_context("Soft deleting story", {"story_id": story_id})
+
+        existing_story = await find_one_and_convert(
+            collection, {"_id": ObjectId(story_id), "deleted": {"$ne": True}}, StoryResponse
+        )
+
+        if not existing_story:
+            logger.warning_with_context("Story not found for delete", {"story_id": story_id})
+            raise HTTPException(status_code=404, detail="Story not found")
+
+        result = await collection.update_one(
+            {"_id": ObjectId(story_id)}, {"$set": {"deleted": True}}
+        )
+
+        if result.modified_count == 0:
+            logger.error_with_context(
+                "Failed to delete story - no documents modified",
+                {
+                    "story_id": story_id,
+                    "matched_count": result.matched_count,
+                    "modified_count": result.modified_count,
+                },
+            )
+            raise HTTPException(status_code=500, detail="Failed to delete story")
+
+        logger.info_with_context(
+            "Story soft deleted successfully", {"story_id": story_id, "title": existing_story.title}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception_with_context(
+            "Error deleting story",
+            {
+                "story_id": story_id,
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+                "traceback": traceback.format_exc(),
+            },
+        )
+
+        logger.log_request_response(request, error=e)
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An error occurred while deleting the story",
                 "error_type": type(e).__name__,
                 "error_details": str(e),
             },

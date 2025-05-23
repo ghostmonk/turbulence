@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { formatDate } from "@/utils/formatDate";
 import { Story } from '@/types/api';
-import { useFetchStories } from '@/hooks/useStories';
+import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
 
 const Stories: React.FC = () => {
     const { data: session } = useSession();
@@ -20,6 +20,7 @@ const Stories: React.FC = () => {
         totalStories, 
         resetStories 
     } = useFetchStories();
+    const { deleteStory, loading: deleteLoading } = useStoryOperations();
     
     // Initialize data on component mount
     useEffect(() => {
@@ -36,6 +37,22 @@ const Stories: React.FC = () => {
             pathname: '/editor',
             query: { id: story.id }
         });
+    };
+
+    const handleDelete = async (story: Story) => {
+        if (!session) {
+            router.push('/api/auth/signin');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to delete "${story.title}"? This action cannot be undone.`)) {
+            return;
+        }
+        
+        const success = await deleteStory(story.id);
+        if (success) {
+            resetStories(); // Refresh the list
+        }
     };
 
     if (error) {
@@ -107,15 +124,26 @@ const Stories: React.FC = () => {
                                         </span>
                                     )}
                                     {session && (
-                                        <button
-                                            onClick={() => handleEdit(story)}
-                                            className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
-                                        >
-                                            Edit
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleEdit(story)}
+                                                className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                            {isDraft && (
+                                                <button
+                                                    onClick={() => handleDelete(story)}
+                                                    disabled={deleteLoading}
+                                                    className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                                                >
+                                                    {deleteLoading ? 'Deleting...' : 'Delete'}
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
-                                <h2 className={`text-xl font-bold mb-2 ${isDraft ? 'pr-32' : 'pr-16'}`}>{story.title}</h2>
+                                <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''}`}>{story.title}</h2>
                                 <h3 className="text-sm text-gray-400 mb-4">{formatDate(story.date)}</h3>
                                 <div
                                     className="card-content"
