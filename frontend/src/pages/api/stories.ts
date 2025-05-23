@@ -36,14 +36,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         }
 
-        // Build URL with query parameters for pagination
         let apiUrl = `${API_BASE_URL}/stories`;
         
-        // Forward pagination parameters if present
+        const token = await getToken({ req });
+        
         if (req.method === 'GET' && req.query) {
             const params = new URLSearchParams();
             
-            // Add pagination parameters if provided
             if (req.query.limit) {
                 params.append('limit', req.query.limit.toString());
             }
@@ -52,28 +51,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 params.append('offset', req.query.offset.toString());
             }
             
-            // Add include_drafts parameter if provided
-            if (req.query.include_drafts) {
-                params.append('include_drafts', req.query.include_drafts.toString());
+            if (token?.accessToken) {
+                params.append('include_drafts', 'true');
             }
             
-            // Add params to URL if any were set
             if (params.toString()) {
                 apiUrl += `?${params.toString()}`;
             }
         }
-        
-        const token = await getToken({ req });
+
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
         };
         
-        // Add auth header for non-GET requests OR GET requests with include_drafts
         if ((req.method !== 'GET' || req.query.include_drafts) && token?.accessToken) {
             headers.Authorization = `Bearer ${token.accessToken}`;
         }
         
-        // Log request details for debugging
         const requestBody = req.method !== 'GET' ? req.body : undefined;
         console.log(`Backend request: ${req.method} ${apiUrl}`, {
             method: req.method,
@@ -87,16 +81,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ...(req.method !== 'GET' && { body: JSON.stringify(req.body) }),
         });
 
-        // Handle error responses with more details
         if (!response.ok) {
-            // Try to parse the error response as JSON
             let errorData: any;
             let responseText: string | undefined;
             
             try {
                 errorData = await response.json();
             } catch (parseError) {
-                // If we can't parse JSON, get the text response instead
                 try {
                     responseText = await response.text();
                     errorData = { detail: 'Non-JSON error response', rawResponse: responseText };
@@ -105,7 +96,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
             }
             
-            // Log detailed error information
             console.error('Backend API error:', {
                 status: response.status,
                 statusText: response.statusText,
@@ -126,7 +116,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
-        // Log detailed error with stack trace
         console.error('Fatal error in /api/stories:', error);
         
         if (error instanceof Error) {

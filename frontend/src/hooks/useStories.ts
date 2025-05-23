@@ -21,14 +21,12 @@ export function useFetchStories(includeDrafts = false) {
   const [hasMore, setHasMore] = useState(true);
   const [totalStories, setTotalStories] = useState(0);
   
-  // Use refs to avoid dependency issues
   const offsetRef = useRef(0);
   const isMountedRef = useRef(false);
   const tokenRef = useRef(session?.accessToken);
   const loadingRef = useRef(loading);
   const hasMoreRef = useRef(hasMore);
   
-  // Update refs when state changes
   useEffect(() => {
     loadingRef.current = loading;
   }, [loading]);
@@ -41,7 +39,6 @@ export function useFetchStories(includeDrafts = false) {
     tokenRef.current = session?.accessToken;
   }, [session?.accessToken]);
   
-  // Function to fetch stories that doesn't depend on state
   const fetchStoriesInternal = useCallback(async (reset = false) => {
     if (loadingRef.current) return;
     
@@ -52,7 +49,6 @@ export function useFetchStories(includeDrafts = false) {
       hasMoreRef.current = true;
     }
     
-    // If we already know there are no more stories, don't fetch
     if (!reset && !hasMoreRef.current) return;
     
     setLoading(true);
@@ -65,7 +61,7 @@ export function useFetchStories(includeDrafts = false) {
       const response = await apiClient.stories.list(tokenRef.current, {
         limit: STORIES_PAGE_SIZE,
         offset: offsetRef.current,
-        include_drafts: includeDrafts
+        include_drafts: session?.accessToken ? true : false
       });
       
       setTotalStories(response.total);
@@ -76,7 +72,6 @@ export function useFetchStories(includeDrafts = false) {
         setStories(prevStories => [...prevStories, ...response.items]);
       }
       
-      // Check if we've loaded all stories
       offsetRef.current += response.items.length;
       const newHasMore = offsetRef.current < response.total;
       setHasMore(newHasMore);
@@ -102,15 +97,14 @@ export function useFetchStories(includeDrafts = false) {
     }
   }, []); // Empty dependency array = run once on mount
   
-  // Refetch when token or includeDrafts changes
+  // Refetch when token changes
   useEffect(() => {
     // Skip first render, already handled by mount effect
     if (isMountedRef.current) {
       fetchStoriesInternal(true);
     }
-  }, [session?.accessToken, includeDrafts]); // Depend on session token and includeDrafts
+  }, [session?.accessToken]); // Depend on session token
   /* eslint-enable react-hooks/exhaustive-deps */
-  
   // Expose stable functions that don't get recreated
   const loadMore = useCallback(() => {
     fetchStoriesInternal(false);
