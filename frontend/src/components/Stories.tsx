@@ -93,26 +93,39 @@ const Stories: React.FC = () => {
                 }
             >
                 <div className="flex flex-col space-y-6">
-                    {stories.map((story) => (
-                        <div key={story.id} className="card relative">
-                            {session && (
-                                <button
-                                    onClick={() => handleEdit(story)}
-                                    className="absolute top-4 right-4 px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
-                                >
-                                    Edit
-                                </button>
-                            )}
-                            <h2 className="text-xl font-bold mb-2">{story.title}</h2>
-                            <h3 className="text-sm text-gray-400 mb-4">{formatDate(story.date)}</h3>
-                            <div
-                                className="card-content"
-                                dangerouslySetInnerHTML={{
-                                    __html: DOMPurify.sanitize(story.content),
-                                }}
-                            />
-                        </div>
-                    ))}
+                    {stories.map((story) => {
+                        const isDraft = !story.is_published;
+                        return (
+                            <div 
+                                key={story.id} 
+                                className={`card relative ${isDraft ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : ''}`}
+                            >
+                                <div className="absolute top-4 right-4 flex gap-2">
+                                    {isDraft && (
+                                        <span className="px-3 py-1 text-xs bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200 rounded-full font-medium">
+                                            DRAFT
+                                        </span>
+                                    )}
+                                    {session && (
+                                        <button
+                                            onClick={() => handleEdit(story)}
+                                            className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
+                                        >
+                                            Edit
+                                        </button>
+                                    )}
+                                </div>
+                                <h2 className={`text-xl font-bold mb-2 ${isDraft ? 'pr-32' : 'pr-16'}`}>{story.title}</h2>
+                                <h3 className="text-sm text-gray-400 mb-4">{formatDate(story.date)}</h3>
+                                <div
+                                    className="card-content"
+                                    dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(story.content),
+                                    }}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             </InfiniteScroll>
         </div>

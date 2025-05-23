@@ -20,10 +20,11 @@ async def get_stories(
     response: Response,
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    include_drafts: bool = Query(False),
     collection: AsyncIOMotorCollection = Depends(get_collection),
 ):
     try:
-        query = {"is_published": True}
+        query = {} if include_drafts else {"is_published": True} 
         sort = {"date": -1}
 
         logger.info_with_context(

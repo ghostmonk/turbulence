@@ -155,6 +155,7 @@ const apiRoutes = {
 interface PaginationParams {
   limit?: number;
   offset?: number;
+  include_drafts?: boolean;
 }
 
 /**
@@ -199,6 +200,7 @@ const apiClient = {
         token 
       }),
   },
+
 };
 
 export { ApiRequestError, apiClient };
