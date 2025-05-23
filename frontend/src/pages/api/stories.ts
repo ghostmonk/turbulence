@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             'Content-Type': 'application/json',
         };
         
-        if ((req.method !== 'GET' || req.query.include_drafts) && token?.accessToken) {
+        if (token?.accessToken) {
             headers.Authorization = `Bearer ${token.accessToken}`;
         }
         
