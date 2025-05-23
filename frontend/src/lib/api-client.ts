@@ -4,7 +4,6 @@
 
 import { ApiError, Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
 
-// Types
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 interface RequestOptions<T = unknown> {
@@ -14,7 +13,6 @@ interface RequestOptions<T = unknown> {
   params?: Record<string, string | number>;
 }
 
-// Error handling
 class ApiRequestError extends Error {
   status: number;
   data: unknown;
@@ -37,7 +35,6 @@ class ApiRequestError extends Error {
     this.data = data;
     this.requestDetails = requestDetails;
     
-    // Capture stack trace for better debugging
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ApiRequestError);
     }
@@ -59,7 +56,6 @@ async function fetchApi<T, B = unknown>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  // Add query parameters if provided
   let url = endpoint;
   if (params && Object.keys(params).length > 0) {
     const searchParams = new URLSearchParams();
@@ -80,7 +76,6 @@ async function fetchApi<T, B = unknown>(
     body: body ? JSON.stringify(body) : undefined,
   };
 
-  // Create request details for error reporting
   const requestDetails = {
     url,
     method,
@@ -93,7 +88,10 @@ async function fetchApi<T, B = unknown>(
   try {
     const response = await fetch(url, config);
 
-    // Handle non-JSON responses
+    if (response.status === 204) {
+      return {} as T;
+    }
+    
     if (!response.headers.get('content-type')?.includes('application/json')) {
       throw new ApiRequestError(
         `Invalid response format: ${response.headers.get('content-type')}`,
@@ -105,7 +103,6 @@ async function fetchApi<T, B = unknown>(
 
     const data = await response.json();
 
-    // Handle API errors
     if (!response.ok) {
       const errorMessage = (data as ApiError).detail || `Error: ${response.status} ${response.statusText}`;
       console.error('API error:', { 
@@ -122,7 +119,6 @@ async function fetchApi<T, B = unknown>(
       throw error;
     }
 
-    // Handle network errors with more details
     console.error('Network error:', error, {
       request: requestDetails,
       stack: error instanceof Error ? error.stack : undefined
@@ -141,7 +137,6 @@ async function fetchApi<T, B = unknown>(
  * API endpoints that go through Next.js API routes
  */
 const apiRoutes = {
-  // Story-related endpoints
   stories: {
     list: () => '/api/stories',
     getById: (id: string) => `/api/stories/${id}`,
@@ -151,7 +146,6 @@ const apiRoutes = {
   },
 };
 
-// Pagination interface
 interface PaginationParams {
   limit?: number;
   offset?: number;
