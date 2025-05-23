@@ -52,6 +52,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 params.append('offset', req.query.offset.toString());
             }
             
+            // Add include_drafts parameter if provided
+            if (req.query.include_drafts) {
+                params.append('include_drafts', req.query.include_drafts.toString());
+            }
+            
             // Add params to URL if any were set
             if (params.toString()) {
                 apiUrl += `?${params.toString()}`;
@@ -63,7 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             'Content-Type': 'application/json',
         };
         
-        if (req.method !== 'GET' && token?.accessToken) {
+        // Add auth header for non-GET requests OR GET requests with include_drafts
+        if ((req.method !== 'GET' || req.query.include_drafts) && token?.accessToken) {
             headers.Authorization = `Bearer ${token.accessToken}`;
         }
         

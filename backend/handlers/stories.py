@@ -20,10 +20,16 @@ async def get_stories(
     response: Response,
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    include_drafts: bool = Query(False),
     collection: AsyncIOMotorCollection = Depends(get_collection),
 ):
     try:
-        query = {"is_published": True}
+        # If include_drafts is True, fetch all stories (published and unpublished)
+        # Otherwise, only fetch published stories
+        if include_drafts:
+            query = {}  # No filter - get all stories
+        else:
+            query = {"is_published": True}
         sort = {"date": -1}
 
         logger.info_with_context(

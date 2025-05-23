@@ -149,16 +149,13 @@ const apiRoutes = {
     update: (id: string) => `/api/stories/${id}`,
     delete: (id: string) => `/api/stories/${id}`,
   },
-  // Draft-related endpoints
-  drafts: {
-    list: () => '/api/drafts',
-  },
 };
 
 // Pagination interface
 interface PaginationParams {
   limit?: number;
   offset?: number;
+  include_drafts?: boolean;
 }
 
 /**
@@ -204,16 +201,6 @@ const apiClient = {
       }),
   },
 
-  /**
-   * Draft methods
-   */
-  drafts: {
-    list: (token: string, pagination?: PaginationParams) => 
-      fetchApi<PaginatedResponse<Story>>(apiRoutes.drafts.list(), { 
-        token,
-        params: pagination as Record<string, string | number>
-      }),
-  },
 };
 
 export { ApiRequestError, apiClient };

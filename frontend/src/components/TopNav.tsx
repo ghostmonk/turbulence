@@ -21,14 +21,9 @@ export default function TopNav() {
                             Home
                         </Link>
                         {session && (
-                            <>
-                                <Link href="/editor" className="hover:text-blue-500 transition-colors">
-                                    New Story
-                                </Link>
-                                <Link href="/drafts" className="hover:text-blue-500 transition-colors">
-                                    Drafts
-                                </Link>
-                            </>
+                            <Link href="/editor" className="hover:text-blue-500 transition-colors">
+                                New Story
+                            </Link>
                         )}
                     </div>
                     
@@ -77,22 +72,13 @@ export default function TopNav() {
                             Home
                         </Link>
                         {session && (
-                            <>
-                                <Link 
-                                    href="/editor" 
-                                    className="hover:text-blue-500 transition-colors py-2"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    New Story
-                                </Link>
-                                <Link 
-                                    href="/drafts" 
-                                    className="hover:text-blue-500 transition-colors py-2"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    Drafts
-                                </Link>
-                            </>
+                            <Link 
+                                href="/editor" 
+                                className="hover:text-blue-500 transition-colors py-2"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                New Story
+                            </Link>
                         )}
                     </div>
                 </div>
