@@ -85,7 +85,7 @@ export function useFetchStories() {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [session?.accessToken]); // Include session?.accessToken as dependency
+  }, []); // No dependencies to avoid recreation
   
   /* eslint-disable react-hooks/exhaustive-deps */
   // Load initial data only once after mounting
