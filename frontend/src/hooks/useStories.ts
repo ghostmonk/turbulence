@@ -173,7 +173,6 @@ export function useFetchStory(id?: string) {
   };
 }
 
-
 /**
  * Hook for story operations (create, update)
  */
