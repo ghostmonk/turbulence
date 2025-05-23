@@ -218,3 +218,74 @@ async def update_story(
                 "error_details": str(e),
             },
         )
+
+
+@router.post("/stories", response_model=StoryResponse, status_code=201)
+@requires_auth
+async def add_story(
+    request: Request,
+    story: StoryCreate,
+    collection: AsyncIOMotorCollection = Depends(get_collection),
+):
+    try:
+        logger.info_with_context(
+            "Creating new story",
+            {
+                "title": story.title,
+                "content_length": len(story.content) if story.content else 0,
+                "is_published": story.is_published,
+            },
+        )
+
+        document = {**story.model_dump(), "date": datetime.now(timezone.utc)}
+
+        result = await collection.insert_one(document)
+        story_id = str(result.inserted_id)
+        logger.info_with_context("Inserted document", {"story_id": story_id})
+
+        created_story = await find_one_and_convert(
+            collection, {"_id": result.inserted_id}, StoryResponse
+        )
+
+        if not created_story:
+            logger.error_with_context("Failed to retrieve created story", {"story_id": story_id})
+            raise HTTPException(status_code=500, detail="Failed to retrieve created story")
+
+        logger.info_with_context(
+            "Story created successfully", {"story_id": story_id, "title": created_story.title}
+        )
+
+        return created_story
+
+    except ValidationError as e:
+        error_details = e.errors() if hasattr(e, "errors") else str(e)
+        logger.error_with_context(
+            "Story validation error during creation", {"validation_errors": error_details}
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Invalid story data", "validation_errors": error_details},
+        )
+    except Exception as e:
+        logger.exception_with_context(
+            "Error adding story",
+            {
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+                "traceback": traceback.format_exc(),
+                "story_title": getattr(story, "title", "Unknown"),
+                "content_length": (
+                    len(getattr(story, "content", "")) if hasattr(story, "content") else 0
+                ),
+            },
+        )
+        logger.log_request_response(request, error=e)
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An error occurred while creating the story",
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+            },
+        )
