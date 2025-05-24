@@ -63,8 +63,17 @@ Required environment variables in `.env`:
 - Google Cloud Storage (`GCS_BUCKET_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`)
 - Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
 - NextAuth (`NEXTAUTH_SECRET`, `NEXTAUTH_URL`)
+- **For www subdomain support**: `NEXTAUTH_COOKIE_DOMAIN=.ghostmonk.com` (production only)
 
 Place `gcp-credentials.json` in project root.
+
+### Google OAuth Configuration
+
+For www subdomain support, ensure both redirect URIs are configured in Google Cloud Console:
+- `https://ghostmonk.com/api/auth/callback/google`  
+- `https://www.ghostmonk.com/api/auth/callback/google`
+
+In production, set `NEXTAUTH_COOKIE_DOMAIN=.ghostmonk.com` to enable cross-subdomain cookie sharing.
 
 ## Key Implementation Details
 
