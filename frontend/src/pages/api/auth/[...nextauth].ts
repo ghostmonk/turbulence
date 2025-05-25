@@ -21,6 +21,32 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
     },
+    cookies: {
+        // Only configure the OAuth state cookie to work across subdomains
+        state: {
+            name: "next-auth.state",
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: process.env.NODE_ENV === 'production',
+                domain: process.env.NODE_ENV === 'production' ? '.ghostmonk.com' : undefined,
+                maxAge: 900, // 15 minutes
+            },
+        },
+        // Also configure the PKCE code verifier for OAuth
+        pkceCodeVerifier: {
+            name: "next-auth.pkce.code_verifier",
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: process.env.NODE_ENV === 'production',
+                domain: process.env.NODE_ENV === 'production' ? '.ghostmonk.com' : undefined,
+                maxAge: 900, // 15 minutes
+            },
+        },
+    },
     secret: process.env.NEXTAUTH_SECRET,
     debug: process.env.NEXTAUTH_DEBUG === 'true',
 };
