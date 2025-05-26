@@ -310,3 +310,4 @@ service-account-key.json
 .env.local
 
 *.zip
+.roomodes

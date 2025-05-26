@@ -144,7 +144,14 @@ const Stories: React.FC = () => {
                                     )}
                                 </div>
                                 <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''}`}>{story.title}</h2>
-                                <h3 className="text-sm text-gray-400 mb-4">{formatDate(story.date)}</h3>
+                                <div className="flex items-center text-sm mb-4">
+                                    <span className="text-gray-400">{formatDate(story.createdDate)}</span>
+                                    {story.updatedDate !== story.createdDate && (
+                                        <span className="text-gray-400 text-xs ml-2 opacity-70">
+                                            (Updated: {formatDate(story.updatedDate)})
+                                        </span>
+                                    )}
+                                </div>
                                 <div
                                     className="card-content"
                                     dangerouslySetInnerHTML={{

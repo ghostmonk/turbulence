@@ -1,37 +1,38 @@
 import logging
+import os
 import sys
 import traceback
 from functools import wraps
+
 from google.cloud import logging as cloud_logging
-import os
 
 
 def setup_cloud_logging():
     """Setup Google Cloud Logging if running in Cloud Run"""
     try:
         # Check if running in Cloud Run
-        if os.getenv('K_SERVICE'):
+        if os.getenv("K_SERVICE"):
             # Get project ID from environment or metadata server
-            project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-            
+            project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+
             # Initialize client with explicit project
             client = cloud_logging.Client(project=project_id)
-            
+
             # Configure handler with service name for better filtering
             handler = cloud_logging.handlers.CloudLoggingHandler(
                 client,
-                name=os.getenv('K_SERVICE'),
+                name=os.getenv("K_SERVICE"),
                 labels={
-                    'service': os.getenv('K_SERVICE'),
-                    'revision': os.getenv('K_REVISION', 'unknown'),
-                    'configuration': os.getenv('K_CONFIGURATION', 'unknown')
-                }
+                    "service": os.getenv("K_SERVICE"),
+                    "revision": os.getenv("K_REVISION", "unknown"),
+                    "configuration": os.getenv("K_CONFIGURATION", "unknown"),
+                },
             )
-            
+
             # Setup handler with formatter
-            handler.setFormatter(logging.Formatter('%(message)s'))
+            handler.setFormatter(logging.Formatter("%(message)s"))
             logger.addHandler(handler)
-            
+
             # Set logging level
             logger.setLevel(logging.INFO)
             return True
@@ -50,8 +51,8 @@ def create_structured_log(record, message, context=None, exc_info=None):
         "logging.googleapis.com/sourceLocation": {
             "file": record.pathname,
             "line": str(record.lineno),
-            "function": record.funcName
-        }
+            "function": record.funcName,
+        },
     }
 
     if context:
@@ -61,7 +62,7 @@ def create_structured_log(record, message, context=None, exc_info=None):
         log_dict["exception"] = {
             "type": type(exc_info[1]).__name__,
             "message": str(exc_info[1]),
-            "traceback": ''.join(traceback.format_exception(*exc_info))
+            "traceback": "".join(traceback.format_exception(*exc_info)),
         }
 
     return log_dict
@@ -78,16 +79,14 @@ for handler in logger.handlers[:]:
 # Setup Cloud Logging if in Cloud Run, otherwise use standard logging
 if not setup_cloud_logging():
     console_handler = logging.StreamHandler(sys.stdout)
-    console_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
 
 
 def log_with_context(level, message, context=None, exc_info=None):
     """Log with additional context information."""
-    if os.getenv('K_SERVICE'):  # If running in Cloud Run
+    if os.getenv("K_SERVICE"):  # If running in Cloud Run
         record = logging.LogRecord(
             name=logger.name,
             level=level,
@@ -96,7 +95,7 @@ def log_with_context(level, message, context=None, exc_info=None):
             msg=message,
             args=(),
             exc_info=exc_info,
-            func=sys._getframe().f_back.f_code.co_name
+            func=sys._getframe().f_back.f_code.co_name,
         )
         structured_log = create_structured_log(record, message, context, exc_info)
         logger.log(level, structured_log)
@@ -133,8 +132,8 @@ def exception(message, context=None):
 def log_request_response(request, response=None, error=None):
     """Log detailed request and response information."""
     try:
-        trace_header = request.headers.get('X-Cloud-Trace-Context')
-        
+        trace_header = request.headers.get("X-Cloud-Trace-Context")
+
         req_info = {
             "httpRequest": {  # Special field for Cloud Logging
                 "requestMethod": getattr(request, "method", "UNKNOWN"),
@@ -142,11 +141,11 @@ def log_request_response(request, response=None, error=None):
                 "remoteIp": getattr(request, "client", None) and str(getattr(request, "client")),
                 "protocol": getattr(request, "scope", {}).get("type", "UNKNOWN"),
             },
-            "requestHeaders": dict(getattr(request, "headers", {}))
+            "requestHeaders": dict(getattr(request, "headers", {})),
         }
 
         if trace_header:  # Add trace context for Cloud Logging
-            req_info['logging.googleapis.com/trace'] = trace_header
+            req_info["logging.googleapis.com/trace"] = trace_header
 
         if hasattr(request, "body") and request.body:
             try:
@@ -163,12 +162,11 @@ def log_request_response(request, response=None, error=None):
             req_info["responseHeaders"] = dict(getattr(response, "headers", {}))
 
         if error:
-            req_info["error"] = {
-                "@type": type(error).__name__,
-                "message": str(error)
-            }
+            req_info["error"] = {"@type": type(error).__name__, "message": str(error)}
             if isinstance(error, Exception):
-                req_info["error"]["stack_trace"] = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
+                req_info["error"]["stack_trace"] = "".join(
+                    traceback.format_exception(type(error), error, error.__traceback__)
+                )
 
         # Log with appropriate severity
         if error:
