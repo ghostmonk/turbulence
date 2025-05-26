@@ -88,7 +88,9 @@ async def get_story(
             raise HTTPException(status_code=400, detail="Invalid story ID format")
 
         logger.info_with_context("Fetching story by ID", {"story_id": story_id})
-        story = await find_one_and_convert(collection, {"_id": ObjectId(story_id), "deleted": {"$ne": True}}, StoryResponse)
+        story = await find_one_and_convert(
+            collection, {"_id": ObjectId(story_id), "deleted": {"$ne": True}}, StoryResponse
+        )
 
         if not story:
             logger.warning_with_context("Story not found", {"story_id": story_id})
@@ -158,7 +160,12 @@ async def update_story(
             logger.warning_with_context("Story not found for update", {"story_id": story_id})
             raise HTTPException(status_code=404, detail="Story not found")
 
-        update_data = {**story.model_dump(), "date": datetime.now(timezone.utc)}
+        current_time = datetime.now(timezone.utc)
+        update_data = {
+            **story.model_dump(),
+            "date": current_time,
+            "updatedDate": current_time,
+        }
 
         result = await collection.update_one({"_id": ObjectId(story_id)}, {"$set": update_data})
 
@@ -239,7 +246,13 @@ async def add_story(
             },
         )
 
-        document = {**story.model_dump(), "date": datetime.now(timezone.utc)}
+        current_time = datetime.now(timezone.utc)
+        document = {
+            **story.model_dump(),
+            "date": current_time,  # Keep for backward compatibility
+            "createdDate": current_time,
+            "updatedDate": current_time,
+        }
 
         result = await collection.insert_one(document)
         story_id = str(result.inserted_id)
@@ -300,7 +313,9 @@ async def delete_story(
 ):
     try:
         if not ObjectId.is_valid(story_id):
-            logger.warning_with_context("Invalid story ID format for delete", {"story_id": story_id})
+            logger.warning_with_context(
+                "Invalid story ID format for delete", {"story_id": story_id}
+            )
             raise HTTPException(status_code=400, detail="Invalid story ID format")
 
         logger.info_with_context("Soft deleting story", {"story_id": story_id})

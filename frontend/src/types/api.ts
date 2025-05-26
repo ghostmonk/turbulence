@@ -11,6 +11,8 @@ export interface Story {
     content: string;
     is_published: boolean;
     date: string;
+    createdDate: string;
+    updatedDate: string;
 }
 
 /**
