@@ -88,7 +88,7 @@ export default function StoryPage({ story, error }: StoryPageProps) {
           </div>
           
           <div 
-            className="prose lg:prose-lg max-w-none"
+            className="prose lg:prose-lg max-w-none dark:prose-invert dark:text-gray-200"
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(story.content),
             }}

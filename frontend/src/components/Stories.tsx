@@ -176,19 +176,19 @@ const Stories: React.FC = () => {
                                 {!isDraft && (
                                     <Link href={storyPath} className="block">
                                         <div
-                                            className="card-content"
+                                            className="card-content dark:prose-invert"
                                             dangerouslySetInnerHTML={{
                                                 __html: DOMPurify.sanitize(story.content),
                                             }}
                                         />
-                                        <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                        <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
                                             Read full story →
                                         </div>
                                     </Link>
                                 )}
                                 {isDraft && (
                                     <div
-                                        className="card-content"
+                                        className="card-content dark:prose-invert"
                                         dangerouslySetInnerHTML={{
                                             __html: DOMPurify.sanitize(story.content),
                                         }}
