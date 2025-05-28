@@ -2,7 +2,6 @@ import React from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import DOMPurify from 'dompurify';
 import { formatDate } from '@/utils/formatDate';
 import { getStoryUrl } from '@/utils/urls';
@@ -14,7 +13,6 @@ interface StoryPageProps {
 }
 
 export default function StoryPage({ story, error }: StoryPageProps) {
-  const router = useRouter();
   const canonicalUrl = story?.slug ? getStoryUrl(story.slug) : '';
   
   // Create a short excerpt from the content
