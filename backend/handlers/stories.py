@@ -9,7 +9,7 @@ from logger import logger
 from models import StoryCreate, StoryResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import ValidationError
-from utils import find_many_and_convert, find_one_and_convert
+from utils import find_many_and_convert, find_one_and_convert, generate_unique_slug
 
 router = APIRouter()
 
@@ -71,6 +71,51 @@ async def get_stories(
             status_code=500,
             detail={
                 "message": "An error occurred while fetching stories",
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+            },
+        )
+
+
+@router.get("/stories/slug/{slug}", response_model=StoryResponse)
+async def get_story_by_slug(
+    request: Request, slug: str, collection: AsyncIOMotorCollection = Depends(get_collection)
+):
+    try:
+        logger.info_with_context("Fetching story by slug", {"slug": slug})
+        story = await find_one_and_convert(
+            collection, {"slug": slug, "deleted": {"$ne": True}, "is_published": True}, StoryResponse
+        )
+
+        if not story:
+            logger.warning_with_context("Story not found by slug", {"slug": slug})
+            raise HTTPException(status_code=404, detail="Story not found")
+
+        logger.info_with_context(
+            "Successfully fetched story by slug", {"slug": slug, "title": story.title}
+        )
+        return story
+    except HTTPException as he:
+        logger.warning_with_context(
+            f"HTTP exception: {he.detail}", {"status_code": he.status_code, "slug": slug}
+        )
+        raise
+    except Exception as e:
+        logger.exception_with_context(
+            "Error fetching story by slug",
+            {
+                "slug": slug,
+                "error_type": type(e).__name__,
+                "error_details": str(e),
+            },
+        )
+
+        logger.log_request_response(request, error=e)
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An error occurred while fetching the story",
                 "error_type": type(e).__name__,
                 "error_details": str(e),
             },
@@ -161,8 +206,15 @@ async def update_story(
             raise HTTPException(status_code=404, detail="Story not found")
 
         current_time = datetime.now(timezone.utc)
+        
+        # If title changed, regenerate the slug
+        slug = existing_story.slug
+        if existing_story.title != story.title:
+            slug = await generate_unique_slug(collection, story.title, ObjectId(story_id))
+        
         update_data = {
             **story.model_dump(),
+            "slug": slug,
             "date": current_time,
             "updatedDate": current_time,
         }
@@ -189,7 +241,7 @@ async def update_story(
             raise HTTPException(status_code=500, detail="Failed to retrieve updated story")
 
         logger.info_with_context(
-            "Story updated successfully", {"story_id": story_id, "title": updated_story.title}
+            "Story updated successfully", {"story_id": story_id, "title": updated_story.title, "slug": updated_story.slug}
         )
 
         return updated_story
@@ -246,8 +298,13 @@ async def add_story(
         )
 
         current_time = datetime.now(timezone.utc)
+        
+        # Generate a unique slug for the new story
+        slug = await generate_unique_slug(collection, story.title)
+        
         document = {
             **story.model_dump(),
+            "slug": slug,
             "date": current_time,
             "createdDate": current_time,
             "updatedDate": current_time,
@@ -255,7 +312,7 @@ async def add_story(
 
         result = await collection.insert_one(document)
         story_id = str(result.inserted_id)
-        logger.info_with_context("Inserted document", {"story_id": story_id})
+        logger.info_with_context("Inserted document", {"story_id": story_id, "slug": slug})
 
         created_story = await find_one_and_convert(
             collection, {"_id": result.inserted_id}, StoryResponse
@@ -266,7 +323,7 @@ async def add_story(
             raise HTTPException(status_code=500, detail="Failed to retrieve created story")
 
         logger.info_with_context(
-            "Story created successfully", {"story_id": story_id, "title": created_story.title}
+            "Story created successfully", {"story_id": story_id, "title": created_story.title, "slug": created_story.slug}
         )
 
         return created_story

@@ -15,6 +15,7 @@ class StoryCreate(StoryBase):
 
 class StoryResponse(StoryBase):
     id: str
+    slug: str = Field(default="")
     date: datetime
     createdDate: datetime
     updatedDate: datetime
