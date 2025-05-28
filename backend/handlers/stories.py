@@ -27,7 +27,7 @@ async def get_stories(
         query = {"deleted": {"$ne": True}}
         if not include_drafts:
             query["is_published"] = True
-        sort = {"date": -1}
+        sort = {"createdDate": -1}
 
         logger.info_with_context(
             "Fetching stories",
