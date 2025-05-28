@@ -139,6 +139,58 @@ h1 {
     line-height: 1.6;
 }
 
+/* Dark mode styles for prose content */
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+    color: #f3f4f6; /* gray-100 */
+}
+
+.dark .prose p,
+.dark .prose ul,
+.dark .prose ol,
+.dark .prose li {
+    color: #e5e7eb; /* gray-200 */
+}
+
+.dark .prose a {
+    color: #93c5fd; /* blue-300 */
+}
+
+.dark .prose a:hover {
+    color: #bfdbfe; /* blue-200 */
+}
+
+.dark .prose strong {
+    color: #f9fafb; /* gray-50 */
+}
+
+.dark .prose blockquote {
+    color: #d1d5db; /* gray-300 */
+    border-left-color: #4b5563; /* gray-600 */
+}
+
+.dark .prose code {
+    color: #f9fafb; /* gray-50 */
+    background-color: #374151; /* gray-700 */
+}
+
+.dark .prose pre {
+    background-color: #1f2937; /* gray-800 */
+    border-color: #374151; /* gray-700 */
+}
+
+.dark .prose hr {
+    border-color: #4b5563; /* gray-600 */
+}
+
+.dark .prose-invert {
+    color: #e5e7eb; /* gray-200 */
+}
+
 /* Direct grid styling */
 .grid {
     display: grid !important;

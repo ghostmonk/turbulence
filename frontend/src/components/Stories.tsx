@@ -4,9 +4,21 @@ import ClipLoader from 'react-spinners/ClipLoader';
 import DOMPurify from "dompurify";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
 import { Story } from '@/types/api';
 import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
+
+/**
+ * Safely gets the story URL based on the slug
+ * Falls back to ID if slug is not available
+ */
+const getStoryPath = (story: Story): string => {
+    if (!story.slug || story.slug.trim() === '') {
+        return `/stories/${story.id}`;
+    }
+    return `/stories/${story.slug}`;
+};
 
 const Stories: React.FC = () => {
     const { data: session } = useSession();
@@ -112,6 +124,8 @@ const Stories: React.FC = () => {
                 <div className="flex flex-col space-y-6">
                     {stories.map((story) => {
                         const isDraft = !story.is_published;
+                        const storyPath = getStoryPath(story);
+                        
                         return (
                             <div 
                                 key={story.id} 
@@ -143,7 +157,14 @@ const Stories: React.FC = () => {
                                         </div>
                                     )}
                                 </div>
-                                <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''}`}>{story.title}</h2>
+                                <Link 
+                                    href={storyPath}
+                                    className={`block ${isDraft ? 'pointer-events-none' : ''}`}
+                                >
+                                    <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''} ${!isDraft ? 'text-indigo-700 hover:text-indigo-900' : ''}`}>
+                                        {story.title}
+                                    </h2>
+                                </Link>
                                 <div className="flex items-center text-sm mb-4">
                                     <span className="text-gray-400">{formatDate(story.createdDate)}</span>
                                     {story.updatedDate !== story.createdDate && (
@@ -152,12 +173,27 @@ const Stories: React.FC = () => {
                                         </span>
                                     )}
                                 </div>
-                                <div
-                                    className="card-content"
-                                    dangerouslySetInnerHTML={{
-                                        __html: DOMPurify.sanitize(story.content),
-                                    }}
-                                />
+                                {!isDraft && (
+                                    <Link href={storyPath} className="block">
+                                        <div
+                                            className="card-content dark:prose-invert"
+                                            dangerouslySetInnerHTML={{
+                                                __html: DOMPurify.sanitize(story.content),
+                                            }}
+                                        />
+                                        <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                            Read full story →
+                                        </div>
+                                    </Link>
+                                )}
+                                {isDraft && (
+                                    <div
+                                        className="card-content dark:prose-invert"
+                                        dangerouslySetInnerHTML={{
+                                            __html: DOMPurify.sanitize(story.content),
+                                        }}
+                                    />
+                                )}
                             </div>
                         );
                     })}

@@ -1,5 +1,6 @@
 from database import get_collection
 from logger import logger
+from utils import generate_unique_slug
 
 
 async def backfill_published_flag():
@@ -26,6 +27,9 @@ async def backfill_published_flag():
 
         # Run the date fields backfill
         date_update_count = await backfill_date_fields()
+
+        # Run the slug backfill
+        slug_update_count = await backfill_slugs()
 
         return update_count
     except Exception as e:
@@ -69,4 +73,38 @@ async def backfill_date_fields():
         return update_count
     except Exception as e:
         logger.exception("Error during date fields backfill operation")
+        return 0
+
+
+async def backfill_slugs():
+    """
+    Generate and add slugs for all stories that don't have them.
+    For existing stories, the slug is generated from the title.
+    Runs once at application startup.
+    """
+    try:
+        collection = await get_collection()
+        # Find stories that don't have a slug field
+        cursor = collection.find({"slug": {"$exists": False}, "deleted": {"$ne": True}})
+        update_count = 0
+
+        async for doc in cursor:
+            # Generate a unique slug from the title
+            slug = await generate_unique_slug(collection, doc.get("title", "untitled"))
+
+            # Update the story with the new slug
+            result = await collection.update_one({"_id": doc["_id"]}, {"$set": {"slug": slug}})
+
+            if result.modified_count:
+                update_count += 1
+                logger.info(f"Backfill: Added slug '{slug}' to story '{doc.get('title')}'")
+
+        if update_count > 0:
+            logger.info(f"Backfill: Updated {update_count} stories to add slugs")
+        else:
+            logger.info("Backfill: No stories needed slugs")
+
+        return update_count
+    except Exception as e:
+        logger.exception("Error during slug backfill operation")
         return 0

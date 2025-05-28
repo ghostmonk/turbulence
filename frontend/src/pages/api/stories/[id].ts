@@ -29,11 +29,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             headers.Authorization = `Bearer ${token.accessToken}`;
         }
         
-        const apiUrl = `${API_BASE_URL}/stories/${id}`;
+        // Check if the ID is a MongoDB ObjectID or a slug
+        // MongoDB ObjectIDs are 24 hex characters
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+        
+        let apiUrl: string;
+        if (isObjectId) {
+            apiUrl = `${API_BASE_URL}/stories/${id}`;
+        } else {
+            // Treat as a slug
+            apiUrl = `${API_BASE_URL}/stories/slug/${id}`;
+        }
         
         if (req.method === 'DELETE') {
             if (!token?.accessToken) {
                 return res.status(401).json({ detail: 'Authentication required', error: 'Unauthorized' });
+            }
+            
+            // Only allow deletion by ID, not by slug
+            if (!isObjectId) {
+                return res.status(400).json({ detail: 'Cannot delete by slug, ID required', error: 'Invalid request' });
             }
             
             const response = await fetch(apiUrl, {
@@ -53,6 +68,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } else if (req.method === 'PUT') {
             if (!token?.accessToken) {
                 return res.status(401).json({ detail: 'Authentication required', error: 'Unauthorized' });
+            }
+            
+            // Only allow updates by ID, not by slug
+            if (!isObjectId) {
+                return res.status(400).json({ detail: 'Cannot update by slug, ID required', error: 'Invalid request' });
             }
             
             const response = await fetch(apiUrl, {
