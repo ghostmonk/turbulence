@@ -84,7 +84,9 @@ async def get_story_by_slug(
     try:
         logger.info_with_context("Fetching story by slug", {"slug": slug})
         story = await find_one_and_convert(
-            collection, {"slug": slug, "deleted": {"$ne": True}, "is_published": True}, StoryResponse
+            collection,
+            {"slug": slug, "deleted": {"$ne": True}, "is_published": True},
+            StoryResponse,
         )
 
         if not story:
@@ -206,12 +208,12 @@ async def update_story(
             raise HTTPException(status_code=404, detail="Story not found")
 
         current_time = datetime.now(timezone.utc)
-        
+
         # If title changed, regenerate the slug
         slug = existing_story.slug
         if existing_story.title != story.title:
             slug = await generate_unique_slug(collection, story.title, ObjectId(story_id))
-        
+
         update_data = {
             **story.model_dump(),
             "slug": slug,
@@ -241,7 +243,8 @@ async def update_story(
             raise HTTPException(status_code=500, detail="Failed to retrieve updated story")
 
         logger.info_with_context(
-            "Story updated successfully", {"story_id": story_id, "title": updated_story.title, "slug": updated_story.slug}
+            "Story updated successfully",
+            {"story_id": story_id, "title": updated_story.title, "slug": updated_story.slug},
         )
 
         return updated_story
@@ -298,10 +301,10 @@ async def add_story(
         )
 
         current_time = datetime.now(timezone.utc)
-        
+
         # Generate a unique slug for the new story
         slug = await generate_unique_slug(collection, story.title)
-        
+
         document = {
             **story.model_dump(),
             "slug": slug,
@@ -323,7 +326,8 @@ async def add_story(
             raise HTTPException(status_code=500, detail="Failed to retrieve created story")
 
         logger.info_with_context(
-            "Story created successfully", {"story_id": story_id, "title": created_story.title, "slug": created_story.slug}
+            "Story created successfully",
+            {"story_id": story_id, "title": created_story.title, "slug": created_story.slug},
         )
 
         return created_story

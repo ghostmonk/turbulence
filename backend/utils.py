@@ -1,5 +1,5 @@
-from typing import List, Type, TypeVar
 import re
+from typing import List, Type, TypeVar
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import BaseModel
@@ -18,13 +18,13 @@ def slugify(text: str) -> str:
     # Convert to lowercase
     text = text.lower()
     # Replace spaces with hyphens
-    text = re.sub(r'\s+', '-', text)
+    text = re.sub(r"\s+", "-", text)
     # Remove special characters (keep alphanumeric and hyphens)
-    text = re.sub(r'[^a-z0-9-]', '', text)
+    text = re.sub(r"[^a-z0-9-]", "", text)
     # Replace consecutive hyphens with a single hyphen
-    text = re.sub(r'-+', '-', text)
+    text = re.sub(r"-+", "-", text)
     # Remove leading and trailing hyphens
-    text = text.strip('-')
+    text = text.strip("-")
     return text
 
 
@@ -36,17 +36,17 @@ async def generate_unique_slug(collection, title: str, existing_id=None) -> str:
     base_slug = slugify(title)
     slug = base_slug
     count = 1
-    
+
     while True:
         # If we're updating an existing story, we don't want to compare with its own slug
         query = {"slug": slug, "deleted": {"$ne": True}}
         if existing_id:
             query["_id"] = {"$ne": existing_id}
-        
+
         existing = await collection.find_one(query)
         if not existing:
             return slug
-        
+
         # Slug exists, try with a number suffix
         count += 1
         slug = f"{base_slug}-{count}"

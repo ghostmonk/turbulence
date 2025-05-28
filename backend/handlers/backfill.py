@@ -91,13 +91,10 @@ async def backfill_slugs():
         async for doc in cursor:
             # Generate a unique slug from the title
             slug = await generate_unique_slug(collection, doc.get("title", "untitled"))
-            
+
             # Update the story with the new slug
-            result = await collection.update_one(
-                {"_id": doc["_id"]},
-                {"$set": {"slug": slug}}
-            )
-            
+            result = await collection.update_one({"_id": doc["_id"]}, {"$set": {"slug": slug}})
+
             if result.modified_count:
                 update_count += 1
                 logger.info(f"Backfill: Added slug '{slug}' to story '{doc.get('title')}'")
