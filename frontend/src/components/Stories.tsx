@@ -1,12 +1,24 @@
 import React, { useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import ClipLoader from 'react-spinners/ClipLoader';
-import DOMPurify from "dompurify";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
 import { Story } from '@/types/api';
 import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
+import { sanitizeHtml } from '@/utils/sanitizer';
+
+/**
+ * Safely gets the story URL based on the slug
+ * Falls back to ID if slug is not available
+ */
+const getStoryPath = (story: Story): string => {
+    if (!story.slug || story.slug.trim() === '') {
+        return `/stories/${story.id}`;
+    }
+    return `/stories/${story.slug}`;
+};
 
 const Stories: React.FC = () => {
     const { data: session } = useSession();
@@ -155,7 +167,7 @@ const Stories: React.FC = () => {
                                 <div
                                     className="card-content"
                                     dangerouslySetInnerHTML={{
-                                        __html: DOMPurify.sanitize(story.content),
+                                        __html: sanitizeHtml(story.content),
                                     }}
                                 />
                             </div>

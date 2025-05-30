@@ -2,10 +2,16 @@ import '../styles/globals.css';
 import { AppProps } from 'next/app';
 import { SessionProvider } from "next-auth/react";
 import Layout from "@/components/Layout";
-import React from "react";
+import React, { useEffect } from "react";
 import Head from "next/head";
+import { configureDOMPurify } from '@/utils/sanitizer';
 
 function MyApp({ Component, pageProps }: AppProps) {
+    // Initialize DOMPurify configuration on client side
+    useEffect(() => {
+        configureDOMPurify();
+    }, []);
+
     return (
         <SessionProvider session={pageProps.session}>
             <Head>

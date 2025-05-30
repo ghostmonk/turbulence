@@ -3,7 +3,7 @@ import os
 import traceback
 import uuid
 from datetime import datetime
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -18,6 +18,8 @@ ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_IMAGE_LENGTH = 1200
+IMAGE_SIZES = [1200, 750, 500]
+OUTPUT_FORMAT = "webp"
 
 GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
 if not GCS_BUCKET_NAME:
@@ -25,10 +27,17 @@ if not GCS_BUCKET_NAME:
 
 
 @router.get("/uploads/{filename:path}")
-async def get_image(filename: str):
+async def get_image(filename: str, size: Optional[int] = None):
     try:
         bucket = get_gcs_bucket()
-        blob_path = construct_blob_path(filename)
+        
+        if size and size in IMAGE_SIZES:
+            base_name, extension = os.path.splitext(filename)
+            sized_filename = f"{base_name}_{size}{extension}"
+            blob_path = construct_blob_path(sized_filename)
+        else:
+            blob_path = construct_blob_path(filename)
+            
         blob = bucket.blob(blob_path)
 
         exists = blob.exists()
@@ -48,10 +57,10 @@ async def get_image(filename: str):
         handle_error(e, "accessing image")
 
 
-@router.post("/uploads", response_model=List[str])
+@router.post("/uploads", response_model=Dict[str, List[str]])
 @requires_auth
 async def upload_images(request: Request, files: List[UploadFile] = File(...)):
-    uploaded_files = []
+    uploaded_files = {"urls": [], "srcsets": []}
 
     try:
         bucket = get_gcs_bucket()
@@ -61,12 +70,31 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
             file_size = len(contents)
             validate_image(file.content_type, file_size)
             new_filename = generate_unique_filename(file.filename)
-
+            base_name, extension = os.path.splitext(new_filename)
+            
+            webp_extension = f".{OUTPUT_FORMAT}"
+            
+            srcset_entries = []
+            primary_url = None
+            
             try:
-                resized_image = resize_image(contents, MAX_IMAGE_LENGTH)
-                _, _ = await upload_to_gcs(resized_image, new_filename, file.content_type, bucket)
-                proxy_path = f"/uploads/{new_filename}"
-                uploaded_files.append(proxy_path)
+                for size in IMAGE_SIZES:
+                    sized_filename = f"{base_name}_{size}{webp_extension}" if size != max(IMAGE_SIZES) else f"{base_name}{webp_extension}"
+                    resized_image = resize_image(contents, size)
+                    
+                    _, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
+                    
+                    url = f"/uploads/{sized_filename}"
+                    
+                    srcset_entries.append(f"{url} {size}w")
+                    
+                    if size == max(IMAGE_SIZES):
+                        primary_url = url
+                
+                # Add to response
+                uploaded_files["urls"].append(primary_url)
+                uploaded_files["srcsets"].append(", ".join(srcset_entries))
+                
             except Exception as e:
                 handle_error(e, "uploading image")
 
@@ -76,24 +104,23 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
         handle_error(e, "processing uploads")
 
 
-def resize_image(content: bytes, max_length: int) -> bytes:
+def resize_image(content: bytes, target_width: int) -> bytes:
     image = Image.open(io.BytesIO(content))
     image = ImageOps.exif_transpose(image)
     width, height = image.size
-
-    if max(width, height) <= max_length:
-        return content
-
-    if height > width:
-        new_height = max_length
-        new_width = int(width * max_length / height)
-    else:
-        new_width = max_length
-        new_height = int(height * max_length / width)
-
-    image = image.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
+    
+    # Calculate new dimensions maintaining aspect ratio
+    new_width = target_width
+    new_height = int(height * target_width / width)
+    
+    # Only resize if the image is larger than target
+    if width > target_width:
+        image = image.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
+    
     output = io.BytesIO()
-    image.convert("RGB").save(output, format="JPEG", quality=75, progressive=True, optimize=True)
+    
+    # Save as WebP with good quality
+    image.save(output, format=OUTPUT_FORMAT.upper(), quality=85)
     output.seek(0)
     return output.read()
 

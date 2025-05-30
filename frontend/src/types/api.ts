@@ -10,6 +10,7 @@ export interface Story {
     title: string;
     content: string;
     is_published: boolean;
+    slug?: string;
     date: string;
     createdDate: string;
     updatedDate: string;
