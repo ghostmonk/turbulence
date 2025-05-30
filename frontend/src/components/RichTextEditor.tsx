@@ -4,7 +4,6 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { appLogger } from '@/utils/logger';
-import { sanitizeHtml } from '@/utils/sanitizer';
 
 interface RichTextEditorProps {
     onChange: (content: string) => void;

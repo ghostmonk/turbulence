@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import ClipLoader from 'react-spinners/ClipLoader';
-import DOMPurify from "dompurify";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';

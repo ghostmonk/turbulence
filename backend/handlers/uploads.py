@@ -30,14 +30,14 @@ if not GCS_BUCKET_NAME:
 async def get_image(filename: str, size: Optional[int] = None):
     try:
         bucket = get_gcs_bucket()
-        
+
         if size and size in IMAGE_SIZES:
             base_name, extension = os.path.splitext(filename)
             sized_filename = f"{base_name}_{size}{extension}"
             blob_path = construct_blob_path(sized_filename)
         else:
             blob_path = construct_blob_path(filename)
-            
+
         blob = bucket.blob(blob_path)
 
         exists = blob.exists()
@@ -72,25 +72,31 @@ async def upload_images(request: Request, files: List[UploadFile] = File(...)):
             new_filename = generate_unique_filename(file.filename)
             base_name, extension = os.path.splitext(new_filename)
             webp_extension = f".{OUTPUT_FORMAT}"
-            
+
             srcset_entries = []
             primary_url = None
-            
+
             try:
                 for size in IMAGE_SIZES:
-                    sized_filename = f"{base_name}_{size}{webp_extension}" if size != max(IMAGE_SIZES) else f"{base_name}{webp_extension}"
+                    sized_filename = (
+                        f"{base_name}_{size}{webp_extension}"
+                        if size != max(IMAGE_SIZES)
+                        else f"{base_name}{webp_extension}"
+                    )
                     resized_image = resize_image(contents, size)
-                    
-                    _, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
-                    
+
+                    _, _ = await upload_to_gcs(
+                        resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket
+                    )
+
                     url = f"/uploads/{sized_filename}"
                     srcset_entries.append(f"{url} {size}w")
                     if size == max(IMAGE_SIZES):
                         primary_url = url
-                
+
                 uploaded_files["urls"].append(primary_url)
                 uploaded_files["srcsets"].append(", ".join(srcset_entries))
-                
+
             except Exception as e:
                 handle_error(e, "uploading image")
 
@@ -104,13 +110,13 @@ def resize_image(content: bytes, target_width: int) -> bytes:
     image = Image.open(io.BytesIO(content))
     image = ImageOps.exif_transpose(image)
     width, height = image.size
-    
+
     new_width = target_width
     new_height = int(height * target_width / width)
-    
+
     if width > target_width:
         image = image.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
-    
+
     output = io.BytesIO()
     image.save(output, format=OUTPUT_FORMAT.upper(), quality=85)
     output.seek(0)
