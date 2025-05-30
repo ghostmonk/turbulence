@@ -29,4 +29,4 @@ export const sanitizeHtml = (html: string): string => {
   return DOMPurify.sanitize(html, {
     ADD_ATTR: ['srcset', 'sizes', 'loading'],
   });
-}; 
+};
