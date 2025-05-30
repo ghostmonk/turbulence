@@ -3,8 +3,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
-import DOMPurify from "dompurify";
 import { appLogger } from '@/utils/logger';
+import { sanitizeHtml } from '@/utils/sanitizer';
 
 interface RichTextEditorProps {
     onChange: (content: string) => void;
@@ -63,14 +63,23 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 throw error;
             }
             
-            const urls = await response.json();
-            appLogger.info('Image upload successful', { urls });
+            const data = await response.json();
+            appLogger.info('Image upload successful', { data });
             
-            if (urls && urls.length > 0) {
+            if (data && data.urls && data.urls.length > 0) {
                 const content = editor?.getHTML() || '';
                 const updatedContent = content.replace(loadingText, '');
                 editor?.commands.setContent(updatedContent);
-                editor?.commands.insertContent(`<img src="${urls[0]}" alt="${file.name}" />`);
+                
+                if (data.srcsets && data.srcsets.length > 0) {
+                    const srcUrl = data.urls[0];
+                    const srcset = data.srcsets[0];
+                    const imgHTML = `<img src="${srcUrl}" srcset="${srcset}" sizes="(max-width: 500px) 500px, (max-width: 750px) 750px, 1200px" alt="${file.name}" />`;
+                    editor?.commands.insertContent(imgHTML);
+                } else {
+                    // Fallback to old method
+                    editor?.commands.insertContent(`<img src="${data.urls[0]}" alt="${file.name}" />`);
+                }
             }
         } catch (error) {
             appLogger.error('Error uploading image', error instanceof Error ? error : new Error(String(error)));
@@ -161,5 +170,3 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         </div>
     );
 }
-
-export const sanitizeHtml = (html: string) => DOMPurify.sanitize(html);

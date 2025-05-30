@@ -2,10 +2,10 @@ import React from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import DOMPurify from 'dompurify';
 import { formatDate } from '@/utils/formatDate';
 import { getStoryUrl } from '@/utils/urls';
 import { Story } from '@/types/api';
+import { sanitizeHtml } from '@/utils/sanitizer';
 
 interface StoryPageProps {
   story: Story | null;
@@ -87,7 +87,7 @@ export default function StoryPage({ story, error }: StoryPageProps) {
           <div 
             className="prose lg:prose-lg max-w-none dark:prose-invert dark:text-gray-200"
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(story.content),
+              __html: sanitizeHtml(story.content),
             }}
           />
           

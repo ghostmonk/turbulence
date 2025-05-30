@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
 import { Story } from '@/types/api';
 import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
+import { sanitizeHtml } from '@/utils/sanitizer';
 
 /**
  * Safely gets the story URL based on the slug
@@ -178,7 +179,7 @@ const Stories: React.FC = () => {
                                         <div
                                             className="card-content dark:prose-invert"
                                             dangerouslySetInnerHTML={{
-                                                __html: DOMPurify.sanitize(story.content),
+                                                __html: sanitizeHtml(story.content),
                                             }}
                                         />
                                         <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
@@ -190,7 +191,7 @@ const Stories: React.FC = () => {
                                     <div
                                         className="card-content dark:prose-invert"
                                         dangerouslySetInnerHTML={{
-                                            __html: DOMPurify.sanitize(story.content),
+                                            __html: sanitizeHtml(story.content),
                                         }}
                                     />
                                 )}
