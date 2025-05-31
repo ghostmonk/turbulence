@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { useSession } from 'next-auth/react';
@@ -20,6 +20,98 @@ const getStoryPath = (story: Story): string => {
     return `/stories/${story.slug}`;
 };
 
+const StoryItem = React.memo(({ 
+    story, 
+    session, 
+    onEdit, 
+    onDelete, 
+    deleteLoading 
+}: { 
+    story: Story, 
+    session: any, 
+    onEdit: (story: Story) => void, 
+    onDelete: (story: Story) => Promise<void>,
+    deleteLoading: boolean
+}) => {
+    const isDraft = !story.is_published;
+    const storyPath = getStoryPath(story);
+    
+    return (
+        <div 
+            key={story.id} 
+            className={`card relative ${isDraft ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : ''}`}
+        >
+            <div className="absolute top-4 right-4 flex gap-2">
+                {isDraft && (
+                    <span className="px-3 py-1 text-xs bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200 rounded-full font-medium">
+                        DRAFT
+                    </span>
+                )}
+                {session && (
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => onEdit(story)}
+                            className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
+                        >
+                            Edit
+                        </button>
+                        {isDraft && (
+                            <button
+                                onClick={() => onDelete(story)}
+                                disabled={deleteLoading}
+                                className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                            >
+                                {deleteLoading ? 'Deleting...' : 'Delete'}
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+            <Link 
+                href={storyPath}
+                className={`block ${isDraft ? 'pointer-events-none' : ''}`}
+            >
+                <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''} ${!isDraft ? 'text-indigo-700 hover:text-indigo-900' : ''}`}
+                    title={story.title}
+                >
+                    {story.title}
+                </h2>
+            </Link>
+            <div className="flex items-center text-sm mb-4">
+                <span className="text-gray-400">{formatDate(story.createdDate)}</span>
+                {story.updatedDate !== story.createdDate && (
+                    <span className="text-gray-400 text-xs ml-2 opacity-70">
+                        (Updated: {formatDate(story.updatedDate)})
+                    </span>
+                )}
+            </div>
+            {!isDraft && (
+                <Link href={storyPath} className="block">
+                    <div
+                        className="card-content dark:prose-invert"
+                        dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(story.content),
+                        }}
+                    />
+                    <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                        Read full story →
+                    </div>
+                </Link>
+            )}
+            {isDraft && (
+                <div
+                    className="card-content dark:prose-invert"
+                    dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(story.content),
+                    }}
+                />
+            )}
+        </div>
+    );
+});
+
+StoryItem.displayName = 'StoryItem';
+
 const Stories: React.FC = () => {
     const { data: session } = useSession();
     const router = useRouter();
@@ -39,7 +131,8 @@ const Stories: React.FC = () => {
         resetStories();
     }, [resetStories]);
 
-    const handleEdit = (story: Story) => {
+    // Create stable callbacks for event handlers
+    const handleEdit = useCallback((story: Story) => {
         if (!session) {
             router.push('/api/auth/signin');
             return;
@@ -49,9 +142,9 @@ const Stories: React.FC = () => {
             pathname: '/editor',
             query: { id: story.id }
         });
-    };
+    }, [session, router]);
 
-    const handleDelete = async (story: Story) => {
+    const handleDelete = useCallback(async (story: Story) => {
         if (!session) {
             router.push('/api/auth/signin');
             return;
@@ -65,8 +158,23 @@ const Stories: React.FC = () => {
         if (success) {
             resetStories(); // Refresh the list
         }
-    };
+    }, [session, router, deleteStory, resetStories]);
 
+    // Memoize the story list to prevent unnecessary re-renders
+    const storyItems = useMemo(() => {
+        return stories.map(story => (
+            <StoryItem
+                key={story.id}
+                story={story}
+                session={session}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                deleteLoading={deleteLoading}
+            />
+        ));
+    }, [stories, session, handleEdit, handleDelete, deleteLoading]);
+
+    // Handle error state
     if (error) {
         return (
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
@@ -82,6 +190,7 @@ const Stories: React.FC = () => {
         );
     }
 
+    // Handle empty state
     if (stories.length === 0 && !loading) {
         return (
             <div className="text-center p-8">
@@ -107,6 +216,7 @@ const Stories: React.FC = () => {
             )}
             
             <InfiniteScroll
+                key="story-infinite-scroll"
                 dataLength={stories.length}
                 next={fetchStories}
                 hasMore={hasMore}
@@ -122,81 +232,7 @@ const Stories: React.FC = () => {
                 }
             >
                 <div className="flex flex-col space-y-6">
-                    {stories.map((story) => {
-                        const isDraft = !story.is_published;
-                        const storyPath = getStoryPath(story);
-                        
-                        return (
-                            <div 
-                                key={story.id} 
-                                className={`card relative ${isDraft ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : ''}`}
-                            >
-                                <div className="absolute top-4 right-4 flex gap-2">
-                                    {isDraft && (
-                                        <span className="px-3 py-1 text-xs bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200 rounded-full font-medium">
-                                            DRAFT
-                                        </span>
-                                    )}
-                                    {session && (
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleEdit(story)}
-                                                className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
-                                            >
-                                                Edit
-                                            </button>
-                                            {isDraft && (
-                                                <button
-                                                    onClick={() => handleDelete(story)}
-                                                    disabled={deleteLoading}
-                                                    className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
-                                                >
-                                                    {deleteLoading ? 'Deleting...' : 'Delete'}
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                                <Link 
-                                    href={storyPath}
-                                    className={`block ${isDraft ? 'pointer-events-none' : ''}`}
-                                >
-                                    <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''} ${!isDraft ? 'text-indigo-700 hover:text-indigo-900' : ''}`}>
-                                        {story.title}
-                                    </h2>
-                                </Link>
-                                <div className="flex items-center text-sm mb-4">
-                                    <span className="text-gray-400">{formatDate(story.createdDate)}</span>
-                                    {story.updatedDate !== story.createdDate && (
-                                        <span className="text-gray-400 text-xs ml-2 opacity-70">
-                                            (Updated: {formatDate(story.updatedDate)})
-                                        </span>
-                                    )}
-                                </div>
-                                {!isDraft && (
-                                    <Link href={storyPath} className="block">
-                                        <div
-                                            className="card-content dark:prose-invert"
-                                            dangerouslySetInnerHTML={{
-                                                __html: sanitizeHtml(story.content),
-                                            }}
-                                        />
-                                        <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                            Read full story →
-                                        </div>
-                                    </Link>
-                                )}
-                                {isDraft && (
-                                    <div
-                                        className="card-content dark:prose-invert"
-                                        dangerouslySetInnerHTML={{
-                                            __html: sanitizeHtml(story.content),
-                                        }}
-                                    />
-                                )}
-                            </div>
-                        );
-                    })}
+                    {storyItems}
                 </div>
             </InfiniteScroll>
         </div>
