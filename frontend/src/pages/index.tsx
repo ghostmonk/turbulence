@@ -6,7 +6,7 @@ const Home: React.FC = () => {
     return (
         <>
             <Head>
-                <title>Ghostmonk: Turbulence</title>
+                <title>Turbulence</title>
                 <meta name="description" content="Stories and Such - Ghostmonk: Turbulence!"/>
                 <meta name="keywords" content="Ghostmonk, Turbulence, News, Updates"/>
             </Head>
