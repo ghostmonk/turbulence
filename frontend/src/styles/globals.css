@@ -361,7 +361,7 @@ button.btn--primary:hover:not(:disabled) {
 .nav {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 40;
   background-color: var(--color-surface-secondary);
   color: var(--color-text-primary);
   padding: var(--space-lg);
@@ -697,4 +697,53 @@ html.dark {
 .legacy-styles {
   /* This class can be used to wrap legacy components that need the old styles */
   /* while we gradually migrate them to the new system */
+}
+
+/* Story Progress Bar */
+.story-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: transparent;
+}
+
+.story-progress-bar__container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-border-primary);
+  opacity: 0.5;
+}
+
+.story-progress-bar__fill {
+  height: 100%;
+  background: var(--color-brand-primary);
+  transition: width 0.2s ease-out;
+  opacity: 1;
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.3);
+}
+
+/* Remove the info section styles since we're making it minimal */
+.story-progress-bar__info {
+  display: none;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .story-progress-bar__container {
+    background-color: var(--color-border-primary);
+    opacity: 0.4;
+  }
+  
+  .story-progress-bar__fill {
+    background: var(--color-brand-primary);
+    opacity: 1;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Remove the body padding since we're no longer covering content */
+.has-progress-bar {
+  /* No padding needed for minimal bar */
 } 

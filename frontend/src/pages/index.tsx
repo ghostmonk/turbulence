@@ -11,7 +11,7 @@ const Home: React.FC = () => {
                 <meta name="keywords" content="Ghostmonk, Turbulence, News, Updates"/>
             </Head>
 
-            <div style={{margin: '0 auto', maxWidth: '800px'}}>
+            <div style={{margin: '0 auto', maxWidth: '800px', padding: '0 1rem'}}>
                 <h1 className="page-title text-blue-500">Turbulence</h1>
                 <Stories />
             </div>
