@@ -2,10 +2,13 @@ import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useState } from "react";
+import StoryProgressBar from "./StoryProgressBar";
+import { useFetchStories } from "@/hooks/useStories";
 
 export default function TopNav() {
     const { data: session } = useSession();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { stories, totalStories } = useFetchStories();
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
@@ -84,6 +87,14 @@ export default function TopNav() {
                         )}
                     </div>
                 </div>
+            )}
+            
+            {/* Integrated Progress Bar */}
+            {stories.length > 0 && (
+                <StoryProgressBar 
+                    currentStoryCount={stories.length}
+                    totalStoryCount={totalStories}
+                />
             )}
         </nav>
     );
