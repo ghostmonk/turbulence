@@ -1,19 +1,20 @@
 """
 Unit tests for utils module
 """
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone
-from bson import ObjectId
 
-from utils import (
-    slugify, 
-    generate_unique_slug, 
-    mongo_to_pydantic, 
-    find_one_and_convert,
-    find_many_and_convert
-)
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from bson import ObjectId
 from models import StoryResponse
+from utils import (
+    find_many_and_convert,
+    find_one_and_convert,
+    generate_unique_slug,
+    mongo_to_pydantic,
+    slugify,
+)
 
 
 class TestSlugify:
@@ -83,14 +84,13 @@ class TestGenerateUniqueSlug:
         """Test generate unique slug when no collision exists"""
         mock_collection = AsyncMock()
         mock_collection.find_one.return_value = None  # No existing slug
-        
+
         result = await generate_unique_slug(mock_collection, "Test Story")
-        
+
         assert result == "test-story"
-        mock_collection.find_one.assert_called_once_with({
-            "slug": "test-story", 
-            "deleted": {"$ne": True}
-        })
+        mock_collection.find_one.assert_called_once_with(
+            {"slug": "test-story", "deleted": {"$ne": True}}
+        )
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -100,11 +100,11 @@ class TestGenerateUniqueSlug:
         # First call returns existing document, second call returns None
         mock_collection.find_one.side_effect = [
             {"_id": ObjectId(), "slug": "test-story"},  # Collision
-            None  # No collision for test-story-2
+            None,  # No collision for test-story-2
         ]
-        
+
         result = await generate_unique_slug(mock_collection, "Test Story")
-        
+
         assert result == "test-story-2"
         assert mock_collection.find_one.call_count == 2
 
@@ -115,14 +115,14 @@ class TestGenerateUniqueSlug:
         mock_collection = AsyncMock()
         # Multiple collisions before finding unique slug
         mock_collection.find_one.side_effect = [
-            {"_id": ObjectId(), "slug": "test-story"},    # Collision 1
+            {"_id": ObjectId(), "slug": "test-story"},  # Collision 1
             {"_id": ObjectId(), "slug": "test-story-2"},  # Collision 2
             {"_id": ObjectId(), "slug": "test-story-3"},  # Collision 3
-            None  # No collision for test-story-4
+            None,  # No collision for test-story-4
         ]
-        
+
         result = await generate_unique_slug(mock_collection, "Test Story")
-        
+
         assert result == "test-story-4"
         assert mock_collection.find_one.call_count == 4
 
@@ -133,19 +133,13 @@ class TestGenerateUniqueSlug:
         mock_collection = AsyncMock()
         existing_id = ObjectId()
         mock_collection.find_one.return_value = None
-        
-        result = await generate_unique_slug(
-            mock_collection, 
-            "Test Story", 
-            existing_id=existing_id
-        )
-        
+
+        result = await generate_unique_slug(mock_collection, "Test Story", existing_id=existing_id)
+
         assert result == "test-story"
-        mock_collection.find_one.assert_called_once_with({
-            "slug": "test-story", 
-            "deleted": {"$ne": True},
-            "_id": {"$ne": existing_id}
-        })
+        mock_collection.find_one.assert_called_once_with(
+            {"slug": "test-story", "deleted": {"$ne": True}, "_id": {"$ne": existing_id}}
+        )
 
 
 class TestMongoToPydantic:
@@ -163,11 +157,11 @@ class TestMongoToPydantic:
             "slug": "test-story",
             "date": now,
             "createdDate": now,
-            "updatedDate": now
+            "updatedDate": now,
         }
-        
+
         result = mongo_to_pydantic(mongo_doc, StoryResponse)
-        
+
         assert isinstance(result, StoryResponse)
         assert result.id == str(mongo_doc["_id"])
         assert result.title == "Test Story"
@@ -192,9 +186,9 @@ class TestMongoToPydantic:
             "slug": "test-story",
             "date": now,
             "createdDate": now,
-            "updatedDate": now
+            "updatedDate": now,
         }
-        
+
         # This should fail since id is required in StoryResponse
         with pytest.raises(Exception):  # Pydantic validation error
             mongo_to_pydantic(mongo_doc, StoryResponse)
@@ -216,18 +210,16 @@ class TestFindOneAndConvert:
             "slug": "test-story",
             "date": now,
             "createdDate": now,
-            "updatedDate": now
+            "updatedDate": now,
         }
-        
+
         mock_collection = AsyncMock()
         mock_collection.find_one.return_value = mock_doc
-        
+
         result = await find_one_and_convert(
-            mock_collection, 
-            {"_id": mock_doc["_id"]}, 
-            StoryResponse
+            mock_collection, {"_id": mock_doc["_id"]}, StoryResponse
         )
-        
+
         assert isinstance(result, StoryResponse)
         assert result.title == "Test Story"
         mock_collection.find_one.assert_called_once_with({"_id": mock_doc["_id"]})
@@ -238,13 +230,9 @@ class TestFindOneAndConvert:
         """Test find and convert when document not found"""
         mock_collection = AsyncMock()
         mock_collection.find_one.return_value = None
-        
-        result = await find_one_and_convert(
-            mock_collection, 
-            {"_id": ObjectId()}, 
-            StoryResponse
-        )
-        
+
+        result = await find_one_and_convert(mock_collection, {"_id": ObjectId()}, StoryResponse)
+
         assert result is None
 
 
@@ -265,7 +253,7 @@ class TestFindManyAndConvert:
                 "slug": "story-1",
                 "date": now,
                 "createdDate": now,
-                "updatedDate": now
+                "updatedDate": now,
             },
             {
                 "_id": ObjectId(),
@@ -275,34 +263,34 @@ class TestFindManyAndConvert:
                 "slug": "story-2",
                 "date": now,
                 "createdDate": now,
-                "updatedDate": now
-            }
+                "updatedDate": now,
+            },
         ]
-        
+
         # Create async iterator mock
         mock_cursor = MagicMock()
         mock_cursor.__aiter__.return_value = iter(mock_docs)
         mock_cursor.sort.return_value = mock_cursor
         mock_cursor.skip.return_value = mock_cursor
         mock_cursor.limit.return_value = mock_cursor
-        
+
         mock_collection = AsyncMock()
         mock_collection.find.return_value = mock_cursor
-        
+
         result = await find_many_and_convert(
             mock_collection,
             {"is_published": True},
             StoryResponse,
             sort={"createdDate": -1},
             limit=10,
-            skip=0
+            skip=0,
         )
-        
+
         assert len(result) == 2
         assert all(isinstance(story, StoryResponse) for story in result)
         assert result[0].title == "Story 1"
         assert result[1].title == "Story 2"
-        
+
         mock_collection.find.assert_called_once_with({"is_published": True})
         mock_cursor.sort.assert_called_once_with({"createdDate": -1})
         mock_cursor.skip.assert_called_once_with(0)
@@ -314,14 +302,10 @@ class TestFindManyAndConvert:
         """Test find many and convert with empty result"""
         mock_cursor = MagicMock()
         mock_cursor.__aiter__.return_value = iter([])
-        
+
         mock_collection = AsyncMock()
         mock_collection.find.return_value = mock_cursor
-        
-        result = await find_many_and_convert(
-            mock_collection,
-            {"is_published": True},
-            StoryResponse
-        )
-        
-        assert result == [] 
+
+        result = await find_many_and_convert(mock_collection, {"is_published": True}, StoryResponse)
+
+        assert result == []

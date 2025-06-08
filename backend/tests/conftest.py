@@ -1,17 +1,19 @@
 """
 Test configuration and fixtures
 """
+
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
+
+import mongomock_motor
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
-from unittest.mock import AsyncMock, MagicMock
-import mongomock_motor
-from datetime import datetime, timezone
 
 # Import the main app
 from app import app
 from database import db, get_database
+from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.fixture
@@ -26,9 +28,10 @@ def mock_database():
 @pytest.fixture
 def override_database(mock_database):
     """Override the database dependency"""
+
     def get_mock_database():
         return mock_database
-    
+
     app.dependency_overrides[get_database] = get_mock_database
     yield mock_database
     app.dependency_overrides.clear()
@@ -43,10 +46,7 @@ def client():
 @pytest_asyncio.fixture
 async def async_client():
     """Async test client for async tests"""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), 
-        base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
@@ -59,7 +59,7 @@ def sample_story_data():
         "is_published": True,
         "slug": "test-story",
         "createdDate": datetime.now(timezone.utc),
-        "updatedDate": datetime.now(timezone.utc)
+        "updatedDate": datetime.now(timezone.utc),
     }
 
 
@@ -72,7 +72,7 @@ def sample_unpublished_story_data():
         "is_published": False,
         "slug": "draft-story",
         "createdDate": datetime.now(timezone.utc),
-        "updatedDate": datetime.now(timezone.utc)
+        "updatedDate": datetime.now(timezone.utc),
     }
 
 
@@ -82,12 +82,12 @@ def mock_google_storage():
     mock_storage = MagicMock()
     mock_bucket = MagicMock()
     mock_blob = MagicMock()
-    
+
     mock_storage.bucket.return_value = mock_bucket
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_file.return_value = None
     mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test-file.jpg"
-    
+
     return mock_storage
 
 
@@ -102,4 +102,4 @@ def setup_test_environment(monkeypatch):
     """Set up test environment variables"""
     monkeypatch.setenv("DATABASE_URL", "mongodb://localhost:27017/test")
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
-    monkeypatch.setenv("STORAGE_BUCKET", "test-bucket") 
+    monkeypatch.setenv("STORAGE_BUCKET", "test-bucket")
