@@ -5,9 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "dev:docker": "TAILWIND_MODE=watch next dev",
+    "dev:css": "tailwindcss -i ./src/styles/globals.css -o ./public/styles/output.css --watch",
     "build": "next build",
+    "build:css": "tailwindcss -i ./src/styles/globals.css -o ./public/styles/output.css --minify",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up --build",
+    "docker:dev:rebuild": "docker-compose -f docker-compose.dev.yml up --build --force-recreate",
+    "clean": "rm -rf .next && rm -rf node_modules/.cache"
   },
   "dependencies": {
     "@mantine/tiptap": "^7.0.0",

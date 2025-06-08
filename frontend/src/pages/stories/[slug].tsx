@@ -32,7 +32,7 @@ export default function StoryPage({ story, error }: StoryPageProps) {
         <div className="p-4 bg-red-50 border border-red-200 rounded-md">
           <h3 className="text-red-800 font-semibold">Error Loading Story</h3>
           <p className="text-red-600 mt-2">{error}</p>
-          <Link href="/" className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+          <Link href="/" className="btn btn--primary">
             Return Home
           </Link>
         </div>
@@ -44,7 +44,7 @@ export default function StoryPage({ story, error }: StoryPageProps) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center p-8">
-          <h2 className="text-2xl font-semibold text-gray-700">Loading...</h2>
+          <h2 className="loading-title">Loading...</h2>
         </div>
       </div>
     );
@@ -67,13 +67,13 @@ export default function StoryPage({ story, error }: StoryPageProps) {
         <link rel="canonical" href={canonicalUrl} />
       </Head>
       
-      <div className="container mx-auto px-4 py-8">
-        <Link href="/" className="inline-block mb-8 text-indigo-600 hover:text-indigo-800">
+      <div style={{margin: '0 auto', maxWidth: '800px', padding: '2rem 1rem'}}>
+        <Link href="/" className="inline-block mb-8 btn btn--secondary btn--sm">
           &larr; Back to all stories
         </Link>
         
         <article className="card">
-          <h1 className="text-3xl font-bold mb-4">{story.title}</h1>
+          <h1 className="story-title">{story.title}</h1>
           
           <div className="flex items-center text-sm mb-8">
             <span className="text-gray-400">{formatDate(story.createdDate)}</span>
@@ -85,14 +85,14 @@ export default function StoryPage({ story, error }: StoryPageProps) {
           </div>
           
           <div 
-            className="prose lg:prose-lg max-w-none dark:prose-invert dark:text-gray-200"
+            className="prose--card lg:prose-lg dark:prose-invert dark:text-gray-200"
             dangerouslySetInnerHTML={{
               __html: sanitizeHtml(story.content),
             }}
           />
           
-          <div className="mt-10 pt-6 border-t border-gray-200">
-            <Link href="/" className="text-indigo-600 hover:text-indigo-800">
+          <div className="mt-10 pt-6">
+            <Link href="/" className="btn btn--secondary btn--sm">
               &larr; Back to all stories
             </Link>
           </div>

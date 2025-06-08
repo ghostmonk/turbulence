@@ -197,7 +197,7 @@ export default function EditorPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">
+        <h1 className="section-title">
           {story.id ? 'Edit Story' : 'New Story'}
         </h1>
         <div className="flex gap-2">

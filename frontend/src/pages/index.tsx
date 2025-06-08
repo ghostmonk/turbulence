@@ -12,7 +12,7 @@ const Home: React.FC = () => {
             </Head>
 
             <div style={{margin: '0 auto', maxWidth: '800px'}}>
-                <h1 className="text-4xl font-bold text-blue-500 mb-12 text-center">Ghostmonk: Turbulence</h1>
+                <h1 className="page-title text-blue-500">Turbulence</h1>
                 <Stories />
             </div>
         </>

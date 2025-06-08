@@ -39,68 +39,75 @@ const StoryItem = React.memo(({
     return (
         <div 
             key={story.id} 
-            className={`card relative ${isDraft ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : ''}`}
+            className={`card ${isDraft ? 'card--draft' : ''}`}
         >
-            <div className="absolute top-4 right-4 flex gap-2">
-                {isDraft && (
-                    <span className="px-3 py-1 text-xs bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200 rounded-full font-medium">
-                        DRAFT
-                    </span>
-                )}
-                {session && (
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => onEdit(story)}
-                            className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
-                        >
-                            Edit
-                        </button>
-                        {isDraft && (
+            <div className="story-header">
+                <div className="story-header__actions">
+                    {isDraft && (
+                        <span className="badge badge--draft">
+                            DRAFT
+                        </span>
+                    )}
+                    {session && (
+                        <div className="flex gap-2">
                             <button
-                                onClick={() => onDelete(story)}
-                                disabled={deleteLoading}
-                                className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                                onClick={() => onEdit(story)}
+                                className="btn btn--primary btn--sm"
                             >
-                                {deleteLoading ? 'Deleting...' : 'Delete'}
+                                Edit
                             </button>
-                        )}
-                    </div>
-                )}
-            </div>
-            <Link 
-                href={storyPath}
-                className={`block ${isDraft ? 'pointer-events-none' : ''}`}
-            >
-                <h2 className={`text-xl font-bold mb-2 ${isDraft && session ? 'pr-48' : isDraft ? 'pr-32' : session ? 'pr-16' : ''} ${!isDraft ? 'text-indigo-700 hover:text-indigo-900' : ''}`}
-                    title={story.title}
+                            {isDraft && (
+                                <button
+                                    onClick={() => onDelete(story)}
+                                    disabled={deleteLoading}
+                                    className="btn btn--danger btn--sm"
+                                >
+                                    {deleteLoading ? 'Deleting...' : 'Delete'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+                
+                <Link 
+                    href={storyPath}
+                    className={`${isDraft ? 'pointer-events-none' : ''}`}
                 >
-                    {story.title}
-                </h2>
-            </Link>
-            <div className="flex items-center text-sm mb-4">
-                <span className="text-gray-400">{formatDate(story.createdDate)}</span>
-                {story.updatedDate !== story.createdDate && (
-                    <span className="text-gray-400 text-xs ml-2 opacity-70">
-                        (Updated: {formatDate(story.updatedDate)})
-                    </span>
-                )}
+                    <h2 className={`story-title ${!isDraft ? 'story-title--link' : 'story-title--draft'}`}
+                        title={story.title}
+                    >
+                        {story.title}
+                    </h2>
+                </Link>
+                
+                <div className="story-header__meta">
+                    <span>{formatDate(story.createdDate)}</span>
+                    {story.updatedDate !== story.createdDate && (
+                        <span className="opacity-70">
+                            (Updated: {formatDate(story.updatedDate)})
+                        </span>
+                    )}
+                </div>
             </div>
+            
             {!isDraft && (
                 <Link href={storyPath} className="block">
                     <div
-                        className="card-content dark:prose-invert"
+                        className="story-content prose--card"
                         dangerouslySetInnerHTML={{
                             __html: sanitizeHtml(story.content),
                         }}
                     />
-                    <div className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
-                        Read full story →
+                    <div className="mt-4">
+                        <span className="btn btn--secondary btn--sm">
+                            Read full story →
+                        </span>
                     </div>
                 </Link>
             )}
             {isDraft && (
                 <div
-                    className="card-content dark:prose-invert"
+                    className="story-content prose--card"
                     dangerouslySetInnerHTML={{
                         __html: sanitizeHtml(story.content),
                     }}
@@ -177,12 +184,12 @@ const Stories: React.FC = () => {
     // Handle error state
     if (error) {
         return (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                <h3 className="text-red-800 font-semibold">Error Loading Stories</h3>
-                <p className="text-red-600 mt-2">{error}</p>
+            <div className="error-state">
+                <h3 className="error-state__title">Error Loading Stories</h3>
+                <p className="error-state__message">{error}</p>
                 <button 
                     onClick={() => resetStories()}
-                    className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                    className="btn btn--primary"
                 >
                     Try Again
                 </button>
@@ -193,12 +200,12 @@ const Stories: React.FC = () => {
     // Handle empty state
     if (stories.length === 0 && !loading) {
         return (
-            <div className="text-center p-8">
-                <h2 className="text-2xl font-semibold text-gray-700">No stories found</h2>
+            <div className="empty-state">
+                <h2 className="empty-state__title">No stories found</h2>
                 {session && (
                     <button
                         onClick={() => router.push('/editor')}
-                        className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                        className="btn btn--primary"
                     >
                         Create Your First Story
                     </button>
@@ -210,7 +217,7 @@ const Stories: React.FC = () => {
     return (
         <div className="mt-4">
             {stories.length > 0 && (
-                <div className="mb-4 text-sm text-gray-500">
+                <div className="mb-4 text-sm text-text-secondary">
                     Showing {stories.length} of {totalStories} stories
                 </div>
             )}
@@ -222,11 +229,11 @@ const Stories: React.FC = () => {
                 hasMore={hasMore}
                 loader={
                     <div className="flex justify-center items-center py-4">
-                        <ClipLoader color="#4F46E5" loading={true} size={35} />
+                        <ClipLoader color="var(--color-brand-primary)" loading={true} size={35} />
                     </div>
                 }
                 endMessage={
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="text-center py-4 text-text-secondary">
                         You&apos;ve reached the end
                     </div>
                 }

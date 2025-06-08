@@ -20,13 +20,14 @@ function MyApp({ Component, pageProps }: AppProps) {
                 />
                 <meta name="author" content="Ghostmonk"/>
                 <link rel="canonical" href="https://ghostmonk.com/"/>
-                <style>{`
-                    .grid { display: grid !important; }
-                    .border-b { border-bottom-width: 1px !important; }
-                    .border-gray-700 { border-color: rgb(55, 65, 81) !important; }
-                    .leading-relaxed { line-height: 1.625 !important; }
-                    .pb-10 { padding-bottom: 2.5rem !important; }
-                `}</style>
+                
+                {/* Google Fonts - More reliable than CSS @import */}
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link 
+                    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Slab:wght@300;400;700&display=swap" 
+                    rel="stylesheet" 
+                />
             </Head>
             <Layout>
                 <Component {...pageProps} />
