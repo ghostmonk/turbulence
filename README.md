@@ -74,6 +74,47 @@ This project uses `pip-tools` for dependency management to ensure reproducible b
 - Commit both `.in` and `.txt` files to version control
 - The `.txt` files ensure reproducible builds across environments
 
+## Testing & CI/CD
+
+This project includes comprehensive testing and continuous integration to ensure code quality and prevent deployment of broken code.
+
+### Testing Commands
+
+- `make test` - Run all tests
+- `make test-unit` - Run only unit tests
+- `make test-integration` - Run only integration tests  
+- `make test-coverage` - Run tests with HTML coverage report
+- `make test-ci` - Run CI-style tests (formatting, linting, and tests with coverage)
+
+### Code Quality
+
+- `make format` - Auto-format code with black and isort
+- `make format-check` - Check formatting without making changes
+
+### CI/CD Workflow
+
+The project uses GitHub Actions with two workflows:
+
+#### 1. CI Workflow (`.github/workflows/ci.yml`)
+Runs on pull requests and non-main branches:
+- ✅ Code formatting checks (black, isort)
+- ✅ Linting (flake8)
+- ✅ Backend tests with coverage
+- ✅ Frontend linting and TypeScript checks
+
+#### 2. Deploy Workflow (`.github/workflows/deploy.yml`)
+Runs on pushes to main branch:
+- ✅ **Tests must pass first** - deployment fails if tests fail
+- ✅ Deploys backend to Google Cloud Run
+- ✅ Deploys frontend to Google Cloud Run
+
+### Test Requirements
+
+- All tests must pass before deployment
+- Code must be properly formatted (black, isort)
+- Code must pass linting (flake8)
+- Maintain test coverage
+
 ## Configuration
 
 ### Environment Variables

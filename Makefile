@@ -1,4 +1,4 @@
-.PHONY: format format-check test test-unit test-integration test-coverage clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke deps deps-dev deps-compile deps-upgrade dev dev-backend dev-frontend
+.PHONY: format format-check test test-unit test-integration test-coverage test-ci clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke deps deps-dev deps-compile deps-upgrade dev dev-backend dev-frontend
 
 # Virtual environment configuration
 VENV_DEFAULT := $(HOME)/Documents/venvs/turbulence
@@ -94,6 +94,18 @@ test-integration:
 test-coverage:
 	. $(VENV_ACTIVATE) && pytest --cov=backend --cov-report=html --cov-report=term-missing
 
+test-ci:
+	@echo "Running CI-style tests with formatting checks..."
+	. $(VENV_ACTIVATE) && cd backend && \
+	echo "Checking import sorting..." && \
+	isort . --check-only --diff && \
+	echo "Checking code formatting..." && \
+	black . --check --diff && \
+	echo "Running linting..." && \
+	flake8 . --statistics && \
+	echo "Running tests with coverage..." && \
+	pytest -v --tb=short --cov=. --cov-report=term-missing
+
 # Docker operations
 docker-build:
 	docker-compose build
@@ -161,6 +173,7 @@ help:
 	@echo "  test-unit        - Run only unit tests"
 	@echo "  test-integration - Run only integration tests"
 	@echo "  test-coverage    - Run tests with coverage report"
+	@echo "  test-ci          - Run CI-style tests with formatting and linting checks"
 	@echo "  docker-build     - Build Docker images"
 	@echo "  docker-up        - Start Docker containers"
 	@echo "  docker-down      - Stop Docker containers"
