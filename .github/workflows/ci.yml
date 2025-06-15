@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      # Cache pip dependencies
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Install pip-tools and dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools
+          cd backend
+          pip install -r requirements-dev.txt
+
+      # Run code formatting checks
+      - name: Check code formatting
+        run: |
+          cd backend
+          echo "Checking import sorting..."
+          isort . --check-only --diff
+          echo "Checking code formatting..."
+          black . --check --diff
+
+      # Run linting
+      - name: Run linting
+        run: |
+          cd backend
+          echo "Running flake8 linting..."
+          flake8 . --statistics
+
+      # Run tests with coverage
+      - name: Run tests
+        run: |
+          cd backend
+          echo "Running tests..."
+          pytest -v --tb=short --cov=. --cov-report=term-missing --cov-report=xml
+
+      # Upload coverage to codecov (optional)
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: success()
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # Install frontend dependencies
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      # Run frontend linting
+      - name: Run ESLint
+        run: |
+          cd frontend
+          npx eslint . --ext .js,.jsx,.ts,.tsx
+
+      # Check TypeScript compilation
+      - name: Check TypeScript
+        run: |
+          cd frontend
+          npx tsc --noEmit 
