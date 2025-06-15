@@ -37,6 +37,43 @@ Turbulence is a modern blog/content management system built with Next.js and Fas
 - **Docker**: Easy deployment with Docker and docker-compose
 - **Google Cloud Run**: Containerized deployment on Google Cloud
 
+## Backend Dependencies
+
+This project uses `pip-tools` for dependency management to ensure reproducible builds and clear separation between production and development dependencies.
+
+### Dependency Files
+
+- `backend/requirements.in` - Production dependencies (high-level, unpinned)
+- `backend/requirements-dev.in` - Development dependencies (includes production via `-r requirements.in`)
+- `backend/requirements.txt` - Compiled production dependencies (pinned versions, auto-generated)
+- `backend/requirements-dev.txt` - Compiled development dependencies (pinned versions, auto-generated)
+
+### Dependency Management Workflow
+
+#### Adding New Dependencies
+
+1. **Production dependency**: Add to `backend/requirements.in`
+2. **Development dependency**: Add to `backend/requirements-dev.in`
+3. Compile the requirements: `make deps-compile`
+4. Install the updated dependencies: `make deps-dev`
+
+#### Updating Dependencies
+
+- Update all dependencies: `make deps-upgrade`
+- Update specific dependency: Edit the `.in` file and run `make deps-compile`
+
+#### Installing Dependencies
+
+- Production only: `make deps`
+- Development (includes production): `make deps-dev`
+
+#### Important Notes
+
+- **Never edit** `requirements.txt` or `requirements-dev.txt` directly
+- Always edit the `.in` files and recompile
+- Commit both `.in` and `.txt` files to version control
+- The `.txt` files ensure reproducible builds across environments
+
 ## Configuration
 
 ### Environment Variables
