@@ -9,9 +9,8 @@ import mongomock_motor
 import pytest
 import pytest_asyncio
 
-# Import the main app
 from app import app
-from database import db, get_database
+from database import get_database
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
@@ -19,7 +18,6 @@ from httpx import ASGITransport, AsyncClient
 @pytest.fixture
 def mock_database():
     """Mock database for testing"""
-    # Create a mock MongoDB client using mongomock-motor
     mock_client = mongomock_motor.AsyncMongoMockClient()
     mock_db = mock_client.test_db
     return mock_db
