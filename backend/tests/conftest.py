@@ -3,7 +3,7 @@ Test configuration and fixtures
 """
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import mongomock_motor
 import pytest

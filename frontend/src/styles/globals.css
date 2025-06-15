@@ -1,55 +1,38 @@
-/* ==========================================================================
-   Global Stylesheet - All styles consolidated for immediate functionality
-   ========================================================================== */
-
-/* ==========================================================================
-   Design Tokens - Inline
-   ========================================================================== */
-
-/* Colors - Semantic naming for better intent */
 :root {
-  /* Brand Colors */
-  --color-brand-primary: #2563eb; /* blue-600 instead of indigo */
-  --color-brand-primary-hover: #1d4ed8; /* blue-700 */
-  --color-brand-secondary: #06b6d4; /* cyan-500 */
+  --color-brand-primary: #2563eb;
+  --color-brand-primary-hover: #1d4ed8;
+  --color-brand-secondary: #06b6d4;
   
-  /* Surface Colors - Light theme */
   --color-surface-primary: #ffffff;
-  --color-surface-secondary: #f9fafb; /* gray-50 */
-  --color-surface-tertiary: #f3f4f6; /* gray-100 */
-  --color-surface-inverse: #111827; /* gray-900 */
+  --color-surface-secondary: #f9fafb;
+  --color-surface-tertiary: #f3f4f6;
+  --color-surface-inverse: #111827;
   
-  /* Text Colors - Light theme */
-  --color-text-primary: #111827; /* gray-900 */
-  --color-text-secondary: #6b7280; /* gray-500 */
-  --color-text-tertiary: #9ca3af; /* gray-400 */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
   --color-text-inverse: #ffffff;
-  --color-text-brand: #2563eb; /* blue-600 */
-  --color-text-link: #2563eb; /* blue-600 */
-  --color-text-link-hover: #1d4ed8; /* blue-700 */
+  --color-text-brand: #2563eb;
+  --color-text-link: #2563eb;
+  --color-text-link-hover: #1d4ed8;
   
-  /* Border Colors - Light theme */
-  --color-border-primary: #e5e7eb; /* gray-200 */
-  --color-border-secondary: #d1d5db; /* gray-300 */
-  --color-border-focus: #4f46e5; /* indigo-600 */
+  --color-border-primary: #e5e7eb;
+  --color-border-secondary: #d1d5db;
+  --color-border-focus: #4f46e5;
   
-  /* Status Colors */
-  --color-status-success: #10b981; /* emerald-500 */
-  --color-status-warning: #f59e0b; /* amber-500 */
-  --color-status-error: #ef4444; /* red-500 */
-  --color-status-info: #3b82f6; /* blue-500 */
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
   
-  /* Shadow Colors */
   --color-shadow-light: rgba(0, 0, 0, 0.1);
   --color-shadow-medium: rgba(0, 0, 0, 0.15);
   --color-shadow-dark: rgba(0, 0, 0, 0.25);
 
-  /* Typography Scale */
   --font-family-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-family-serif: 'Roboto Slab', Georgia, serif;
   --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
   
-  /* Font Sizes - Fluid typography */
   --font-size-xs: clamp(0.75rem, 0.7rem + 0.2vw, 0.8rem);
   --font-size-sm: clamp(0.875rem, 0.8rem + 0.3vw, 0.95rem);
   --font-size-base: clamp(1rem, 0.9rem + 0.4vw, 1.125rem);
@@ -59,82 +42,66 @@
   --font-size-3xl: clamp(1.875rem, 1.6rem + 1.2vw, 2.5rem);
   --font-size-4xl: clamp(2.25rem, 1.9rem + 1.5vw, 3rem);
   
-  /* Font Weights */
   --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
   
-  /* Line Heights */
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 
-  /* Spacing Scale */
-  --space-xs: 0.25rem;   /* 4px */
-  --space-sm: 0.5rem;    /* 8px */
-  --space-md: 0.75rem;   /* 12px */
-  --space-lg: 1rem;      /* 16px */
-  --space-xl: 1.5rem;    /* 24px */
-  --space-2xl: 2rem;     /* 32px */
-  --space-3xl: 3rem;     /* 48px */
-  --space-4xl: 4rem;     /* 64px */
-  --space-5xl: 6rem;     /* 96px */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+  --space-3xl: 3rem;
+  --space-4xl: 4rem;
+  --space-5xl: 6rem;
 
-  /* Border Radius */
-  --radius-sm: 0.125rem;  /* 2px */
-  --radius-md: 0.25rem;   /* 4px */
-  --radius-lg: 0.5rem;    /* 8px */
-  --radius-xl: 0.75rem;   /* 12px */
-  --radius-2xl: 1rem;     /* 16px */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
   --radius-full: 9999px;
 
-  /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
   --transition-slow: 500ms ease;
   --transition-colors: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }
 
-/* Dark theme overrides */
 .dark {
-  /* Surface Colors - Dark theme */
-  --color-surface-primary: #0f172a; /* slate-900 */
-  --color-surface-secondary: #1e293b; /* slate-800 */
-  --color-surface-tertiary: #334155; /* slate-700 */
-  --color-surface-inverse: #f8fafc; /* slate-50 */
+  --color-surface-primary: #0f172a;
+  --color-surface-secondary: #1e293b;
+  --color-surface-tertiary: #334155;
+  --color-surface-inverse: #f8fafc;
   
-  /* Text Colors - Dark theme */
-  --color-text-primary: #f8fafc; /* slate-50 */
-  --color-text-secondary: #cbd5e1; /* slate-300 */
-  --color-text-tertiary: #94a3b8; /* slate-400 */
-  --color-text-inverse: #0f172a; /* slate-900 */
-  --color-text-brand: #3b82f6; /* blue-500 */
-  --color-text-link: #3b82f6; /* blue-500 */
-  --color-text-link-hover: #60a5fa; /* blue-400 */
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-text-inverse: #0f172a;
+  --color-text-brand: #3b82f6;
+  --color-text-link: #3b82f6;
+  --color-text-link-hover: #60a5fa;
   
-  /* Border Colors - Dark theme */
-  --color-border-primary: #334155; /* slate-700 */
-  --color-border-secondary: #475569; /* slate-600 */
-  --color-border-focus: #3b82f6; /* blue-500 */
+  --color-border-primary: #334155;
+  --color-border-secondary: #475569;
+  --color-border-focus: #3b82f6;
   
-  /* Shadow Colors - Dark theme */
   --color-shadow-light: rgba(0, 0, 0, 0.3);
   --color-shadow-medium: rgba(0, 0, 0, 0.4);
   --color-shadow-dark: rgba(0, 0, 0, 0.6);
 }
 
-/* Import Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ==========================================================================
-   Base Styles - Inline
-   ========================================================================== */
-
-/* Body and HTML base styles */
 html {
   height: 100%;
   scroll-behavior: smooth;
@@ -154,22 +121,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure fonts are explicitly applied */
 * {
   font-family: inherit;
 }
 
-/* Override for specific elements that should use serif */
 h1, h2, h3, h4, h5, h6, .font-serif {
   font-family: var(--font-family-serif) !important;
 }
 
-/* Override for elements that should use sans */
 p, div, span, a, button, input, textarea, .font-sans {
   font-family: var(--font-family-sans) !important;
 }
 
-/* Typography hierarchy */
 h1, h2, h3, h4, h5, h6 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
@@ -202,7 +165,6 @@ h6 {
   font-size: var(--font-size-sm);
 }
 
-/* Semantic Typography Classes */
 .page-title {
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
@@ -227,18 +189,12 @@ h6 {
   color: var(--color-text-secondary);
 }
 
-/* ==========================================================================
-   Component Styles - Essential components inline
-   ========================================================================== */
-
-/* Layout Components */
 .container {
-  max-width: 75rem; /* 1200px */
+  max-width: 75rem;
   margin: 0 auto;
   padding: 0 var(--space-lg);
 }
 
-/* Card Component */
 .card {
   background-color: var(--color-surface-secondary);
   color: var(--color-text-primary);
@@ -255,16 +211,15 @@ h6 {
 }
 
 .card--draft {
-  background-color: rgb(254 252 232); /* yellow-50 */
-  border-color: rgb(254 240 138); /* yellow-200 */
+  background-color: rgb(254 252 232);
+  border-color: rgb(254 240 138);
 }
 
 .dark .card--draft {
-  background-color: rgb(120 113 108 / 0.2); /* yellow-900/20 */
-  border-color: rgb(133 77 14); /* yellow-800 */
+  background-color: rgb(120 113 108 / 0.2);
+  border-color: rgb(133 77 14);
 }
 
-/* Button Components */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -291,7 +246,6 @@ h6 {
   cursor: not-allowed;
 }
 
-/* Button Variants */
 .btn--primary,
 button.btn--primary {
   background-color: var(--color-brand-primary);
@@ -321,11 +275,10 @@ button.btn--primary:hover:not(:disabled) {
 }
 
 .btn--danger:hover:not(:disabled) {
-  background-color: #dc2626; /* red-600 */
+  background-color: #dc2626;
   color: var(--color-text-inverse) !important;
 }
 
-/* Button Sizes */
 .btn--sm {
   padding: var(--space-xs) var(--space-md);
   font-size: var(--font-size-xs);
@@ -336,7 +289,6 @@ button.btn--primary:hover:not(:disabled) {
   font-size: var(--font-size-lg);
 }
 
-/* Badge Component */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -348,16 +300,15 @@ button.btn--primary:hover:not(:disabled) {
 }
 
 .badge--draft {
-  background-color: rgb(254 240 138); /* yellow-200 */
-  color: rgb(146 64 14); /* yellow-800 */
+  background-color: rgb(254 240 138);
+  color: rgb(146 64 14);
 }
 
 .dark .badge--draft {
-  background-color: rgb(133 77 14); /* yellow-800 */
-  color: rgb(254 240 138); /* yellow-200 */
+  background-color: rgb(133 77 14);
+  color: rgb(254 240 138);
 }
 
-/* Navigation Components */
 .nav {
   position: sticky;
   top: 0;
@@ -426,7 +377,6 @@ button.btn--primary:hover:not(:disabled) {
   color: var(--color-text-link);
 }
 
-/* Grid Components */
 .grid {
   display: grid !important;
   gap: var(--space-xl);
@@ -444,7 +394,6 @@ button.btn--primary:hover:not(:disabled) {
   grid-template-columns: 1fr;
 }
 
-/* Story Components */
 .story-header {
   position: relative;
   margin-bottom: var(--space-2xl);
@@ -506,36 +455,35 @@ button.btn--primary:hover:not(:disabled) {
   color: var(--color-text-link-hover);
 }
 
-/* Error and Loading States */
 .error-state {
   padding: var(--space-lg);
-  background-color: rgb(254 242 242); /* red-50 */
-  border: 1px solid rgb(254 202 202); /* red-200 */
+  background-color: rgb(254 242 242);
+  border: 1px solid rgb(254 202 202);
   border-radius: var(--radius-md);
 }
 
 .dark .error-state {
-  background-color: rgb(127 29 29 / 0.2); /* red-900/20 */
-  border-color: rgb(153 27 27); /* red-800 */
+  background-color: rgb(127 29 29 / 0.2);
+  border-color: rgb(153 27 27);
 }
 
 .error-state__title {
-  color: rgb(153 27 27); /* red-800 */
+  color: rgb(153 27 27);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--space-sm);
 }
 
 .dark .error-state__title {
-  color: rgb(248 113 113); /* red-400 */
+  color: rgb(248 113 113);
 }
 
 .error-state__message {
-  color: rgb(220 38 38); /* red-600 */
+  color: rgb(220 38 38);
   margin-bottom: var(--space-lg);
 }
 
 .dark .error-state__message {
-  color: rgb(252 165 165); /* red-300 */
+  color: rgb(252 165 165);
 }
 
 .empty-state {
@@ -550,7 +498,6 @@ button.btn--primary:hover:not(:disabled) {
   margin-bottom: var(--space-lg);
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   .grid--3-cols {
     grid-template-columns: repeat(2, 1fr);
@@ -585,7 +532,6 @@ button.btn--primary:hover:not(:disabled) {
   }
 }
 
-/* Global utility classes that complement Tailwind */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -602,13 +548,11 @@ button.btn--primary:hover:not(:disabled) {
   transition: var(--transition-colors) !important;
 }
 
-/* Dark mode body override for Next.js */
 .dark body, 
 html.dark {
   background-color: var(--color-surface-primary);
 }
 
-/* Prose Content (for rich text) */
 .prose {
   max-width: 65ch;
   color: var(--color-text-primary);
@@ -650,7 +594,6 @@ html.dark {
   border-color: var(--color-border-primary);
 }
 
-/* Card prose variant - full width for card content */
 .prose--card {
   max-width: none;
   width: 100%;
@@ -693,8 +636,43 @@ html.dark {
   border-color: var(--color-border-primary);
 }
 
-/* Legacy wrapper class for gradual migration */
-.legacy-styles {
-  /* This class can be used to wrap legacy components that need the old styles */
-  /* while we gradually migrate them to the new system */
-} 
+.story-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: transparent;
+}
+
+.story-progress-bar__container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-border-primary);
+  opacity: 0.5;
+}
+
+.story-progress-bar__fill {
+  height: 100%;
+  background: var(--color-brand-primary);
+  transition: width 0.2s ease-out;
+  opacity: 1;
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.3);
+}
+
+.story-progress-bar__info {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .story-progress-bar__container {
+    background-color: var(--color-border-primary);
+    opacity: 0.4;
+  }
+  
+  .story-progress-bar__fill {
+    background: var(--color-brand-primary);
+    opacity: 1;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+  }
+}
