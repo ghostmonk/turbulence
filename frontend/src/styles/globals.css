@@ -312,7 +312,7 @@ button.btn--primary:hover:not(:disabled) {
 .nav {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 40;
   background-color: var(--color-surface-secondary);
   color: var(--color-text-primary);
   padding: var(--space-lg);

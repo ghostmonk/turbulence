@@ -216,12 +216,6 @@ const Stories: React.FC = () => {
 
     return (
         <div className="mt-4">
-            {stories.length > 0 && (
-                <div className="mb-4 text-sm text-text-secondary">
-                    Showing {stories.length} of {totalStories} stories
-                </div>
-            )}
-            
             <InfiniteScroll
                 key="story-infinite-scroll"
                 dataLength={stories.length}
