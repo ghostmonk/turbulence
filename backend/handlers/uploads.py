@@ -2,12 +2,12 @@ import io
 import os
 import traceback
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import RedirectResponse
 from google.cloud import storage
 from logger import logger
 from PIL import Image, ImageOps
@@ -40,18 +40,20 @@ async def get_image(filename: str, size: Optional[int] = None):
 
         blob = bucket.blob(blob_path)
 
-        exists = blob.exists()
-
-        if not exists:
+        if not blob.exists():
             raise HTTPException(status_code=404, detail="Image not found")
 
-        content_type = blob.content_type
-        if not content_type:
-            content_type = "application/octet-stream"
-
-        image_data = blob.download_as_bytes()
-
-        return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
+        # Generate signed URL for direct access (valid for 1 hour)
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(hours=1),
+            method="GET"
+        )
+        
+        logger.info(f"Redirecting image request to signed URL: {filename}")
+        
+        # Return 302 redirect to the signed URL for direct GCS access
+        return RedirectResponse(url=signed_url, status_code=302)
 
     except Exception as e:
         handle_error(e, "accessing image")
