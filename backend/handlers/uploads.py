@@ -29,6 +29,7 @@ if not GCS_BUCKET_NAME:
 @router.get("/uploads/{filename:path}")
 async def get_image(filename: str, size: Optional[int] = None):
     try:
+        logger.info(f"Image request received: {filename}, size: {size}")
         bucket = get_gcs_bucket()
 
         if size and size in IMAGE_SIZES:
@@ -38,24 +39,42 @@ async def get_image(filename: str, size: Optional[int] = None):
         else:
             blob_path = construct_blob_path(filename)
 
+        logger.info(f"Looking for blob at path: {blob_path}")
         blob = bucket.blob(blob_path)
 
         if not blob.exists():
+            logger.error(f"Image not found: {blob_path}")
             raise HTTPException(status_code=404, detail="Image not found")
 
-        # Generate signed URL for direct access (valid for 1 hour)
-        signed_url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(hours=1),
-            method="GET"
-        )
+        logger.info(f"Image found, generating signed URL for: {blob_path}")
         
-        logger.info(f"Redirecting image request to signed URL: {filename}")
-        
-        # Return 302 redirect to the signed URL for direct GCS access
-        return RedirectResponse(url=signed_url, status_code=302)
+        try:
+            # Generate signed URL for direct access (valid for 1 hour)
+            signed_url = blob.generate_signed_url(
+                version="v4", expiration=timedelta(hours=1), method="GET"
+            )
+            
+            logger.info(f"Generated signed URL: {signed_url}")
+            logger.info(f"Redirecting image request to signed URL: {filename}")
+            
+            # Return 302 redirect to the signed URL for direct GCS access
+            return RedirectResponse(url=signed_url, status_code=302)
+            
+        except Exception as signed_url_error:
+            logger.error(f"Failed to generate signed URL for {blob_path}: {str(signed_url_error)}")
+            logger.info(f"Falling back to streaming response for: {filename}")
+            
+            # Fallback: Stream the image through the server (original behavior)
+            content_type = blob.content_type or "application/octet-stream"
+            image_data = blob.download_as_bytes()
+            
+            from fastapi.responses import StreamingResponse
+            import io
+            
+            return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
 
     except Exception as e:
+        logger.error(f"Error in get_image for {filename}: {str(e)}")
         handle_error(e, "accessing image")
 
 
