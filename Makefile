@@ -77,10 +77,10 @@ docker-logs:
 
 # Development server
 dev-backend:
-	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5001
+	. $(VENV_ACTIVATE) && export $$(cat .env | grep -v '^#' | grep -v '^$$' | xargs) && cd backend && uvicorn app:app --reload --port 5001
 
 dev-frontend:
-	cd frontend && npm run dev
+	export $$(cat .env | grep -v '^#' | grep -v '^$$' | grep -v PORT | xargs) && cd frontend && PORT=3000 npm run dev
 
 # Cleanup
 clean:

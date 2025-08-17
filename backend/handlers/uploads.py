@@ -60,13 +60,13 @@ async def get_image(filename: str, size: Optional[int] = None):
             raise HTTPException(status_code=404, detail="Image not found")
 
         logger.info(f"Image found, attempting to generate signed URL for: {blob_path}")
-        
+
         # Try to generate signed URL, fall back to streaming if it fails
         signed_url = generate_signed_url_or_none(blob, blob_path)
         if signed_url:
             logger.info(f"Redirecting image request to signed URL: {filename}")
             return RedirectResponse(url=signed_url, status_code=302)
-        
+
         # Fallback: Stream the image through the server
         logger.info(f"Falling back to streaming response for: {filename}")
         content_type = blob.content_type or "application/octet-stream"
@@ -98,9 +98,7 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
         )
         resized_image = resize_image(contents, size)
 
-        _, _ = await upload_to_gcs(
-            resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket
-        )
+        _, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
 
         url = f"/uploads/{sized_filename}"
         srcset_entries.append(f"{url} {size}w")

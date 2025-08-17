@@ -128,7 +128,7 @@ const Stories: React.FC = () => {
         error, 
         fetchStories, 
         hasMore, 
-        totalStories, 
+        totalStories: _totalStories, 
         resetStories 
     } = useFetchStories();
     const { deleteStory, loading: deleteLoading } = useStoryOperations();
