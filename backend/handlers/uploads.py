@@ -9,6 +9,8 @@ from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
+from google.oauth2 import service_account
+import json
 from logger import logger
 from PIL import Image, ImageOps
 
@@ -149,8 +151,21 @@ def resize_image(content: bytes, target_width: int) -> bytes:
 
 def get_gcs_bucket():
     try:
-        storage_client = storage.Client()
+        # Check if we have JSON credentials for Cloud Run
+        credentials_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        if credentials_json:
+            logger.info("Using service account JSON credentials for GCS")
+            # Parse JSON and create credentials with private key
+            credentials_info = json.loads(credentials_json)
+            credentials = service_account.Credentials.from_service_account_info(credentials_info)
+            storage_client = storage.Client(credentials=credentials)
+        else:
+            logger.info("Using default credentials for GCS")
+            # Fall back to default credentials (for local dev with GOOGLE_APPLICATION_CREDENTIALS file)
+            storage_client = storage.Client()
+            
     except Exception as e:
+        logger.error(f"Failed to initialize GCS client: {str(e)}")
         raise HTTPException(status_code=500, detail="Storage configuration error")
 
     return storage_client.bucket(GCS_BUCKET_NAME)
