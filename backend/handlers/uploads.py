@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from logger import logger
 from PIL import Image, ImageOps
@@ -24,6 +24,19 @@ OUTPUT_FORMAT = "webp"
 GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
 if not GCS_BUCKET_NAME:
     raise ValueError("GCS_BUCKET_NAME environment variable not set")
+
+
+def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
+    """Generate a signed URL for the blob, returning None if it fails."""
+    try:
+        signed_url = blob.generate_signed_url(
+            version="v4", expiration=timedelta(hours=1), method="GET"
+        )
+        logger.info(f"Generated signed URL: {signed_url}")
+        return signed_url
+    except Exception as e:
+        logger.error(f"Failed to generate signed URL for {blob_path}: {str(e)}")
+        return None
 
 
 @router.get("/uploads/{filename:path}")
@@ -46,32 +59,19 @@ async def get_image(filename: str, size: Optional[int] = None):
             logger.error(f"Image not found: {blob_path}")
             raise HTTPException(status_code=404, detail="Image not found")
 
-        logger.info(f"Image found, generating signed URL for: {blob_path}")
+        logger.info(f"Image found, attempting to generate signed URL for: {blob_path}")
         
-        try:
-            # Generate signed URL for direct access (valid for 1 hour)
-            signed_url = blob.generate_signed_url(
-                version="v4", expiration=timedelta(hours=1), method="GET"
-            )
-            
-            logger.info(f"Generated signed URL: {signed_url}")
+        # Try to generate signed URL, fall back to streaming if it fails
+        signed_url = generate_signed_url_or_none(blob, blob_path)
+        if signed_url:
             logger.info(f"Redirecting image request to signed URL: {filename}")
-            
-            # Return 302 redirect to the signed URL for direct GCS access
             return RedirectResponse(url=signed_url, status_code=302)
-            
-        except Exception as signed_url_error:
-            logger.error(f"Failed to generate signed URL for {blob_path}: {str(signed_url_error)}")
-            logger.info(f"Falling back to streaming response for: {filename}")
-            
-            # Fallback: Stream the image through the server (original behavior)
-            content_type = blob.content_type or "application/octet-stream"
-            image_data = blob.download_as_bytes()
-            
-            from fastapi.responses import StreamingResponse
-            import io
-            
-            return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
+        
+        # Fallback: Stream the image through the server
+        logger.info(f"Falling back to streaming response for: {filename}")
+        content_type = blob.content_type or "application/octet-stream"
+        image_data = blob.download_as_bytes()
+        return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
 
     except Exception as e:
         logger.error(f"Error in get_image for {filename}: {str(e)}")
