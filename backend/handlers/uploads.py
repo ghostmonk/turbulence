@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from logger import logger
 from PIL import Image, ImageOps
@@ -26,9 +26,23 @@ if not GCS_BUCKET_NAME:
     raise ValueError("GCS_BUCKET_NAME environment variable not set")
 
 
+def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
+    """Generate a signed URL for the blob, returning None if it fails."""
+    try:
+        signed_url = blob.generate_signed_url(
+            version="v4", expiration=timedelta(hours=1), method="GET"
+        )
+        logger.info(f"Generated signed URL: {signed_url}")
+        return signed_url
+    except Exception as e:
+        logger.error(f"Failed to generate signed URL for {blob_path}: {str(e)}")
+        return None
+
+
 @router.get("/uploads/{filename:path}")
 async def get_image(filename: str, size: Optional[int] = None):
     try:
+        logger.info(f"Image request received: {filename}, size: {size}")
         bucket = get_gcs_bucket()
 
         if size and size in IMAGE_SIZES:
@@ -38,69 +52,77 @@ async def get_image(filename: str, size: Optional[int] = None):
         else:
             blob_path = construct_blob_path(filename)
 
+        logger.info(f"Looking for blob at path: {blob_path}")
         blob = bucket.blob(blob_path)
 
         if not blob.exists():
+            logger.error(f"Image not found: {blob_path}")
             raise HTTPException(status_code=404, detail="Image not found")
 
-        # Generate signed URL for direct access (valid for 1 hour)
-        signed_url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(hours=1),
-            method="GET"
-        )
-        
-        logger.info(f"Redirecting image request to signed URL: {filename}")
-        
-        # Return 302 redirect to the signed URL for direct GCS access
-        return RedirectResponse(url=signed_url, status_code=302)
+        logger.info(f"Image found, attempting to generate signed URL for: {blob_path}")
+
+        # Try to generate signed URL, fall back to streaming if it fails
+        signed_url = generate_signed_url_or_none(blob, blob_path)
+        if signed_url:
+            logger.info(f"Redirecting image request to signed URL: {filename}")
+            return RedirectResponse(url=signed_url, status_code=302)
+
+        # Fallback: Stream the image through the server
+        logger.info(f"Falling back to streaming response for: {filename}")
+        content_type = blob.content_type or "application/octet-stream"
+        image_data = blob.download_as_bytes()
+        return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
 
     except Exception as e:
+        logger.error(f"Error in get_image for {filename}: {str(e)}")
         handle_error(e, "accessing image")
+
+
+async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
+    """Process a single uploaded file and return (primary_url, srcset)."""
+    contents = await file.read()
+    file_size = len(contents)
+    validate_image(file.content_type, file_size)
+    new_filename = generate_unique_filename(file.filename)
+    base_name, extension = os.path.splitext(new_filename)
+    webp_extension = f".{OUTPUT_FORMAT}"
+
+    srcset_entries = []
+    primary_url = None
+
+    for size in IMAGE_SIZES:
+        sized_filename = (
+            f"{base_name}_{size}{webp_extension}"
+            if size != max(IMAGE_SIZES)
+            else f"{base_name}{webp_extension}"
+        )
+        resized_image = resize_image(contents, size)
+
+        _, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
+
+        url = f"/uploads/{sized_filename}"
+        srcset_entries.append(f"{url} {size}w")
+        if size == max(IMAGE_SIZES):
+            primary_url = url
+
+    return primary_url, ", ".join(srcset_entries)
 
 
 @router.post("/uploads", response_model=Dict[str, List[str]])
 @requires_auth
 async def upload_images(request: Request, files: List[UploadFile] = File(...)):
-    uploaded_files = {"urls": [], "srcsets": []}
-
     try:
+        uploaded_files = {"urls": [], "srcsets": []}
         bucket = get_gcs_bucket()
 
         for file in files:
-            contents = await file.read()
-            file_size = len(contents)
-            validate_image(file.content_type, file_size)
-            new_filename = generate_unique_filename(file.filename)
-            base_name, extension = os.path.splitext(new_filename)
-            webp_extension = f".{OUTPUT_FORMAT}"
-
-            srcset_entries = []
-            primary_url = None
-
             try:
-                for size in IMAGE_SIZES:
-                    sized_filename = (
-                        f"{base_name}_{size}{webp_extension}"
-                        if size != max(IMAGE_SIZES)
-                        else f"{base_name}{webp_extension}"
-                    )
-                    resized_image = resize_image(contents, size)
-
-                    _, _ = await upload_to_gcs(
-                        resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket
-                    )
-
-                    url = f"/uploads/{sized_filename}"
-                    srcset_entries.append(f"{url} {size}w")
-                    if size == max(IMAGE_SIZES):
-                        primary_url = url
-
+                primary_url, srcset = await process_single_file(file, bucket)
                 uploaded_files["urls"].append(primary_url)
-                uploaded_files["srcsets"].append(", ".join(srcset_entries))
-
+                uploaded_files["srcsets"].append(srcset)
             except Exception as e:
-                handle_error(e, "uploading image")
+                logger.error(f"Failed to process file {file.filename}: {str(e)}")
+                handle_error(e, f"uploading image {file.filename}")
 
         return uploaded_files
 

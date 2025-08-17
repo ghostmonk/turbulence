@@ -75,12 +75,21 @@ docker-down:
 docker-logs:
 	docker-compose logs -f
 
-# Development server
+# Development servers
+# 
+# dev-backend: Start Python backend server on port 5001
+# - Activates virtual environment 
+# - Loads all .env variables (excluding comments and empty lines)
+# - Runs uvicorn with hot reload for development
 dev-backend:
-	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5001
+	. $(VENV_ACTIVATE) && export $$(cat .env | grep -v '^#' | grep -v '^$$' | xargs) && cd backend && uvicorn app:app --reload --port 5001
 
+# dev-frontend: Start Next.js frontend server on port 3000
+# - Loads .env variables but excludes PORT to avoid conflicts
+# - Explicitly sets PORT=3000 to prevent frontend from using backend's port (5001)
+# - The grep filters ensure only valid env vars are exported (no comments/empty lines)
 dev-frontend:
-	cd frontend && npm run dev
+	export $$(cat .env | grep -v '^#' | grep -v '^$$' | grep -v PORT | xargs) && cd frontend && PORT=3000 npm run dev
 
 # Cleanup
 clean:
