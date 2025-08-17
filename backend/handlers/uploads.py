@@ -78,48 +78,53 @@ async def get_image(filename: str, size: Optional[int] = None):
         handle_error(e, "accessing image")
 
 
+async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
+    """Process a single uploaded file and return (primary_url, srcset)."""
+    contents = await file.read()
+    file_size = len(contents)
+    validate_image(file.content_type, file_size)
+    new_filename = generate_unique_filename(file.filename)
+    base_name, extension = os.path.splitext(new_filename)
+    webp_extension = f".{OUTPUT_FORMAT}"
+
+    srcset_entries = []
+    primary_url = None
+
+    for size in IMAGE_SIZES:
+        sized_filename = (
+            f"{base_name}_{size}{webp_extension}"
+            if size != max(IMAGE_SIZES)
+            else f"{base_name}{webp_extension}"
+        )
+        resized_image = resize_image(contents, size)
+
+        _, _ = await upload_to_gcs(
+            resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket
+        )
+
+        url = f"/uploads/{sized_filename}"
+        srcset_entries.append(f"{url} {size}w")
+        if size == max(IMAGE_SIZES):
+            primary_url = url
+
+    return primary_url, ", ".join(srcset_entries)
+
+
 @router.post("/uploads", response_model=Dict[str, List[str]])
 @requires_auth
 async def upload_images(request: Request, files: List[UploadFile] = File(...)):
-    uploaded_files = {"urls": [], "srcsets": []}
-
     try:
+        uploaded_files = {"urls": [], "srcsets": []}
         bucket = get_gcs_bucket()
 
         for file in files:
-            contents = await file.read()
-            file_size = len(contents)
-            validate_image(file.content_type, file_size)
-            new_filename = generate_unique_filename(file.filename)
-            base_name, extension = os.path.splitext(new_filename)
-            webp_extension = f".{OUTPUT_FORMAT}"
-
-            srcset_entries = []
-            primary_url = None
-
             try:
-                for size in IMAGE_SIZES:
-                    sized_filename = (
-                        f"{base_name}_{size}{webp_extension}"
-                        if size != max(IMAGE_SIZES)
-                        else f"{base_name}{webp_extension}"
-                    )
-                    resized_image = resize_image(contents, size)
-
-                    _, _ = await upload_to_gcs(
-                        resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket
-                    )
-
-                    url = f"/uploads/{sized_filename}"
-                    srcset_entries.append(f"{url} {size}w")
-                    if size == max(IMAGE_SIZES):
-                        primary_url = url
-
+                primary_url, srcset = await process_single_file(file, bucket)
                 uploaded_files["urls"].append(primary_url)
-                uploaded_files["srcsets"].append(", ".join(srcset_entries))
-
+                uploaded_files["srcsets"].append(srcset)
             except Exception as e:
-                handle_error(e, "uploading image")
+                logger.error(f"Failed to process file {file.filename}: {str(e)}")
+                handle_error(e, f"uploading image {file.filename}")
 
         return uploaded_files
 
