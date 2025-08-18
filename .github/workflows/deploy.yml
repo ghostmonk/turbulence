@@ -34,8 +34,20 @@ jobs:
         run: |
           gcloud builds submit ./backend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service
           
-          # Write the JSON to a temporary file to avoid command line parsing issues
-          echo "${GCP_SERVICE_ACCOUNT_JSON}" > /tmp/gcp_creds.json
+          # Create environment file for Cloud Run deployment
+          cat > /tmp/env_vars.txt << 'EOF'
+          MONGO_USER=${{ secrets.MONGO_USER }}
+          MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
+          MONGO_CLUSTER=${{ vars.MONGO_CLUSTER }}
+          MONGO_APP_NAME=${{ vars.MONGO_APP_NAME }}
+          MONGO_HOST=${{ vars.MONGO_HOST }}
+          GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+          MONGO_DB_NAME=${{ vars.MONGO_DB_NAME }}
+          GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}
+          EOF
+          
+          # Add the JSON credential to the environment file
+          echo "GOOGLE_APPLICATION_CREDENTIALS_JSON=${GCP_SERVICE_ACCOUNT_JSON}" >> /tmp/env_vars.txt
           
           gcloud run deploy turbulent-service \
             --image gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service \
@@ -43,12 +55,11 @@ jobs:
             --region us-central1 \
             --allow-unauthenticated \
             --service-account=${{ vars.GCP_SERVICE_ACCOUNT_NAME }} \
-            --set-env-vars "MONGO_USER=${{ secrets.MONGO_USER }},MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},MONGO_CLUSTER=${{ vars.MONGO_CLUSTER }},MONGO_APP_NAME=${{ vars.MONGO_APP_NAME }},MONGO_HOST=${{ vars.MONGO_HOST }},GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }},MONGO_DB_NAME=${{ vars.MONGO_DB_NAME }},GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}" \
-            --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS_JSON=$(cat /tmp/gcp_creds.json)" \
+            --env-vars-file /tmp/env_vars.txt \
             --timeout=600s
           
           # Clean up the temporary file
-          rm -f /tmp/gcp_creds.json
+          rm -f /tmp/env_vars.txt
 
       # Build and deploy the frontend
       - name: Deploy Frontend
