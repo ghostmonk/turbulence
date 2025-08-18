@@ -38,10 +38,23 @@ async def get_stories(
             },
         )
 
-        total = await collection.count_documents(query)
+        # Use estimated count for better performance on large collections
+        total = await collection.estimated_document_count() if not query else await collection.count_documents(query)
+
+        # Optimized query with projection for commonly accessed fields
+        projection = {
+            "_id": 1,
+            "title": 1,
+            "content": 1,
+            "slug": 1,
+            "is_published": 1,
+            "createdDate": 1,
+            "updatedDate": 1,
+            "deleted": 1
+        }
 
         stories = await find_many_and_convert(
-            collection, query, StoryResponse, sort, limit=limit, skip=offset
+            collection, query, StoryResponse, sort, limit=limit, skip=offset, projection=projection
         )
 
         logger.info_with_context(
