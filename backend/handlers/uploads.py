@@ -151,22 +151,36 @@ def resize_image(content: bytes, target_width: int) -> bytes:
 
 def get_gcs_bucket():
     try:
-        # Check if we have JSON credentials for Cloud Run
+        # Check for JSON credentials in environment variable first
         credentials_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        
         if credentials_json:
-            logger.info("Using service account JSON credentials for GCS")
-            # Parse JSON and create credentials with private key
-            credentials_info = json.loads(credentials_json)
-            credentials = service_account.Credentials.from_service_account_info(credentials_info)
-            storage_client = storage.Client(credentials=credentials)
+            logger.info("Using service account JSON from environment variable")
+            try:
+                credentials_info = json.loads(credentials_json)
+                credentials = service_account.Credentials.from_service_account_info(credentials_info)
+                storage_client = storage.Client(credentials=credentials)
+                logger.info("Successfully created GCS client with JSON credentials")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON credentials: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Invalid JSON credentials: {str(e)}")
         else:
-            logger.info("Using default credentials for GCS")
-            # Fall back to default credentials (for local dev with GOOGLE_APPLICATION_CREDENTIALS file)
-            storage_client = storage.Client()
+            # Check for file-based credentials
+            credentials_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+            if credentials_file and os.path.exists(credentials_file):
+                logger.info(f"Using service account file: {credentials_file}")
+                credentials = service_account.Credentials.from_service_account_file(credentials_file)
+                storage_client = storage.Client(credentials=credentials)
+            else:
+                logger.info("Using default credentials (Application Default Credentials)")
+                storage_client = storage.Client()
             
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f"Failed to initialize GCS client: {str(e)}")
-        raise HTTPException(status_code=500, detail="Storage configuration error")
+        raise HTTPException(status_code=500, detail=f"Storage configuration error: {str(e)}")
 
     return storage_client.bucket(GCS_BUCKET_NAME)
 
