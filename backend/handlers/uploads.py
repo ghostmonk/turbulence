@@ -101,9 +101,15 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
         )
         resized_image = resize_image(contents, size)
 
-        _, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
-
-        url = f"/uploads/{sized_filename}"
+        blob_path, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
+        
+        # Get the blob and try to generate a signed URL
+        blob = bucket.blob(blob_path)
+        signed_url = generate_signed_url_or_none(blob, blob_path)
+        
+        # Use signed URL if available, otherwise fall back to API endpoint
+        url = signed_url if signed_url else f"/uploads/{sized_filename}"
+        
         srcset_entries.append(f"{url} {size}w")
         if size == max(IMAGE_SIZES):
             primary_url = url
