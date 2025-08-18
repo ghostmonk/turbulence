@@ -1,3 +1,4 @@
+import base64
 import io
 import os
 import traceback
@@ -151,10 +152,23 @@ def resize_image(content: bytes, target_width: int) -> bytes:
 
 def get_gcs_bucket():
     try:
-        # Check for JSON credentials in environment variable first
+        # Check for base64 encoded JSON credentials first
+        credentials_json_b64 = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON_B64")
         credentials_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
         
-        if credentials_json:
+        if credentials_json_b64:
+            logger.info("Using base64 encoded service account JSON from environment variable")
+            try:
+                # Decode base64 to get the JSON
+                credentials_json = base64.b64decode(credentials_json_b64).decode('utf-8')
+                credentials_info = json.loads(credentials_json)
+                credentials = service_account.Credentials.from_service_account_info(credentials_info)
+                storage_client = storage.Client(credentials=credentials)
+                logger.info("Successfully created GCS client with base64 decoded JSON credentials")
+            except (base64.binascii.Error, json.JSONDecodeError) as e:
+                logger.error(f"Failed to decode/parse base64 JSON credentials: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Invalid base64 JSON credentials: {str(e)}")
+        elif credentials_json:
             logger.info("Using service account JSON from environment variable")
             try:
                 credentials_info = json.loads(credentials_json)
