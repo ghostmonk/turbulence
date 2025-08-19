@@ -68,13 +68,23 @@ async def get_image(filename: str, size: Optional[int] = None):
         signed_url = generate_signed_url_or_none(blob, blob_path)
         if signed_url:
             logger.info(f"Redirecting image request to signed URL: {filename}")
-            return RedirectResponse(url=signed_url, status_code=302)
+            # Use 307 to preserve the original request method and add cache headers
+            response = RedirectResponse(url=signed_url, status_code=307)
+            # Add cache headers to help with browser caching
+            response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
+            response.headers["Vary"] = "Accept-Encoding"
+            return response
 
         # Fallback: Stream the image through the server
         logger.info(f"Falling back to streaming response for: {filename}")
         content_type = blob.content_type or "application/octet-stream"
         image_data = blob.download_as_bytes()
-        return StreamingResponse(io.BytesIO(image_data), media_type=content_type)
+        
+        # Add cache headers for streaming response too
+        response = StreamingResponse(io.BytesIO(image_data), media_type=content_type)
+        response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
+        response.headers["Vary"] = "Accept-Encoding"
+        return response
 
     except Exception as e:
         logger.error(f"Error in get_image for {filename}: {str(e)}")
@@ -103,12 +113,9 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
 
         blob_path, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
         
-        # Get the blob and try to generate a signed URL
-        blob = bucket.blob(blob_path)
-        signed_url = generate_signed_url_or_none(blob, blob_path)
-        
-        # Use signed URL if available, otherwise fall back to API endpoint
-        url = signed_url if signed_url else f"/uploads/{sized_filename}"
+        # Always use API endpoint instead of signed URLs to avoid expiration issues
+        # The API endpoint will handle signed URL generation on-demand
+        url = f"/uploads/{sized_filename}"
         
         srcset_entries.append(f"{url} {size}w")
         if size == max(IMAGE_SIZES):
