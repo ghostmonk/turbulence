@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 import os
 import traceback
 import uuid
@@ -11,7 +12,6 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from google.oauth2 import service_account
-import json
 from logger import logger
 from PIL import Image, ImageOps
 
@@ -42,10 +42,28 @@ def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
         return None
 
 
+@router.options("/uploads/{filename:path}")
+async def options_image(filename: str):
+    """Handle CORS preflight requests for images"""
+    from fastapi.responses import Response
+
+    response = Response()
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, User-Agent"
+    response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
+    return response
+
+
 @router.get("/uploads/{filename:path}")
-async def get_image(filename: str, size: Optional[int] = None):
+async def get_image(request: Request, filename: str, size: Optional[int] = None):
     try:
         logger.info(f"Image request received: {filename}, size: {size}")
+
+        # Log request headers to help debug mobile issues
+        user_agent = request.headers.get("user-agent", "Unknown")
+        logger.info(f"User-Agent: {user_agent}")
+
         bucket = get_gcs_bucket()
 
         if size and size in IMAGE_SIZES:
@@ -70,20 +88,26 @@ async def get_image(filename: str, size: Optional[int] = None):
             logger.info(f"Redirecting image request to signed URL: {filename}")
             # Use 307 to preserve the original request method and add cache headers
             response = RedirectResponse(url=signed_url, status_code=307)
-            # Add cache headers to help with browser caching
+            # Add headers to prevent auth/CORS issues on mobile
             response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
             response.headers["Vary"] = "Accept-Encoding"
+            response.headers["Access-Control-Allow-Origin"] = "*"  # Allow from any origin
+            response.headers["Access-Control-Allow-Methods"] = "GET"
+            response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
             return response
 
         # Fallback: Stream the image through the server
         logger.info(f"Falling back to streaming response for: {filename}")
         content_type = blob.content_type or "application/octet-stream"
         image_data = blob.download_as_bytes()
-        
+
         # Add cache headers for streaming response too
         response = StreamingResponse(io.BytesIO(image_data), media_type=content_type)
         response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
         response.headers["Vary"] = "Accept-Encoding"
+        response.headers["Access-Control-Allow-Origin"] = "*"  # Allow from any origin
+        response.headers["Access-Control-Allow-Methods"] = "GET"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
         return response
 
     except Exception as e:
@@ -111,12 +135,14 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
         )
         resized_image = resize_image(contents, size)
 
-        blob_path, _ = await upload_to_gcs(resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket)
-        
+        blob_path, _ = await upload_to_gcs(
+            resized_image, sized_filename, f"image/{OUTPUT_FORMAT}", bucket
+        )
+
         # Always use API endpoint instead of signed URLs to avoid expiration issues
         # The API endpoint will handle signed URL generation on-demand
         url = f"/uploads/{sized_filename}"
-        
+
         srcset_entries.append(f"{url} {size}w")
         if size == max(IMAGE_SIZES):
             primary_url = url
@@ -168,24 +194,30 @@ def get_gcs_bucket():
         # Check for base64 encoded JSON credentials first
         credentials_json_b64 = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON_B64")
         credentials_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
-        
+
         if credentials_json_b64:
             logger.info("Using base64 encoded service account JSON from environment variable")
             try:
                 # Decode base64 to get the JSON
-                credentials_json = base64.b64decode(credentials_json_b64).decode('utf-8')
+                credentials_json = base64.b64decode(credentials_json_b64).decode("utf-8")
                 credentials_info = json.loads(credentials_json)
-                credentials = service_account.Credentials.from_service_account_info(credentials_info)
+                credentials = service_account.Credentials.from_service_account_info(
+                    credentials_info
+                )
                 storage_client = storage.Client(credentials=credentials)
                 logger.info("Successfully created GCS client with base64 decoded JSON credentials")
             except (base64.binascii.Error, json.JSONDecodeError) as e:
                 logger.error(f"Failed to decode/parse base64 JSON credentials: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Invalid base64 JSON credentials: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail=f"Invalid base64 JSON credentials: {str(e)}"
+                )
         elif credentials_json:
             logger.info("Using service account JSON from environment variable")
             try:
                 credentials_info = json.loads(credentials_json)
-                credentials = service_account.Credentials.from_service_account_info(credentials_info)
+                credentials = service_account.Credentials.from_service_account_info(
+                    credentials_info
+                )
                 storage_client = storage.Client(credentials=credentials)
                 logger.info("Successfully created GCS client with JSON credentials")
             except json.JSONDecodeError as e:
@@ -196,12 +228,14 @@ def get_gcs_bucket():
             credentials_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
             if credentials_file and os.path.exists(credentials_file):
                 logger.info(f"Using service account file: {credentials_file}")
-                credentials = service_account.Credentials.from_service_account_file(credentials_file)
+                credentials = service_account.Credentials.from_service_account_file(
+                    credentials_file
+                )
                 storage_client = storage.Client(credentials=credentials)
             else:
                 logger.info("Using default credentials (Application Default Credentials)")
                 storage_client = storage.Client()
-            
+
     except HTTPException:
         # Re-raise HTTP exceptions
         raise

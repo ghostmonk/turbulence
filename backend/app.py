@@ -19,18 +19,24 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting application turbulent")
-    
+
     # Debug environment variables for GCS credentials
     gcs_bucket = os.environ.get("GCS_BUCKET_NAME")
     google_creds_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
     google_creds_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
-    
+
     logger.info(f"Environment debug - GCS_BUCKET_NAME: {'SET' if gcs_bucket else 'NOT_SET'}")
-    logger.info(f"Environment debug - GOOGLE_APPLICATION_CREDENTIALS: {'SET' if google_creds_file else 'NOT_SET'}")
-    logger.info(f"Environment debug - GOOGLE_APPLICATION_CREDENTIALS_JSON: {'SET' if google_creds_json else 'NOT_SET'}")
-    
+    logger.info(
+        f"Environment debug - GOOGLE_APPLICATION_CREDENTIALS: {'SET' if google_creds_file else 'NOT_SET'}"
+    )
+    logger.info(
+        f"Environment debug - GOOGLE_APPLICATION_CREDENTIALS_JSON: {'SET' if google_creds_json else 'NOT_SET'}"
+    )
+
     if google_creds_json:
-        logger.info(f"GOOGLE_APPLICATION_CREDENTIALS_JSON length: {len(google_creds_json)} characters")
+        logger.info(
+            f"GOOGLE_APPLICATION_CREDENTIALS_JSON length: {len(google_creds_json)} characters"
+        )
     if google_creds_file:
         logger.info(f"GOOGLE_APPLICATION_CREDENTIALS file path: {google_creds_file}")
     updated_count = await backfill_published_flag()
