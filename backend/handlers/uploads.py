@@ -28,6 +28,15 @@ GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
 if not GCS_BUCKET_NAME:
     raise ValueError("GCS_BUCKET_NAME environment variable not set")
 
+# Allowed origins for CORS
+ALLOWED_ORIGINS = [
+    "https://ghostmonk.com",
+    "https://www.ghostmonk.com", 
+    "https://api.ghostmonk.com",
+    "http://localhost:3000",
+    "http://localhost:5001"
+]
+
 
 def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
     """Generate a signed URL for the blob, returning None if it fails."""
@@ -43,12 +52,14 @@ def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
 
 
 @router.options("/uploads/{filename:path}")
-async def options_image(filename: str):
+async def options_image(request: Request, filename: str):
     """Handle CORS preflight requests for images"""
     from fastapi.responses import Response
 
     response = Response()
-    response.headers["Access-Control-Allow-Origin"] = "*"
+    origin = request.headers.get("origin", "")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, User-Agent"
     response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
@@ -91,7 +102,10 @@ async def get_image(request: Request, filename: str, size: Optional[int] = None)
             # Add headers to prevent auth/CORS issues on mobile
             response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
             response.headers["Vary"] = "Accept-Encoding"
-            response.headers["Access-Control-Allow-Origin"] = "*"  # Allow from any origin
+            origin = request.headers.get("origin", "")
+            if origin in ALLOWED_ORIGINS:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            # No CORS header for any other case - blocks cross-origin requests from unauthorized domains
             response.headers["Access-Control-Allow-Methods"] = "GET"
             response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
             return response
@@ -105,7 +119,10 @@ async def get_image(request: Request, filename: str, size: Optional[int] = None)
         response = StreamingResponse(io.BytesIO(image_data), media_type=content_type)
         response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
         response.headers["Vary"] = "Accept-Encoding"
-        response.headers["Access-Control-Allow-Origin"] = "*"  # Allow from any origin
+        origin = request.headers.get("origin", "")
+        if origin in ALLOWED_ORIGINS:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        # No CORS header for any other case - blocks cross-origin requests from unauthorized domains
         response.headers["Access-Control-Allow-Methods"] = "GET"
         response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
         return response
