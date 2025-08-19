@@ -100,8 +100,9 @@ async def get_image(request: Request, filename: str, size: Optional[int] = None)
             # Use 307 to preserve the original request method and add cache headers
             response = RedirectResponse(url=signed_url, status_code=307)
             # Add headers to prevent auth/CORS issues on mobile
-            response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
-            response.headers["Vary"] = "Accept-Encoding"
+            # Mobile-friendly cache headers to prevent overly aggressive caching
+            response.headers["Cache-Control"] = "public, max-age=3600, no-cache"  # Cache but always revalidate
+            response.headers["Vary"] = "Accept-Encoding, Origin"
             origin = request.headers.get("origin", "")
             if origin in ALLOWED_ORIGINS:
                 response.headers["Access-Control-Allow-Origin"] = origin
@@ -117,8 +118,9 @@ async def get_image(request: Request, filename: str, size: Optional[int] = None)
 
         # Add cache headers for streaming response too
         response = StreamingResponse(io.BytesIO(image_data), media_type=content_type)
-        response.headers["Cache-Control"] = "public, max-age=3600"  # Cache for 1 hour
-        response.headers["Vary"] = "Accept-Encoding"
+        # Mobile-friendly cache headers to prevent overly aggressive caching
+        response.headers["Cache-Control"] = "public, max-age=3600, no-cache"  # Cache but always revalidate
+        response.headers["Vary"] = "Accept-Encoding, Origin"
         origin = request.headers.get("origin", "")
         if origin in ALLOWED_ORIGINS:
             response.headers["Access-Control-Allow-Origin"] = origin
