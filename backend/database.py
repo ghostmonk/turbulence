@@ -1,10 +1,14 @@
-import os
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 from logger import logger
+from motor.motor_asyncio import (
+    AsyncIOMotorClient,
+    AsyncIOMotorCollection,
+    AsyncIOMotorDatabase,
+)
 
 client: Optional[AsyncIOMotorClient] = None
 _connection_lock = asyncio.Lock()
@@ -13,12 +17,12 @@ _connection_lock = asyncio.Lock()
 async def get_database() -> AsyncIOMotorDatabase:
     """Get database instance with optimized connection handling"""
     global client
-    
+
     if not client:
         async with _connection_lock:
             if not client:  # Double-check pattern
                 await _create_client()
-    
+
     db_name = os.getenv("MONGO_DB_NAME", "ghostmonk")
     return client[db_name]
 
@@ -26,7 +30,7 @@ async def get_database() -> AsyncIOMotorDatabase:
 async def _create_client():
     """Create MongoDB client with connection pooling and optimizations"""
     global client
-    
+
     user = _get_variable("MONGO_USER")
     password = _get_variable("MONGO_PASSWORD")
     cluster = _get_variable("MONGO_CLUSTER")
@@ -38,21 +42,21 @@ async def _create_client():
         f"mongodb+srv://{user}:{password}@{cluster}.{host}/"
         f"?retryWrites=true&w=majority&appName={app_name}"
         f"&maxPoolSize=20"  # Max connections in pool
-        f"&minPoolSize=5"   # Min connections to maintain
+        f"&minPoolSize=5"  # Min connections to maintain
         f"&maxIdleTimeMS=60000"  # Close connections after 1 minute idle
         f"&serverSelectionTimeoutMS=5000"  # 5 second timeout
         f"&connectTimeoutMS=10000"  # 10 second connection timeout
-        f"&socketTimeoutMS=30000"   # 30 second socket timeout
+        f"&socketTimeoutMS=30000"  # 30 second socket timeout
         f"&heartbeatFrequencyMS=10000"  # Heartbeat every 10 seconds
     )
-    
+
     try:
         client = AsyncIOMotorClient(mongo_uri)
-        
+
         # Test the connection
-        await client.admin.command('ping')
+        await client.admin.command("ping")
         logger.info("MongoDB connection established successfully")
-        
+
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {str(e)}")
         raise

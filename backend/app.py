@@ -44,10 +44,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"Startup complete. Backfilled {updated_count} stories.")
 
     yield  # This is where the app runs
-    
+
     # Cleanup database connections
     logger.info("Shutting down application")
     from database import close_db_connection
+
     await close_db_connection()
 
 
@@ -149,30 +150,29 @@ async def health_check():
     """Fast health check endpoint for keep-alive pings"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+
 @app.get("/warmup")
 async def warmup():
     """Warm-up endpoint that ensures database connection and caches are ready"""
     try:
         # Test database connection
         from database import get_database
+
         db = await get_database()
         # Quick database ping
         await db.command("ping")
-        
+
         logger.info("Warmup successful - database connected")
-        return {
-            "status": "warm", 
-            "timestamp": datetime.now().isoformat(),
-            "database": "connected"
-        }
+        return {"status": "warm", "timestamp": datetime.now().isoformat(), "database": "connected"}
     except Exception as e:
         logger.error(f"Warmup failed: {str(e)}")
         return {
-            "status": "cold", 
+            "status": "cold",
             "timestamp": datetime.now().isoformat(),
             "database": "failed",
-            "error": str(e)
+            "error": str(e),
         }
+
 
 app.include_router(stories_router)
 app.include_router(uploads_router)
