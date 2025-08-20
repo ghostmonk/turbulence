@@ -2,6 +2,7 @@ import React from 'react';
 import Head from 'next/head';
 import { GetStaticProps } from 'next';
 import Stories from '@/components/Stories';
+import { SkeletonShowcase } from '@/components/LoadingSkeletons';
 import { Story, PaginatedResponse } from '@/types/api';
 
 interface HomeProps {
@@ -18,6 +19,9 @@ const Home: React.FC<HomeProps> = ({ initialStories, error }) => {
                 <meta name="keywords" content="Ghostmonk, Turbulence, News, Updates"/>
             </Head>
 
+            {/* Skeleton showcase for testing - add ?skeleton=test to URL */}
+            <SkeletonShowcase />
+            
             <div style={{margin: '0 auto', maxWidth: '800px', padding: '0 1rem'}}>
                 <h1 className="page-title text-blue-500">Turbulence</h1>
                 <Stories initialData={initialStories} initialError={error} />

@@ -11,9 +11,14 @@ import { BackendWarmupBanner } from '@/components/LoadingSkeletons';
 function MyApp({ Component, pageProps }: AppProps) {
     const [isWarming, setIsWarming] = useState(false);
     const [warmupFailed, setWarmupFailed] = useState(false);
+    const [isSkeletonTest, setIsSkeletonTest] = useState(false);
 
     useEffect(() => {
         configureDOMPurify();
+        
+        // Check if we're in skeleton test mode
+        const skeletonTestMode = window.location.search.includes('skeleton=test');
+        setIsSkeletonTest(skeletonTestMode);
         
         // Start keep-alive service to prevent cold starts
         keepAliveService.start();
@@ -32,7 +37,10 @@ function MyApp({ Component, pageProps }: AppProps) {
                 console.error('Initial warmup failed:', error);
                 setWarmupFailed(true);
             } finally {
-                setIsWarming(false);
+                // Keep warming state if in skeleton test mode
+                if (!skeletonTestMode) {
+                    setIsWarming(false);
+                }
             }
         };
 
@@ -57,7 +65,10 @@ function MyApp({ Component, pageProps }: AppProps) {
             console.error('Warmup retry failed:', error);
             setWarmupFailed(true);
         } finally {
-            setIsWarming(false);
+            // Keep warming state if in skeleton test mode
+            if (!isSkeletonTest) {
+                setIsWarming(false);
+            }
         }
     };
 
