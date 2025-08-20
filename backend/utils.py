@@ -84,12 +84,13 @@ async def find_many_and_convert(
     sort: dict = None,
     limit: int = None,
     skip: int = 0,
+    projection: dict = None,
 ) -> List[T]:
     """
     Find many documents and convert them to Pydantic models.
-    Supports pagination with limit and skip.
+    Supports pagination with limit and skip, and field projection for optimization.
     """
-    cursor = collection.find(query)
+    cursor = collection.find(query, projection)
     if sort:
         cursor = cursor.sort(sort)
 

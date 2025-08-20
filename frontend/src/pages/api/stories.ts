@@ -2,6 +2,49 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getToken } from "next-auth/jwt";
 import { apiLogger } from '@/utils/logger';
 
+// Simple in-memory cache for stories
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes for stories
+const PUBLIC_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for public stories
+
+function getCacheKey(req: NextApiRequest): string {
+    const { limit, offset, include_drafts } = req.query;
+    return `stories:${limit || 'all'}:${offset || 0}:${include_drafts || 'false'}`;
+}
+
+function getFromCache(key: string): any | null {
+    const cached = cache.get(key);
+    if (!cached) return null;
+    
+    if (Date.now() - cached.timestamp > cached.ttl) {
+        cache.delete(key);
+        return null;
+    }
+    
+    return cached.data;
+}
+
+function setCache(key: string, data: any, ttl: number): void {
+    cache.set(key, {
+        data,
+        timestamp: Date.now(),
+        ttl
+    });
+}
+
+function invalidateCache(pattern?: string): void {
+    if (!pattern) {
+        cache.clear();
+        return;
+    }
+    
+    for (const key of cache.keys()) {
+        if (key.includes(pattern)) {
+            cache.delete(key);
+        }
+    }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const API_BASE_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
     
@@ -20,6 +63,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     apiLogger.logApiRequest(req, res);
     
     try {
+        // Check cache for GET requests
+        if (req.method === 'GET') {
+            const cacheKey = getCacheKey(req);
+            const cachedData = getFromCache(cacheKey);
+            
+            if (cachedData) {
+                apiLogger.info('Serving from cache', { cacheKey });
+                
+                // Set cache headers
+                res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=300');
+                res.setHeader('X-Cache', 'HIT');
+                
+                return res.status(200).json(cachedData);
+            }
+        }
+
         if (req.method !== 'GET') {
             const token = await getToken({ req });
             
@@ -34,6 +93,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     error: 'Authentication required'
                 });
             }
+            
+            // Invalidate cache on mutations
+            invalidateCache('stories');
         }
 
         let apiUrl = `${API_BASE_URL}/stories`;
@@ -114,6 +176,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const data = await response.json();
+        
+        // Cache successful GET responses
+        if (req.method === 'GET') {
+            const cacheKey = getCacheKey(req);
+            const { include_drafts } = req.query;
+            const ttl = include_drafts === 'true' ? CACHE_TTL : PUBLIC_CACHE_TTL;
+            
+            setCache(cacheKey, data, ttl);
+            apiLogger.info('Cached response', { cacheKey, ttl });
+            
+            // Set cache headers
+            res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=300');
+            res.setHeader('X-Cache', 'MISS');
+        }
+        
         return res.status(200).json(data);
     } catch (error) {
         console.error('Fatal error in /api/stories:', error);

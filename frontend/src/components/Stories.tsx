@@ -5,9 +5,10 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
-import { Story } from '@/types/api';
+import { Story, PaginatedResponse } from '@/types/api';
 import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
-import { sanitizeHtml } from '@/utils/sanitizer';
+import { StoriesListSkeleton } from '@/components/LoadingSkeletons';
+import { LazyStoryContent } from '@/components/LazyStoryContent';
 
 /**
  * Safely gets the story URL based on the slug
@@ -92,11 +93,9 @@ const StoryItem = React.memo(({
             
             {!isDraft && (
                 <Link href={storyPath} className="block">
-                    <div
+                    <LazyStoryContent 
+                        content={story.content}
                         className="story-content prose--card"
-                        dangerouslySetInnerHTML={{
-                            __html: sanitizeHtml(story.content),
-                        }}
                     />
                     <div className="mt-4">
                         <span className="btn btn--secondary btn--sm">
@@ -106,11 +105,9 @@ const StoryItem = React.memo(({
                 </Link>
             )}
             {isDraft && (
-                <div
+                <LazyStoryContent 
+                    content={story.content}
                     className="story-content prose--card"
-                    dangerouslySetInnerHTML={{
-                        __html: sanitizeHtml(story.content),
-                    }}
                 />
             )}
         </div>
@@ -119,7 +116,12 @@ const StoryItem = React.memo(({
 
 StoryItem.displayName = 'StoryItem';
 
-const Stories: React.FC = () => {
+interface StoriesProps {
+    initialData?: PaginatedResponse<Story>;
+    initialError?: string;
+}
+
+const Stories: React.FC<StoriesProps> = ({ initialData, initialError }) => {
     const { data: session } = useSession();
     const router = useRouter();
     const { 
@@ -129,10 +131,11 @@ const Stories: React.FC = () => {
         fetchStories, 
         hasMore, 
         resetStories 
-    } = useFetchStories();
+    } = useFetchStories(initialData, initialError);
     const { deleteStory, loading: deleteLoading } = useStoryOperations();
     
     // Initialize data on component mount
+    
     useEffect(() => {
         resetStories();
     }, [resetStories]);
@@ -194,6 +197,11 @@ const Stories: React.FC = () => {
                 </button>
             </div>
         );
+    }
+
+    // Handle initial loading state
+    if (stories.length === 0 && loading) {
+        return <StoriesListSkeleton count={3} />;
     }
 
     // Handle empty state

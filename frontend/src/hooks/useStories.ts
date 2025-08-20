@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import apiClient, { ApiRequestError } from '@/lib/api-client';
-import { Story, CreateStoryRequest } from '@/types/api';
+import { Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
 import { handleAuthError } from '@/lib/auth';
 
 const STORIES_PAGE_SIZE = 5;
@@ -13,15 +13,15 @@ const STORIES_PAGE_SIZE = 5;
 /**
  * Hook for fetching stories with infinite scrolling support
  */
-export function useFetchStories() {
+export function useFetchStories(initialData?: PaginatedResponse<Story>, initialError?: string) {
   const { data: session } = useSession();
-  const [stories, setStories] = useState<Story[]>([]);
+  const [stories, setStories] = useState<Story[]>(initialData?.items || []);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [totalStories, setTotalStories] = useState(0);
+  const [error, setError] = useState<string | null>(initialError || null);
+  const [hasMore, setHasMore] = useState(initialData ? initialData.items.length < initialData.total : true);
+  const [totalStories, setTotalStories] = useState(initialData?.total || 0);
   
-  const offsetRef = useRef(0);
+  const offsetRef = useRef(initialData?.items.length || 0);
   const isMountedRef = useRef(false);
   const tokenRef = useRef(session?.accessToken);
   const loadingRef = useRef(loading);
@@ -90,10 +90,12 @@ export function useFetchStories() {
   /* eslint-disable react-hooks/exhaustive-deps */
   // Load initial data only once after mounting
   useEffect(() => {
-    // Only fetch on first mount
+    // Only fetch on first mount if we don't have initial data
     if (!isMountedRef.current) {
       isMountedRef.current = true;
-      fetchStoriesInternal(true);
+      if (!initialData || initialData.items.length === 0) {
+        fetchStoriesInternal(true);
+      }
     }
   }, []); // Empty dependency array = run once on mount
   

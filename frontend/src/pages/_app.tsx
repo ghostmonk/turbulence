@@ -2,14 +2,64 @@ import '../styles/globals.css';
 import { AppProps } from 'next/app';
 import { SessionProvider } from "next-auth/react";
 import Layout from "@/components/Layout";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { configureDOMPurify } from '@/utils/sanitizer';
+import keepAliveService from '@/lib/keep-alive';
+import { BackendWarmupBanner } from '@/components/LoadingSkeletons';
 
 function MyApp({ Component, pageProps }: AppProps) {
+    const [isWarming, setIsWarming] = useState(false);
+    const [warmupFailed, setWarmupFailed] = useState(false);
+
     useEffect(() => {
         configureDOMPurify();
+        
+        // Start keep-alive service to prevent cold starts
+        keepAliveService.start();
+        
+        // Initial warmup attempt
+        const performWarmup = async () => {
+            setIsWarming(true);
+            setWarmupFailed(false);
+            
+            try {
+                const success = await keepAliveService.warmup();
+                if (!success) {
+                    setWarmupFailed(true);
+                }
+            } catch (error) {
+                console.error('Initial warmup failed:', error);
+                setWarmupFailed(true);
+            } finally {
+                setIsWarming(false);
+            }
+        };
+
+        performWarmup();
+
+        // Cleanup on unmount
+        return () => {
+            keepAliveService.stop();
+        };
     }, []);
+
+    const handleWarmupRetry = async () => {
+        setIsWarming(true);
+        setWarmupFailed(false);
+        
+        try {
+            const success = await keepAliveService.warmup();
+            if (!success) {
+                setWarmupFailed(true);
+            }
+        } catch (error) {
+            console.error('Warmup retry failed:', error);
+            setWarmupFailed(true);
+        } finally {
+            setIsWarming(false);
+        }
+    };
 
     return (
         <SessionProvider session={pageProps.session}>
@@ -24,6 +74,11 @@ function MyApp({ Component, pageProps }: AppProps) {
 
             </Head>
             <Layout>
+                <BackendWarmupBanner 
+                    isWarming={isWarming}
+                    warmupFailed={warmupFailed}
+                    onRetry={handleWarmupRetry}
+                />
                 <Component {...pageProps} />
             </Layout>
         </SessionProvider>

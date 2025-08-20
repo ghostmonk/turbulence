@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { formatDate } from '@/utils/formatDate';
 import { getStoryUrl } from '@/utils/urls';
 import { Story } from '@/types/api';
-import { sanitizeHtml } from '@/utils/sanitizer';
+import { LazyStoryContent } from '@/components/LazyStoryContent';
 
 interface StoryPageProps {
   story: Story | null;
@@ -84,11 +84,9 @@ export default function StoryPage({ story, error }: StoryPageProps) {
             )}
           </div>
           
-          <div 
+          <LazyStoryContent 
+            content={story.content}
             className="prose--card lg:prose-lg dark:prose-invert dark:text-gray-200"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(story.content),
-            }}
           />
           
           <div className="mt-10 pt-6">
