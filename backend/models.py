@@ -16,12 +16,14 @@ class StoryCreate(StoryBase):
 class StoryResponse(StoryBase):
     id: str
     slug: str = Field(default="")
-    date: datetime
+    date: datetime | None = None
     createdDate: datetime
     updatedDate: datetime
 
     @field_validator("date", "createdDate", "updatedDate")
-    def ensure_utc(cls, value: datetime) -> datetime:
+    def ensure_utc(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc)

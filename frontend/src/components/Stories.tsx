@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
 import { Story, PaginatedResponse } from '@/types/api';
 import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
-import { sanitizeHtml } from '@/utils/sanitizer';
 import { StoriesListSkeleton } from '@/components/LoadingSkeletons';
 import { LazyStoryContent } from '@/components/LazyStoryContent';
 

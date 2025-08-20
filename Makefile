@@ -63,16 +63,16 @@ test:
 	. $(VENV_ACTIVATE) && pytest
 
 # Docker operations
-docker-build:
+build:
 	docker-compose build
 
-docker-up:
+up:
 	docker-compose up -d
 
-docker-down:
+down:
 	docker-compose down
 
-docker-logs:
+logs:
 	docker-compose logs -f
 
 # Development servers
@@ -107,7 +107,7 @@ clean:
 	find . -type d -name "build" -exec rm -r {} +
 
 # Nuke all Docker resources for a clean slate
-docker-nuke:
+nuke:
 	docker-compose down -v --rmi all --remove-orphans
 	docker system prune -af --volumes
 

@@ -65,6 +65,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   return (
     <div className={`relative overflow-hidden ${className}`} style={style}>
       {/* Placeholder */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
         src={placeholder}
@@ -77,6 +78,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
       
       {/* Actual image */}
       {inView && (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={error ? placeholder : src}
           srcSet={error ? undefined : srcSet}

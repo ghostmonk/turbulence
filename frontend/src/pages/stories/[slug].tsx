@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { formatDate } from '@/utils/formatDate';
 import { getStoryUrl } from '@/utils/urls';
 import { Story } from '@/types/api';
-import { sanitizeHtml } from '@/utils/sanitizer';
 import { LazyStoryContent } from '@/components/LazyStoryContent';
 
 interface StoryPageProps {
