@@ -711,12 +711,41 @@ html.dark {
   margin: var(--space-lg) 0;
   /* Support for aspect-ratio to prevent layout shift */
   display: block;
+  /* Subtle loading state */
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: imageShimmer 1.5s ease-in-out infinite;
+  transition: background 0.3s ease;
 }
 
 .prose--card img[style*="aspect-ratio"] {
   width: 100%;
   /* When aspect-ratio is set, the height will be calculated automatically */
   height: auto;
+}
+
+/* Remove shimmer when image is loaded */
+.prose--card img[data-loaded="true"] {
+  background: transparent;
+  animation: none;
+}
+
+/* Subtle shimmer animation */
+@keyframes imageShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Dark mode shimmer */
+@media (prefers-color-scheme: dark) {
+  .prose--card img {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+  }
 }
 
 /* Legacy wrapper class for gradual migration */

@@ -20,6 +20,56 @@ export const LazyStoryContent: React.FC<LazyStoryContentProps> = ({
     setIsClient(true);
   }, []);
 
+  // Add image load event listeners after content is rendered
+  useEffect(() => {
+    if (!isClient) return;
+
+    const handleImageLoad = (img: HTMLImageElement) => {
+      img.setAttribute('data-loaded', 'true');
+    };
+
+    const handleImageError = (img: HTMLImageElement) => {
+      img.setAttribute('data-loaded', 'true'); // Remove shimmer even on error
+    };
+
+    // Find all images in the content and add load listeners
+    const images = document.querySelectorAll('.prose--card img:not([data-loaded])');
+    
+    images.forEach((img) => {
+      const imageElement = img as HTMLImageElement;
+      
+      // If image is already loaded (cached), mark it immediately
+      if (imageElement.complete && imageElement.naturalWidth > 0) {
+        handleImageLoad(imageElement);
+      } else {
+        // Add event listeners for load/error
+        const onLoad = () => {
+          handleImageLoad(imageElement);
+          imageElement.removeEventListener('load', onLoad);
+          imageElement.removeEventListener('error', onError);
+        };
+        
+        const onError = () => {
+          handleImageError(imageElement);
+          imageElement.removeEventListener('load', onLoad);
+          imageElement.removeEventListener('error', onError);
+        };
+        
+        imageElement.addEventListener('load', onLoad);
+        imageElement.addEventListener('error', onError);
+      }
+    });
+
+    // Cleanup function
+    return () => {
+      images.forEach((img) => {
+        const imageElement = img as HTMLImageElement;
+        imageElement.removeEventListener('load', () => {});
+        imageElement.removeEventListener('error', () => {});
+      });
+    };
+  }, [isClient, content]);
+
   const serverContent = content;
   const clientContent = useMemo(() => {
     if (!isClient) return content;
