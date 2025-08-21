@@ -6,13 +6,16 @@ import { formatDate } from '@/utils/formatDate';
 import { getStoryUrl } from '@/utils/urls';
 import { Story } from '@/types/api';
 import { LazyStoryContent } from '@/components/LazyStoryContent';
+import { extractImageFromContentServer, getDefaultOGImage } from '@/utils/extractImageFromContent';
+import { getBaseUrl } from '@/utils/urls';
 
 interface StoryPageProps {
   story: Story | null;
   error?: string;
+  ogImage: string;
 }
 
-export default function StoryPage({ story, error }: StoryPageProps) {
+export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
   const canonicalUrl = story?.slug ? getStoryUrl(story.slug) : '';
   
   // Create a short excerpt from the content
@@ -61,9 +64,14 @@ export default function StoryPage({ story, error }: StoryPageProps) {
         <meta property="og:description" content={excerpt || `Read the full story on Turbulence Blog`} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:alt" content={`Image from ${story.title}`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:title" content={story.title} />
         <meta name="twitter:description" content={excerpt || `Read the full story on Turbulence Blog`} />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={ogImage} />
         <link rel="canonical" href={canonicalUrl} />
       </Head>
       
@@ -107,7 +115,8 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
     return {
       props: {
         story: null,
-        error: 'Story not found'
+        error: 'Story not found',
+        ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
       }
     };
   }
@@ -122,7 +131,8 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
         return {
           props: {
             story: null,
-            error: 'Story not found'
+            error: 'Story not found',
+            ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
           }
         };
       }
@@ -131,16 +141,24 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
       return {
         props: {
           story: null,
-          error: errorData.detail || `Error: ${response.statusText}`
+          error: errorData.detail || `Error: ${response.statusText}`,
+          ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
         }
       };
     }
     
     const story = await response.json();
     
+    // Extract the first image from the story content for Open Graph
+    const extractedImage = extractImageFromContentServer(story.content);
+    
+    // Use extracted image or fallback to default OG image
+    const ogImage = extractedImage || `${getBaseUrl()}${getDefaultOGImage()}`;
+    
     return {
       props: {
-        story
+        story,
+        ogImage
       }
     };
   } catch (error) {
@@ -149,7 +167,8 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
     return {
       props: {
         story: null,
-        error: error instanceof Error ? error.message : 'Failed to load story'
+        error: error instanceof Error ? error.message : 'Failed to load story',
+        ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
       }
     };
   }
