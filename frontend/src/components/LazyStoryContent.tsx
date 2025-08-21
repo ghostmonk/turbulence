@@ -33,7 +33,7 @@ export const LazyStoryContent: React.FC<LazyStoryContentProps> = ({
           updatedMatch = updatedMatch.replace('>', ' loading="lazy" decoding="async">');
         }
         
-        // Check if image has width and height attributes for aspect ratio
+        // All images now have width and height attributes - add aspect ratio
         const widthMatch = updatedMatch.match(/width=["|'](\d+)["|']/);
         const heightMatch = updatedMatch.match(/height=["|'](\d+)["|']/);
         
