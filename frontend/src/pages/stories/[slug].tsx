@@ -13,21 +13,11 @@ interface StoryPageProps {
   story: Story | null;
   error?: string;
   ogImage: string;
+  excerpt: string;
 }
 
-export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
+export default function StoryPage({ story, error, ogImage, excerpt }: StoryPageProps) {
   const canonicalUrl = story?.slug ? getStoryUrl(story.slug) : '';
-  
-  // Create a short excerpt from the content
-  const createExcerpt = (content: string): string => {
-    // Remove HTML tags and get plain text
-    const div = document.createElement('div');
-    div.innerHTML = content;
-    const text = div.textContent || div.innerText || '';
-    
-    // Trim to 160 chars for meta description
-    return text.substring(0, 157) + '...';
-  };
   
   if (error) {
     return (
@@ -52,16 +42,13 @@ export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
       </div>
     );
   }
-  
-  const excerpt = typeof window !== 'undefined' ? createExcerpt(story.content) : '';
-
   return (
     <>
       <Head>
         <title>{story.title} | Turbulence Blog</title>
         <meta name="description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta property="og:title" content={story.title} />
-        <meta property="og:description" content={excerpt || `Read the full story on ghostmonk.com`} />
+        <meta property="og:description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImage} />
@@ -69,7 +56,7 @@ export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta name="twitter:title" content={story.title} />
-        <meta name="twitter:description" content={excerpt || `Read the full story on ghostmonk.com`} />
+        <meta name="twitter:description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={ogImage} />
         <link rel="canonical" href={canonicalUrl} />
@@ -108,17 +95,30 @@ export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
   );
 }
 
+function createErrorProps(error: string, excerpt?: string): StoryPageProps {
+  return {
+    story: null,
+    error,
+    ogImage: `${getBaseUrl()}${getDefaultOGImage()}`,
+    excerpt: excerpt || 'Browse stories and updates on Turbulence'
+  };
+}
+
+async function processStoryDataSS(story: any): Promise<{ ogImage: string; excerpt: string }> {
+  const { createExcerptServer } = await import('@/utils/serverUtils');
+  
+  const extractedImage = extractImageFromContentServer(story.content);
+  const excerpt = createExcerptServer(story.content);
+  const ogImage = extractedImage || `${getBaseUrl()}${getDefaultOGImage()}`;
+  
+  return { ogImage, excerpt };
+}
+
 export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (context) => {
   const { slug } = context.params || {};
 
   if (!slug || typeof slug !== 'string') {
-    return {
-      props: {
-        story: null,
-        error: 'Story not found',
-        ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
-      }
-    };
+    return { props: createErrorProps('Story not found') };
   }
 
   try {
@@ -128,48 +128,26 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
     
     if (!response.ok) {
       if (response.status === 404) {
-        return {
-          props: {
-            story: null,
-            error: 'Story not found',
-            ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
-          }
-        };
+        return { props: createErrorProps('Story not found') };
       }
       
       const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      return {
-        props: {
-          story: null,
-          error: errorData.detail || `Error: ${response.statusText}`,
-          ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
-        }
-      };
+      return { props: createErrorProps(errorData.detail || `Error: ${response.statusText}`) };
     }
     
     const story = await response.json();
-    
-    // Extract the first image from the story content for Open Graph
-    const extractedImage = extractImageFromContentServer(story.content);
-    
-    // Use extracted image or fallback to default OG image
-    const ogImage = extractedImage || `${getBaseUrl()}${getDefaultOGImage()}`;
+    const { ogImage, excerpt } = await processStoryDataSS(story);
     
     return {
       props: {
         story,
-        ogImage
+        ogImage,
+        excerpt
       }
     };
   } catch (error) {
     console.error('Error fetching story by slug:', error);
-    
-    return {
-      props: {
-        story: null,
-        error: error instanceof Error ? error.message : 'Failed to load story',
-        ogImage: `${getBaseUrl()}${getDefaultOGImage()}`
-      }
-    };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load story';
+    return { props: createErrorProps(errorMessage) };
   }
 }; 

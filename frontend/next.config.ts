@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
             bodySizeLimit: '4mb'
         },
     },
+
     // Add rewrites to proxy static uploads to backend API based on explicit env var
     async rewrites() {
         // For Docker: backend:5001, for local dev: localhost:5001
