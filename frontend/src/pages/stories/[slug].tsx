@@ -109,7 +109,13 @@ async function processStoryDataSS(story: any): Promise<{ ogImage: string; excerp
   
   const extractedImage = extractImageFromContentServer(story.content);
   const excerpt = createExcerptServer(story.content);
-  const ogImage = extractedImage || `${getBaseUrl()}${getDefaultOGImage()}`;
+  
+  // Convert relative URLs to absolute for social media
+  let ogImage = extractedImage;
+  if (ogImage && ogImage.startsWith('/')) {
+    ogImage = `${getBaseUrl()}${ogImage}`;
+  }
+  ogImage = ogImage || `${getBaseUrl()}${getDefaultOGImage()}`;
   
   return { ogImage, excerpt };
 }
