@@ -138,8 +138,8 @@ async def get_image(request: Request, filename: str, size: Optional[int] = None)
         handle_error(e, "accessing image")
 
 
-async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
-    """Process a single uploaded file and return (primary_url, srcset)."""
+async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str, int, int]:
+    """Process a single uploaded file and return (primary_url, srcset, width, height)."""
     contents = await file.read()
     file_size = len(contents)
     validate_image(file.content_type, file_size)
@@ -147,8 +147,15 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
     base_name, extension = os.path.splitext(new_filename)
     webp_extension = f".{OUTPUT_FORMAT}"
 
+    # Get original image dimensions for aspect ratio calculation
+    original_image = Image.open(io.BytesIO(contents))
+    original_image = ImageOps.exif_transpose(original_image)
+    original_width, original_height = original_image.size
+
     srcset_entries = []
     primary_url = None
+    final_width = original_width
+    final_height = original_height
 
     for size in IMAGE_SIZES:
         sized_filename = (
@@ -169,22 +176,27 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str]:
         srcset_entries.append(f"{url} {size}w")
         if size == max(IMAGE_SIZES):
             primary_url = url
+            # Calculate final dimensions for the largest size
+            if original_width > size:
+                final_width = size
+                final_height = int(original_height * size / original_width)
 
-    return primary_url, ", ".join(srcset_entries)
+    return primary_url, ", ".join(srcset_entries), final_width, final_height
 
 
-@router.post("/uploads", response_model=Dict[str, List[str]])
+@router.post("/uploads")
 @requires_auth
 async def upload_images(request: Request, files: List[UploadFile] = File(...)):
     try:
-        uploaded_files = {"urls": [], "srcsets": []}
+        uploaded_files = {"urls": [], "srcsets": [], "dimensions": []}
         bucket = get_gcs_bucket()
 
         for file in files:
             try:
-                primary_url, srcset = await process_single_file(file, bucket)
+                primary_url, srcset, width, height = await process_single_file(file, bucket)
                 uploaded_files["urls"].append(primary_url)
                 uploaded_files["srcsets"].append(srcset)
+                uploaded_files["dimensions"].append({"width": width, "height": height})
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {str(e)}")
                 handle_error(e, f"uploading image {file.filename}")

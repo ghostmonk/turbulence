@@ -70,7 +70,14 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 const updatedContent = content.replace(loadingText, '');
                 editor?.commands.setContent(updatedContent);
                 
-                if (data.srcsets && data.srcsets.length > 0) {
+                if (data.srcsets && data.srcsets.length > 0 && data.dimensions && data.dimensions.length > 0) {
+                    const srcUrl = data.urls[0];
+                    const srcset = data.srcsets[0];
+                    const dimensions = data.dimensions[0];
+                    const imgHTML = `<img src="${srcUrl}" srcset="${srcset}" sizes="(max-width: 500px) 500px, (max-width: 750px) 750px, 1200px" width="${dimensions.width}" height="${dimensions.height}" alt="${file.name}" />`;
+                    editor?.commands.insertContent(imgHTML);
+                } else if (data.srcsets && data.srcsets.length > 0) {
+                    // Fallback without dimensions
                     const srcUrl = data.urls[0];
                     const srcset = data.srcsets[0];
                     const imgHTML = `<img src="${srcUrl}" srcset="${srcset}" sizes="(max-width: 500px) 500px, (max-width: 750px) 750px, 1200px" alt="${file.name}" />`;
