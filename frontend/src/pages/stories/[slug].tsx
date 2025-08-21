@@ -59,9 +59,9 @@ export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
     <>
       <Head>
         <title>{story.title} | Turbulence Blog</title>
-        <meta name="description" content={excerpt || `${story.title} - Read the full story on Turbulence Blog`} />
+        <meta name="description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta property="og:title" content={story.title} />
-        <meta property="og:description" content={excerpt || `Read the full story on Turbulence Blog`} />
+        <meta property="og:description" content={excerpt || `Read the full story on ghostmonk.com`} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImage} />
@@ -69,7 +69,7 @@ export default function StoryPage({ story, error, ogImage }: StoryPageProps) {
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta name="twitter:title" content={story.title} />
-        <meta name="twitter:description" content={excerpt || `Read the full story on Turbulence Blog`} />
+        <meta name="twitter:description" content={excerpt || `Read the full story on ghostmonk.com`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={ogImage} />
         <link rel="canonical" href={canonicalUrl} />
