@@ -709,6 +709,14 @@ html.dark {
   max-width: 100%;
   height: auto;
   margin: var(--space-lg) 0;
+  /* Support for aspect-ratio to prevent layout shift */
+  display: block;
+}
+
+.prose--card img[style*="aspect-ratio"] {
+  width: 100%;
+  /* When aspect-ratio is set, the height will be calculated automatically */
+  height: auto;
 }
 
 /* Legacy wrapper class for gradual migration */
