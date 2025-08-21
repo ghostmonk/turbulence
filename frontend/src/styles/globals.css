@@ -650,6 +650,15 @@ html.dark {
   border-color: var(--color-border-primary);
 }
 
+.prose img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: 0 2px 8px var(--color-shadow-light);
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-lg) 0;
+}
+
 /* Card prose variant - full width for card content */
 .prose--card {
   max-width: none;
@@ -691,6 +700,15 @@ html.dark {
 
 .prose--card hr {
   border-color: var(--color-border-primary);
+}
+
+.prose--card img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: 0 2px 8px var(--color-shadow-light);
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-lg) 0;
 }
 
 /* Legacy wrapper class for gradual migration */
