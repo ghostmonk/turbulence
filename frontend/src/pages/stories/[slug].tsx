@@ -104,13 +104,22 @@ function createErrorProps(error: string, excerpt?: string): StoryPageProps {
   };
 }
 
-async function processStoryDataSS(story: any): Promise<{ ogImage: string; excerpt: string }> {
-  const { createExcerptServer } = await import('@/utils/serverUtils');
+async function processStoryDataSSR(story: any): Promise<{ ogImage: string; excerpt: string }> {
+  const extractedImage = await extractImageFromContentServer(story.content);
+  let excerpt = '';
+  try {
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(story.content);
+    $('script, style').remove();
+    const text = $.text();
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    const metaLength = 157;
+    excerpt = normalized.length > metaLength ? normalized.substring(0, metaLength) + '...' : normalized;
+  } catch (error) {
+    console.error('Error creating excerpt:', error);
+    excerpt = 'Browse stories and updates on Turbulence';
+  }
   
-  const extractedImage = extractImageFromContentServer(story.content);
-  const excerpt = createExcerptServer(story.content);
-  
-  // Convert relative URLs to absolute for social media
   let ogImage = extractedImage;
   if (ogImage && ogImage.startsWith('/')) {
     ogImage = `${getBaseUrl()}${ogImage}`;
@@ -142,7 +151,7 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
     }
     
     const story = await response.json();
-    const { ogImage, excerpt } = await processStoryDataSS(story);
+    const { ogImage, excerpt } = await processStoryDataSSR(story);
     
     return {
       props: {

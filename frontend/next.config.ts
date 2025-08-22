@@ -14,6 +14,18 @@ const nextConfig: NextConfig = {
             bodySizeLimit: '4mb'
         },
     },
+    
+    // Configure webpack to exclude server-only modules from client bundle
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+            // Prevent cheerio from being bundled on client side
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                cheerio: false,
+            };
+        }
+        return config;
+    },
 
     // Add rewrites to proxy static uploads to backend API based on explicit env var
     async rewrites() {

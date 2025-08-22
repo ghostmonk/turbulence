@@ -33,27 +33,20 @@ export function extractImageFromContent(htmlContent: string): string | null {
 }
 
 /**
- * Server-side version that safely extracts image URL using zero dependencies
- * This is specifically for use in getServerSideProps
- * 
- * Uses a well-crafted regex that handles:
- * - Single and double quotes
- * - Various attribute orders
- * - Whitespace variations
- * - Self-closing and regular img tags
+ * Server-side version that extracts image URL using cheerio
+ * This is specifically for use in getServerSideProps where cheerio is available
  */
-export function extractImageFromContentServer(htmlContent: string): string | null {
+export async function extractImageFromContentServer(htmlContent: string): Promise<string | null> {
   if (!htmlContent) return null;
   
   try {
-    // More robust regex that handles various quote styles and attribute orders
-    // Matches: <img (any attributes) src="value" (any attributes)> or <img (any attributes) src='value' (any attributes)>
-    const imgSrcRegex = /<img[^>]*\ssrc\s*=\s*(['"])((?:(?!\1)[^\\]|\\.)*)(\1)[^>]*>/i;
-    const match = htmlContent.match(imgSrcRegex);
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(htmlContent);
+    const firstImg = $('img').first();
     
-    if (match && match[2]) {
-      // match[2] contains the src value (between the quotes)
-      return match[2].trim();
+    if (firstImg.length > 0) {
+      const src = firstImg.attr('src');
+      return src ? src.trim() : null;
     }
     
     return null;

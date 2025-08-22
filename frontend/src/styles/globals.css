@@ -711,10 +711,7 @@ html.dark {
   margin: var(--space-lg) 0;
   /* Support for aspect-ratio to prevent layout shift */
   display: block;
-  /* Subtle loading state */
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
-  background-size: 200% 100%;
-  animation: imageShimmer 1.5s ease-in-out infinite;
+  /* Transition for smooth loading */
   transition: background 0.3s ease;
 }
 
@@ -740,12 +737,31 @@ html.dark {
   }
 }
 
-/* Dark mode shimmer */
+/* Default light mode shimmer */
+.prose--card img:not([data-loaded="true"]) {
+  background: linear-gradient(90deg, #e5e7eb 25%, #d1d5db 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: imageShimmer 1.5s ease-in-out infinite;
+}
+
+/* Explicit light mode when theme toggle is used */
+html:not(.dark) .prose--card img:not([data-loaded="true"]) {
+  background: linear-gradient(90deg, #e5e7eb 25%, #d1d5db 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+}
+
+/* Dark mode shimmer - system preference (only when no manual theme set) */
 @media (prefers-color-scheme: dark) {
-  .prose--card img {
+  html:not([data-theme]) .prose--card img:not([data-loaded="true"]) {
     background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
     background-size: 200% 100%;
   }
+}
+
+/* Dark mode shimmer - manual theme toggle (highest specificity) */
+.dark .prose--card img:not([data-loaded="true"]) {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
 }
 
 /* Legacy wrapper class for gradual migration */
