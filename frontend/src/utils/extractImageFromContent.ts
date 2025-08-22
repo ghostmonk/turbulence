@@ -8,11 +8,11 @@
 
 const DEFAULT_OG_IMAGE = '/og-default.svg'; // Fallback Open Graph image
 
-export function extractImageFromContent(htmlContent: string): string | null {
+export async function extractImageFromContent(htmlContent: string): Promise<string | null> {
   if (!htmlContent) return null;
   
   try {
-    const imageSrc = extractImageFromContentServer(htmlContent);
+    const imageSrc = await extractImageFromContentServer(htmlContent);
     
     if (imageSrc) {
       // If it's a relative URL, make it absolute
