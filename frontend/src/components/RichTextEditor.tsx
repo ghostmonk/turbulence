@@ -19,7 +19,59 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             Link.configure({
                 openOnClick: false,
             }),
-            Image,
+            Image.extend({
+                addAttributes() {
+                    return {
+                        ...this.parent?.(),
+                        width: {
+                            default: null,
+                            parseHTML: element => element.getAttribute('width'),
+                            renderHTML: attributes => {
+                                if (!attributes.width) {
+                                    return {}
+                                }
+                                return { width: attributes.width }
+                            },
+                        },
+                        height: {
+                            default: null,
+                            parseHTML: element => element.getAttribute('height'),
+                            renderHTML: attributes => {
+                                if (!attributes.height) {
+                                    return {}
+                                }
+                                return { height: attributes.height }
+                            },
+                        },
+                        srcset: {
+                            default: null,
+                            parseHTML: element => element.getAttribute('srcset'),
+                            renderHTML: attributes => {
+                                if (!attributes.srcset) {
+                                    return {}
+                                }
+                                return { srcset: attributes.srcset }
+                            },
+                        },
+                        sizes: {
+                            default: null,
+                            parseHTML: element => element.getAttribute('sizes'),
+                            renderHTML: attributes => {
+                                if (!attributes.sizes) {
+                                    return {}
+                                }
+                                return { sizes: attributes.sizes }
+                            },
+                        },
+                    }
+                },
+            }).configure({
+                HTMLAttributes: {
+                    class: 'responsive-image',
+                },
+                allowBase64: false,
+                inline: false,
+            }),
         ],
         content: content,
         onUpdate: ({ editor }) => {
