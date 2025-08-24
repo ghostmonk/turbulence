@@ -199,6 +199,46 @@
   margin: var(--space-lg) 0;
 }
 
+/* Editor Videos */
+.ProseMirror .video-wrapper {
+  margin: var(--space-lg) 0;
+  position: relative;
+}
+
+.ProseMirror video {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px var(--color-shadow-light);
+  background-color: #000; /* Keep black for video player consistency */
+  border: 1px solid var(--color-border-primary);
+}
+
+.ProseMirror .video-wrapper .video-overlay {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
+}
+
+/* Video loading state */
+.ProseMirror .video-wrapper .video-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  background-color: var(--color-surface-secondary);
+  border: 2px dashed var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+}
+
 /* Editor Horizontal Rule */
 .ProseMirror hr {
   margin: var(--space-3xl) 0;
@@ -289,4 +329,15 @@
 .dark .ProseMirror blockquote {
   border-left-color: var(--color-border-primary);
   background-color: var(--color-surface-tertiary);
+}
+
+/* Dark mode video styles */
+.dark .ProseMirror video {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border-primary);
+}
+
+.dark .ProseMirror .video-wrapper .video-loading {
+  background-color: var(--color-surface-tertiary);
+  border-color: var(--color-border-primary);
 } 

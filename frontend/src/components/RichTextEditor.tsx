@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
+import { VideoExtension } from './VideoExtension';
 import { appLogger } from '@/utils/logger';
 
 interface RichTextEditorProps {
@@ -12,6 +13,7 @@ interface RichTextEditorProps {
 
 export default function RichTextEditor({ onChange, content = "" }: RichTextEditorProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
     
     const editor = useEditor({
         extensions: [
@@ -72,6 +74,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 allowBase64: false,
                 inline: false,
             }),
+            VideoExtension,
         ],
         content: content,
         onUpdate: ({ editor }) => {
@@ -152,6 +155,65 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             fileInputRef.current.value = '';
         }
     };
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files.length) return;
+        
+        try {
+            const file = e.target.files[0];
+            
+            const formData = new FormData();
+            formData.append('files', file);
+            
+            const loadingText = `[Uploading video ${file.name}...]`;
+            editor?.commands.insertContent(loadingText);
+            
+            const response = await fetch('/api/upload-proxy', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include',
+            });
+            
+            appLogger.info('Video upload response received', { status: response.status });
+            
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => 'No error details');
+                const error = new Error(`Failed to upload video: ${response.status}`);
+                appLogger.error('Video upload failed', error, { status: response.status, errorText });
+                throw error;
+            }
+            
+            const data = await response.json();
+            appLogger.info('Video upload successful', { data });
+            
+            if (data && data.urls && data.urls.length > 0) {
+                const content = editor?.getHTML() || '';
+                const updatedContent = content.replace(loadingText, '');
+                editor?.commands.setContent(updatedContent);
+                
+                // Insert video with basic attributes
+                const videoUrl = data.urls[0];
+                const dimensions = data.dimensions?.[0] || { width: 1280, height: 720 };
+                
+                (editor?.commands as any).setVideo({
+                    src: videoUrl,
+                    width: dimensions.width,
+                    height: dimensions.height,
+                });
+            }
+        } catch (error) {
+            appLogger.error('Error uploading video', error instanceof Error ? error : new Error(String(error)));
+            const content = editor?.getHTML() || '';
+            const loadingPattern = /\[Uploading video .*?\]/g;
+            const updatedContent = content.replace(loadingPattern, '');
+            editor?.commands.setContent(updatedContent);
+            alert('Failed to upload video. Please try again.');
+        }
+        
+        if (videoInputRef.current) {
+            videoInputRef.current.value = '';
+        }
+    };
     
     if (!editor) {
         return <div>Loading editor...</div>;
@@ -216,12 +278,26 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 >
                     Image
                 </button>
+                <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800"
+                >
+                    Video
+                </button>
                 <input 
                     type="file" 
                     ref={fileInputRef} 
                     className="hidden" 
                     accept="image/jpeg,image/png,image/gif,image/webp"
                     onChange={handleImageUpload}
+                />
+                <input 
+                    type="file" 
+                    ref={videoInputRef} 
+                    className="hidden" 
+                    accept="video/mp4,video/webm,video/quicktime,video/avi"
+                    onChange={handleVideoUpload}
                 />
             </div>
             <EditorContent editor={editor} className="border p-3 rounded min-h-[400px] dark:bg-gray-800 dark:text-white" />
