@@ -5,7 +5,7 @@ import os
 import traceback
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -13,13 +13,16 @@ from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from google.oauth2 import service_account
 from logger import logger
+from models import MediaDimensions, ProcessedMediaFile, UploadResponse
 from PIL import Image, ImageOps
 
 router = APIRouter()
 
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/avi"]
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
+MAX_VIDEO_SIZE = 100 * 1024 * 1024
 MAX_IMAGE_LENGTH = 1200
 IMAGE_SIZES = [1200, 750, 500]
 OUTPUT_FORMAT = "webp"
@@ -51,9 +54,26 @@ def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
         return None
 
 
+def set_media_response_headers(response, request: Request):
+    """Set consistent headers for media responses (both redirect and streaming)."""
+    # Cache headers - mobile-friendly, always revalidate
+    response.headers["Cache-Control"] = "public, max-age=3600, no-cache"
+    response.headers["Vary"] = "Accept-Encoding, Origin"
+
+    # CORS headers - only for allowed origins
+    origin = request.headers.get("origin", "")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    # No CORS header for unauthorized domains - blocks cross-origin requests
+
+    # Security and method headers
+    response.headers["Access-Control-Allow-Methods"] = "GET"
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+
+
 @router.options("/uploads/{filename:path}")
-async def options_image(request: Request, filename: str):
-    """Handle CORS preflight requests for images"""
+async def options_media(request: Request, filename: str):
+    """Handle CORS preflight requests for images and videos"""
     from fastapi.responses import Response
 
     response = Response()
@@ -67,9 +87,9 @@ async def options_image(request: Request, filename: str):
 
 
 @router.get("/uploads/{filename:path}")
-async def get_image(request: Request, filename: str, size: Optional[int] = None):
+async def get_media(request: Request, filename: str, size: Optional[int] = None):
     try:
-        logger.info(f"Image request received: {filename}, size: {size}")
+        logger.info(f"Media request received: {filename}, size: {size}")
 
         # Log request headers to help debug mobile issues
         user_agent = request.headers.get("user-agent", "Unknown")
@@ -88,60 +108,48 @@ async def get_image(request: Request, filename: str, size: Optional[int] = None)
         blob = bucket.blob(blob_path)
 
         if not blob.exists():
-            logger.error(f"Image not found: {blob_path}")
-            raise HTTPException(status_code=404, detail="Image not found")
+            logger.error(f"Media file not found: {blob_path}")
+            raise HTTPException(status_code=404, detail="Media file not found")
 
-        logger.info(f"Image found, attempting to generate signed URL for: {blob_path}")
+        logger.info(f"Media file found, attempting to generate signed URL for: {blob_path}")
 
-        # Try to generate signed URL, fall back to streaming if it fails
         signed_url = generate_signed_url_or_none(blob, blob_path)
         if signed_url:
-            logger.info(f"Redirecting image request to signed URL: {filename}")
-            # Use 307 to preserve the original request method and add cache headers
+            logger.info(f"Redirecting media request to signed URL: {filename}")
             response = RedirectResponse(url=signed_url, status_code=307)
-            # Add headers to prevent auth/CORS issues on mobile
-            # Mobile-friendly cache headers to prevent overly aggressive caching
-            response.headers["Cache-Control"] = (
-                "public, max-age=3600, no-cache"  # Cache but always revalidate
-            )
-            response.headers["Vary"] = "Accept-Encoding, Origin"
-            origin = request.headers.get("origin", "")
-            if origin in ALLOWED_ORIGINS:
-                response.headers["Access-Control-Allow-Origin"] = origin
-            # No CORS header for any other case - blocks cross-origin requests from unauthorized domains
-            response.headers["Access-Control-Allow-Methods"] = "GET"
-            response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+            set_media_response_headers(response, request)
             return response
 
-        # Fallback: Stream the image through the server
         logger.info(f"Falling back to streaming response for: {filename}")
         content_type = blob.content_type or "application/octet-stream"
-        image_data = blob.download_as_bytes()
+        media_data = blob.download_as_bytes()
 
-        # Add cache headers for streaming response too
-        response = StreamingResponse(io.BytesIO(image_data), media_type=content_type)
-        # Mobile-friendly cache headers to prevent overly aggressive caching
-        response.headers["Cache-Control"] = (
-            "public, max-age=3600, no-cache"  # Cache but always revalidate
-        )
-        response.headers["Vary"] = "Accept-Encoding, Origin"
-        origin = request.headers.get("origin", "")
-        if origin in ALLOWED_ORIGINS:
-            response.headers["Access-Control-Allow-Origin"] = origin
-        # No CORS header for any other case - blocks cross-origin requests from unauthorized domains
-        response.headers["Access-Control-Allow-Methods"] = "GET"
-        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        response = StreamingResponse(io.BytesIO(media_data), media_type=content_type)
+        set_media_response_headers(response, request)
         return response
 
     except Exception as e:
-        logger.error(f"Error in get_image for {filename}: {str(e)}")
-        handle_error(e, "accessing image")
+        logger.error(f"Error in get_media for {filename}: {str(e)}")
+        handle_error(e, "accessing media")
 
 
-async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str, int, int]:
-    """Process a single uploaded file and return (primary_url, srcset, width, height)."""
+async def process_single_file(file: UploadFile, bucket) -> ProcessedMediaFile:
+    """Process a single uploaded file and return ProcessedMediaFile."""
     contents = await file.read()
     file_size = len(contents)
+
+    if file.content_type in ALLOWED_IMAGE_TYPES:
+        return await process_image_file(file, contents, file_size, bucket)
+    elif file.content_type in ALLOWED_VIDEO_TYPES:
+        return await process_video_file(file, contents, file_size, bucket)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.content_type}")
+
+
+async def process_image_file(
+    file: UploadFile, contents: bytes, file_size: int, bucket
+) -> ProcessedMediaFile:
+    """Process an image file and return ProcessedMediaFile."""
     validate_image(file.content_type, file_size)
     new_filename = generate_unique_filename(file.filename)
     base_name, extension = os.path.splitext(new_filename)
@@ -181,27 +189,55 @@ async def process_single_file(file: UploadFile, bucket) -> Tuple[str, str, int, 
                 final_width = size
                 final_height = int(original_height * size / original_width)
 
-    return primary_url, ", ".join(srcset_entries), final_width, final_height
+    return ProcessedMediaFile(
+        primary_url=primary_url,
+        srcset=", ".join(srcset_entries),
+        width=final_width,
+        height=final_height,
+    )
 
 
-@router.post("/uploads")
+async def process_video_file(
+    file: UploadFile, contents: bytes, file_size: int, bucket
+) -> ProcessedMediaFile:
+    """Process a video file and return ProcessedMediaFile."""
+    validate_video(file.content_type, file_size)
+    new_filename = generate_unique_filename(file.filename)
+
+    blob_path, _ = await upload_to_gcs(contents, new_filename, file.content_type, bucket)
+
+    # For now, just return the video URL
+    # In Phase 2, we'll add video processing/transcoding
+    primary_url = f"/uploads/{new_filename}"
+
+    # Return placeholder dimensions - in Phase 2 we'll extract these from video metadata
+    return ProcessedMediaFile(
+        primary_url=primary_url, srcset="", width=1280, height=720  # Videos don't use srcset
+    )
+
+
+@router.post("/uploads", response_model=UploadResponse)
 @requires_auth
-async def upload_images(request: Request, files: List[UploadFile] = File(...)):
+async def upload_media(request: Request, files: List[UploadFile] = File(...)) -> UploadResponse:
     try:
-        uploaded_files = {"urls": [], "srcsets": [], "dimensions": []}
+        urls = []
+        srcsets = []
+        dimensions = []
         bucket = get_gcs_bucket()
 
         for file in files:
             try:
-                primary_url, srcset, width, height = await process_single_file(file, bucket)
-                uploaded_files["urls"].append(primary_url)
-                uploaded_files["srcsets"].append(srcset)
-                uploaded_files["dimensions"].append({"width": width, "height": height})
+                processed_file = await process_single_file(file, bucket)
+                urls.append(processed_file.primary_url)
+                srcsets.append(processed_file.srcset)
+                dimensions.append(
+                    MediaDimensions(width=processed_file.width, height=processed_file.height)
+                )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {str(e)}")
-                handle_error(e, f"uploading image {file.filename}")
+                handle_error(e, f"uploading media file {file.filename}")
 
-        return uploaded_files
+        return UploadResponse(urls=urls, srcsets=srcsets, dimensions=dimensions)
 
     except Exception as e:
         handle_error(e, "processing uploads")
@@ -312,6 +348,16 @@ def validate_image(content_type, file_size):
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=400, detail=f"Image too large. Maximum size is {MAX_FILE_SIZE/1024/1024}MB"
+        )
+
+
+def validate_video(content_type, file_size):
+    if content_type not in ALLOWED_VIDEO_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid video type: {content_type}")
+
+    if file_size > MAX_VIDEO_SIZE:
+        raise HTTPException(
+            status_code=400, detail=f"Video too large. Maximum size is {MAX_VIDEO_SIZE/1024/1024}MB"
         )
 
 
