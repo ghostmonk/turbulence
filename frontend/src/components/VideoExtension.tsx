@@ -3,8 +3,34 @@ import { ReactNodeViewRenderer } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
 
+// Video attributes interface
+interface VideoAttributes {
+  src?: string;
+  poster?: string;
+  width?: number;
+  height?: number;
+  controls?: boolean;
+  autoplay?: boolean;
+  muted?: boolean;
+}
+
+// Video command options interface
+interface SetVideoOptions {
+  src: string;
+  poster?: string;
+  width?: number;
+  height?: number;
+}
+
+// Video component props - simplified for TipTap compatibility
+interface VideoComponentProps {
+  node: {
+    attrs: VideoAttributes;
+  };
+}
+
 // Video Node View Component
-function VideoComponent({ node }: any) {
+function VideoComponent({ node }: VideoComponentProps) {
   const { src, poster, width, height, controls = true, autoplay = false, muted = true } = node.attrs;
 
   if (!src) {
@@ -139,7 +165,7 @@ export const VideoExtension = Node.create({
   },
   addCommands() {
     return {
-      setVideo: (options: { src: string; poster?: string; width?: number; height?: number }) => ({ commands }: any) => {
+      setVideo: (options: SetVideoOptions) => ({ commands }: any) => {
         return commands.insertContent({
           type: this.name,
           attrs: options,
