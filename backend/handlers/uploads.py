@@ -4,7 +4,7 @@ import json
 import os
 import traceback
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from decorators.auth import requires_auth
@@ -12,8 +12,9 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from google.oauth2 import service_account
+from handlers.video_processing import video_jobs_collection
 from logger import logger
-from models import MediaDimensions, ProcessedMediaFile, UploadResponse
+from models.upload import MediaDimensions, ProcessedMediaFile, UploadResponse
 from PIL import Image, ImageOps
 
 router = APIRouter()
@@ -206,13 +207,47 @@ async def process_video_file(
 
     blob_path, _ = await upload_to_gcs(contents, new_filename, file.content_type, bucket)
 
-    # For now, just return the video URL
-    # In Phase 2, we'll add video processing/transcoding
+    # Create video processing job entry
+    try:
+        job_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc)
+        
+        # Basic video metadata (will be enhanced by Cloud Function)
+        video_metadata = {
+            "duration_seconds": 0.0,  # Will be updated by processing
+            "width": 1280,  # Default, will be updated
+            "height": 720,  # Default, will be updated
+            "file_size": file_size,
+            "content_type": file.content_type,
+            "upload_time": now
+        }
+        
+        job_doc = {
+            "job_id": job_id,
+            "original_file": f"uploads/{new_filename}",
+            "status": "pending",  # Will be updated to 'started' by Cloud Function
+            "created_at": now,
+            "updated_at": now,
+            "metadata": video_metadata,
+            "thumbnail_options": [],
+            "selected_thumbnail_id": "",
+            "processed_formats": [],
+            "error_message": ""
+        }
+        
+        await video_jobs_collection.insert_one(job_doc)
+        logger.info(f"Created video processing job: {job_id} for file: {new_filename}")
+        
+    except Exception as e:
+        logger.error(f"Failed to create video processing job: {str(e)}")
+        
     primary_url = f"/uploads/{new_filename}"
-
-    # Return placeholder dimensions - in Phase 2 we'll extract these from video metadata
+    
     return ProcessedMediaFile(
-        primary_url=primary_url, srcset="", width=1280, height=720  # Videos don't use srcset
+        primary_url=primary_url,
+        srcset="",
+        width=1280,
+        height=720,
     )
 
 

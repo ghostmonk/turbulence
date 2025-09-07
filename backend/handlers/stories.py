@@ -6,7 +6,7 @@ from database import get_collection
 from decorators.auth import requires_auth
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from logger import logger
-from models import StoryCreate, StoryResponse
+from models.story import StoryCreate, StoryResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import ValidationError
 from utils import find_many_and_convert, find_one_and_convert, generate_unique_slug

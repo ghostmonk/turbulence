@@ -13,6 +13,7 @@ from logger import logger
 from middleware.logging_middleware import LoggingMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
+from handlers.video_processing import router as video_processing_router
 
 load_dotenv()
 
@@ -176,6 +177,7 @@ async def warmup():
 
 app.include_router(stories_router)
 app.include_router(uploads_router)
+app.include_router(video_processing_router)
 
 if __name__ == "__main__":
     import uvicorn
