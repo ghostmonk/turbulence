@@ -27,14 +27,22 @@ from models.video import (
 
 router = APIRouter()
 
-# MongoDB connection
+# MongoDB connection - conditional to allow Docker builds without env vars
 MONGODB_URI = os.environ.get("MONGODB_URI")
-if not MONGODB_URI:
-    raise ValueError("MONGODB_URI environment variable not set")
+client = None
+db = None
+video_jobs_collection = None
 
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-db = client.turbulence
-video_jobs_collection = db.video_processing_jobs
+if MONGODB_URI:
+    client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
+    db = client.turbulence
+    video_jobs_collection = db.video_processing_jobs
+
+
+def _check_db_available():
+    """Check if database connection is available."""
+    if video_jobs_collection is None:
+        raise HTTPException(status_code=503, detail="Database connection not available")
 
 
 @router.post("/video-processing/jobs", response_model=VideoProcessingJobCreateResponse)
@@ -42,6 +50,7 @@ async def create_video_processing_job(
     job_data: VideoProcessingJobCreate,
 ) -> VideoProcessingJobCreateResponse:
     """Create a new video processing job (called by Cloud Function)."""
+    _check_db_available()
     try:
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
