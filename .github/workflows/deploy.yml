@@ -4,32 +4,83 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      deploy-backend:
+        description: 'Deploy Backend'
+        type: boolean
+        default: false
+      deploy-frontend:
+        description: 'Deploy Frontend'
+        type: boolean
+        default: false
+      deploy-video-function:
+        description: 'Deploy Video Function'
+        type: boolean
+        default: false
+      deploy-all:
+        description: 'Deploy All Components'
+        type: boolean
+        default: false
 
 jobs:
-  # Detect what changed
+  # Detect what changed (for push) or manual selection (for workflow_dispatch)
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.detect-changes.outputs.backend }}
-      frontend: ${{ steps.detect-changes.outputs.frontend }}
-      video-function: ${{ steps.detect-changes.outputs.video-function }}
+      backend: ${{ steps.determine-deploy.outputs.backend }}
+      frontend: ${{ steps.determine-deploy.outputs.frontend }}
+      video-function: ${{ steps.determine-deploy.outputs.video-function }}
     steps:
       - name: Checkout code
+        if: github.event_name == 'push'
         uses: actions/checkout@v3
         with:
           fetch-depth: 2  # Need at least 2 commits to compare
 
-      - name: Detect changes
+      - name: Detect file changes
+        if: github.event_name == 'push'
         uses: dorny/paths-filter@v2
         id: detect-changes
         with:
           filters: |
             backend:
               - 'backend/**'
+              - '.github/workflows/deploy*.yml'
             frontend:
               - 'frontend/**'
+              - '.github/workflows/deploy*.yml'
             video-function:
               - 'cloud-functions/**'
+              - '.github/workflows/deploy*.yml'
+
+      - name: Determine what to deploy
+        id: determine-deploy
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Manual deployment triggered"
+            
+            # Check deploy-all first
+            if [ "${{ github.event.inputs.deploy-all }}" == "true" ]; then
+              echo "backend=true" >> $GITHUB_OUTPUT
+              echo "frontend=true" >> $GITHUB_OUTPUT
+              echo "video-function=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual: Deploying ALL components"
+            else
+              # Individual selections
+              echo "backend=${{ github.event.inputs.deploy-backend }}" >> $GITHUB_OUTPUT
+              echo "frontend=${{ github.event.inputs.deploy-frontend }}" >> $GITHUB_OUTPUT
+              echo "video-function=${{ github.event.inputs.deploy-video-function }}" >> $GITHUB_OUTPUT
+              echo "🎯 Manual: Backend=${{ github.event.inputs.deploy-backend }}, Frontend=${{ github.event.inputs.deploy-frontend }}, Video=${{ github.event.inputs.deploy-video-function }}"
+            fi
+          else
+            echo "Automatic deployment based on file changes"
+            # Use the path detection results
+            echo "backend=${{ steps.detect-changes.outputs.backend }}" >> $GITHUB_OUTPUT
+            echo "frontend=${{ steps.detect-changes.outputs.frontend }}" >> $GITHUB_OUTPUT
+            echo "video-function=${{ steps.detect-changes.outputs.video-function }}" >> $GITHUB_OUTPUT
+            echo "📁 Auto: Backend=${{ steps.detect-changes.outputs.backend }}, Frontend=${{ steps.detect-changes.outputs.frontend }}, Video=${{ steps.detect-changes.outputs.video-function }}"
+          fi
 
   # Smart deployment with matrix strategy
   deploy:
@@ -44,38 +95,62 @@ jobs:
       matrix:
         include:
           - component: backend
-            condition: ${{ needs.detect-changes.outputs.backend == 'true' }}
           - component: frontend  
-            condition: ${{ needs.detect-changes.outputs.frontend == 'true' }}
           - component: video-function
-            condition: ${{ needs.detect-changes.outputs.video-function == 'true' }}
     
     steps:
-      - name: Skip if no changes
-        if: matrix.condition == 'false'
+      - name: Check if component should deploy
+        id: should-deploy
         run: |
-          echo "⏭️ Skipping ${{ matrix.component }} - no changes detected"
-          exit 0
+          case "${{ matrix.component }}" in
+            "backend")
+              if [ "${{ needs.detect-changes.outputs.backend }}" == "true" ]; then
+                echo "deploy=true" >> $GITHUB_OUTPUT
+                echo "✅ Backend has changes - will deploy"
+              else
+                echo "deploy=false" >> $GITHUB_OUTPUT
+                echo "⏭️ Backend has no changes - will skip"
+              fi
+              ;;
+            "frontend")
+              if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
+                echo "deploy=true" >> $GITHUB_OUTPUT
+                echo "✅ Frontend has changes - will deploy"
+              else
+                echo "deploy=false" >> $GITHUB_OUTPUT
+                echo "⏭️ Frontend has no changes - will skip"
+              fi
+              ;;
+            "video-function")
+              if [ "${{ needs.detect-changes.outputs.video-function }}" == "true" ]; then
+                echo "deploy=true" >> $GITHUB_OUTPUT
+                echo "✅ Video Function has changes - will deploy"
+              else
+                echo "deploy=false" >> $GITHUB_OUTPUT
+                echo "⏭️ Video Function has no changes - will skip"
+              fi
+              ;;
+          esac
 
       - name: Checkout code
-        if: matrix.condition == 'true'
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: actions/checkout@v3
 
       - name: Authenticate to GCP
-        if: matrix.condition == 'true'
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
       - name: Install Google Cloud CLI
-        if: matrix.condition == 'true'
+        if: steps.should-deploy.outputs.deploy == 'true'
         run: |
           echo "Installing Google Cloud CLI..."
           sudo apt-get update
           sudo apt-get install -y google-cloud-cli
 
       - name: Deploy Backend
-        if: matrix.component == 'backend' && matrix.condition == 'true'
+        if: matrix.component == 'backend' && steps.should-deploy.outputs.deploy == 'true'
         run: |
           echo "🚀 Deploying Backend (files changed)"
           gcloud builds submit ./backend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service
@@ -94,7 +169,7 @@ jobs:
             --timeout=600s
 
       - name: Deploy Frontend
-        if: matrix.component == 'frontend' && matrix.condition == 'true'
+        if: matrix.component == 'frontend' && steps.should-deploy.outputs.deploy == 'true'
         run: |
           echo "🚀 Deploying Frontend (files changed)"
           gcloud builds submit ./frontend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend --project=${{ vars.GCP_PROJECT_ID }}
@@ -108,7 +183,7 @@ jobs:
             --timeout=600s
 
       - name: Make Frontend Public
-        if: matrix.component == 'frontend' && matrix.condition == 'true'
+        if: matrix.component == 'frontend' && steps.should-deploy.outputs.deploy == 'true'
         run: |
           gcloud run services add-iam-policy-binding turbulent-frontend \
             --region us-central1 \
@@ -118,7 +193,7 @@ jobs:
             --quiet
 
       - name: Deploy Video Processing Function
-        if: matrix.component == 'video-function' && matrix.condition == 'true'
+        if: matrix.component == 'video-function' && steps.should-deploy.outputs.deploy == 'true'
         run: |
           echo "🚀 Deploying Video Function (files changed)"
           
