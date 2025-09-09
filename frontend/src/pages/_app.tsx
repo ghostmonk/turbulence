@@ -81,8 +81,6 @@ function MyApp({ Component, pageProps }: AppProps) {
                 />
                 <meta name="author" content="Ghostmonk"/>
                 <link rel="canonical" href="https://ghostmonk.com/"/>
-                
-
             </Head>
             <Layout>
                 <BackendWarmupBanner 
