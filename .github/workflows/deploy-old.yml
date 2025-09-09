@@ -1,4 +1,4 @@
-name: Deploy to GCP (Split Jobs)
+name: Deploy to GCP
 
 on:
   push:
@@ -6,30 +6,34 @@ on:
       - main
 
 jobs:
-  # Deploy backend service
-  deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Authenticate with GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
+      # Install Google Cloud CLI with beta components
       - name: Install Google Cloud CLI
         run: |
           echo "Installing Google Cloud CLI..."
           sudo apt-get update
           sudo apt-get install -y google-cloud-cli
 
+      # Build and deploy the backend
       - name: Deploy Backend
         run: |
           gcloud builds submit ./backend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service
           
           # Encode the JSON to base64 to avoid parsing issues
-          GCP_CREDS_B64=$(echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' | base64 -w 0)
+          GCP_CREDS_B64=$(echo '${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}' | base64 -w 0)
           
           gcloud run deploy turbulent-service \
             --image gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service \
@@ -41,63 +45,28 @@ jobs:
             --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS_JSON_B64=${GCP_CREDS_B64}" \
             --timeout=600s
 
-  # Deploy frontend service  
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-
-      - name: Install Google Cloud CLI
+      # Build and deploy the frontend
+      - name: Deploy Frontend
         run: |
-          echo "Installing Google Cloud CLI..."
-          sudo apt-get update
-          sudo apt-get install -y google-cloud-cli
-
-      - name: Build and Deploy Frontend
-        run: |
-          gcloud builds submit ./frontend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend --project=${{ vars.GCP_PROJECT_ID }}
+          gcloud builds submit ./frontend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend
           gcloud run deploy turbulent-frontend \
             --image gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend \
             --platform managed \
             --region us-central1 \
-            --project=${{ vars.GCP_PROJECT_ID }} \
             --allow-unauthenticated \
             --set-env-vars GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }},NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }},NEXTAUTH_DEBUG=${{ vars.NEXTAUTH_DEBUG }},UNSAFE_EVAL=${{ vars.UNSAFE_EVAL }} \
             --timeout=600s
 
+      # Grant public access to the frontend service
       - name: Make Frontend Public
         run: |
           gcloud run services add-iam-policy-binding turbulent-frontend \
             --region us-central1 \
-            --project=${{ vars.GCP_PROJECT_ID }} \
             --member="allUsers" \
             --role="roles/run.invoker" \
             --quiet
 
-  # Deploy video processing function
-  deploy-video-function:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-
-      - name: Install Google Cloud CLI
-        run: |
-          echo "Installing Google Cloud CLI..."
-          sudo apt-get update
-          sudo apt-get install -y google-cloud-cli
-
+      # Deploy containerized Cloud Function for video processing
       - name: Deploy Video Processing Function
         run: |
           echo "Deploying containerized video processing Cloud Function..."
