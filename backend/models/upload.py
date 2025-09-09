@@ -1,36 +1,6 @@
-from datetime import datetime, timezone
 from typing import List
 
-from pydantic import BaseModel, Field, field_validator
-
-
-class StoryBase(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200)
-    content: str = Field(..., min_length=1, max_length=10000)
-    is_published: bool
-
-
-class StoryCreate(StoryBase):
-    pass
-
-
-class StoryResponse(StoryBase):
-    id: str
-    slug: str = Field(default="")
-    date: datetime | None = None
-    createdDate: datetime
-    updatedDate: datetime
-
-    @field_validator("date", "createdDate", "updatedDate")
-    def ensure_utc(cls, value: datetime | None) -> datetime | None:
-        if value is None:
-            return None
-        if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
-
-    class Config:
-        from_attributes = True
+from pydantic import BaseModel
 
 
 class MediaDimensions(BaseModel):
@@ -77,3 +47,11 @@ class UploadResponse(BaseModel):
                 "dimensions": [{"width": 1200, "height": 800}],
             }
         }
+
+
+class ErrorContext(BaseModel):
+    """Context information for error logging."""
+
+    error_type: str
+    error_details: str
+    traceback: str
