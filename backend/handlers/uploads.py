@@ -211,7 +211,7 @@ async def process_video_file(
     try:
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
-        
+
         # Basic video metadata (will be enhanced by Cloud Function)
         video_metadata = {
             "duration_seconds": 0.0,  # Will be updated by processing
@@ -219,9 +219,9 @@ async def process_video_file(
             "height": 720,  # Default, will be updated
             "file_size": file_size,
             "content_type": file.content_type,
-            "upload_time": now
+            "upload_time": now,
         }
-        
+
         job_doc = {
             "job_id": job_id,
             "original_file": f"uploads/{new_filename}",
@@ -232,17 +232,17 @@ async def process_video_file(
             "thumbnail_options": [],
             "selected_thumbnail_id": "",
             "processed_formats": [],
-            "error_message": ""
+            "error_message": "",
         }
-        
+
         await video_jobs_collection.insert_one(job_doc)
         logger.info(f"Created video processing job: {job_id} for file: {new_filename}")
-        
+
     except Exception as e:
         logger.error(f"Failed to create video processing job: {str(e)}")
-        
+
     primary_url = f"/uploads/{new_filename}"
-    
+
     return ProcessedMediaFile(
         primary_url=primary_url,
         srcset="",

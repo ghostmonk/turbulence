@@ -9,11 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from handlers.backfill import backfill_published_flag
 from handlers.stories import router as stories_router
 from handlers.uploads import router as uploads_router
+from handlers.video_processing import router as video_processing_router
 from logger import logger
 from middleware.logging_middleware import LoggingMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
-from handlers.video_processing import router as video_processing_router
 
 load_dotenv()
 

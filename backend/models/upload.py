@@ -1,20 +1,23 @@
 from typing import List
+
 from pydantic import BaseModel
 
 
 class MediaDimensions(BaseModel):
     """Dimensions of a media file."""
+
     width: int
     height: int
 
 
 class ProcessedMediaFile(BaseModel):
     """Result of processing an uploaded media file (image or video)."""
+
     primary_url: str
     srcset: str  # For images: responsive srcset, for videos: empty string
     width: int
     height: int
-    
+
     class Config:
         # Add example for API documentation
         schema_extra = {
@@ -29,10 +32,11 @@ class ProcessedMediaFile(BaseModel):
 
 class UploadResponse(BaseModel):
     """Response from the upload endpoint."""
+
     urls: List[str]
     srcsets: List[str]
     dimensions: List[MediaDimensions]
-    
+
     class Config:
         schema_extra = {
             "example": {

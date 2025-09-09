@@ -3,11 +3,13 @@ Story-related Pydantic models.
 """
 
 from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field, field_validator
 
 
 class StoryBase(BaseModel):
     """Base model for story data."""
+
     title: str = Field(..., min_length=1, max_length=200)
     content: str = Field(..., min_length=1, max_length=10000)
     is_published: bool
@@ -15,11 +17,13 @@ class StoryBase(BaseModel):
 
 class StoryCreate(StoryBase):
     """Model for creating a new story."""
+
     pass
 
 
 class StoryResponse(StoryBase):
     """Model for story API responses."""
+
     id: str
     slug: str = Field(default="")
     date: datetime | None = None
