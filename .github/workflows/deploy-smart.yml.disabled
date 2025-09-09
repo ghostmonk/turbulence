@@ -10,9 +10,9 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.changes.outputs.backend }}
-      frontend: ${{ steps.changes.outputs.frontend }}
-      video-function: ${{ steps.changes.outputs.video-function }}
+      backend: ${{ steps.detect-changes.outputs.backend }}
+      frontend: ${{ steps.detect-changes.outputs.frontend }}
+      video-function: ${{ steps.detect-changes.outputs.video-function }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,7 +21,7 @@ jobs:
 
       - name: Detect changes
         uses: dorny/paths-filter@v2
-        id: changes
+        id: detect-changes
         with:
           filters: |
             backend:
