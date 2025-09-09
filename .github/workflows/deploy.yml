@@ -77,6 +77,7 @@ jobs:
           # Deploy the Cloud Function from Dockerfile
           gcloud functions deploy video-processor \
             --gen2 \
+            --runtime=python311 \
             --project=${{ vars.GCP_PROJECT_ID }} \
             --region=us-central1 \
             --source=./cloud-functions/video-processor \
