@@ -1,4 +1,4 @@
-name: Deploy to GCP (Optimized)
+name: Deploy to GCP (Smart - Only Changed Components)
 
 on:
   push:
@@ -6,13 +6,39 @@ on:
       - main
 
 jobs:
-  deploy:
+  # Detect what changed
+  detect-changes:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false  # Don't stop other deployments if one fails
-      matrix:
-        component: [backend, frontend, video-function]
-    
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      video-function: ${{ steps.changes.outputs.video-function }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # Need at least 2 commits to compare
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/deploy*.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/deploy*.yml'
+            video-function:
+              - 'cloud-functions/**'
+              - '.github/workflows/deploy*.yml'
+
+  # Deploy backend only if backend files changed
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,8 +55,8 @@ jobs:
           sudo apt-get install -y google-cloud-cli
 
       - name: Deploy Backend
-        if: matrix.component == 'backend'
         run: |
+          echo "🚀 Deploying Backend (files changed)"
           gcloud builds submit ./backend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service
           
           # Encode the JSON to base64 to avoid parsing issues
@@ -46,9 +72,29 @@ jobs:
             --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS_JSON_B64=${GCP_CREDS_B64}" \
             --timeout=600s
 
-      - name: Deploy Frontend
-        if: matrix.component == 'frontend'
+  # Deploy frontend only if frontend files changed  
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Install Google Cloud CLI
         run: |
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
+
+      - name: Deploy Frontend
+        run: |
+          echo "🚀 Deploying Frontend (files changed)"
           gcloud builds submit ./frontend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend --project=${{ vars.GCP_PROJECT_ID }}
           gcloud run deploy turbulent-frontend \
             --image gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend \
@@ -60,7 +106,6 @@ jobs:
             --timeout=600s
 
       - name: Make Frontend Public
-        if: matrix.component == 'frontend'
         run: |
           gcloud run services add-iam-policy-binding turbulent-frontend \
             --region us-central1 \
@@ -69,10 +114,29 @@ jobs:
             --role="roles/run.invoker" \
             --quiet
 
-      - name: Deploy Video Processing Function
-        if: matrix.component == 'video-function'
+  # Deploy video function only if cloud function files changed
+  deploy-video-function:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.video-function == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Install Google Cloud CLI
         run: |
-          echo "Deploying containerized video processing Cloud Function..."
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
+
+      - name: Deploy Video Processing Function
+        run: |
+          echo "🚀 Deploying Video Function (files changed)"
           
           # Build MongoDB URI from secrets/vars
           MONGODB_URI="mongodb+srv://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASSWORD }}@${{ vars.MONGO_HOST }}/${{ vars.MONGO_DB_NAME }}?retryWrites=true&w=majority&appName=${{ vars.MONGO_APP_NAME }}"
@@ -93,3 +157,34 @@ jobs:
             --max-instances=5 \
             --cpu=1 \
             --service-account="${{ vars.GCP_SERVICE_ACCOUNT_NAME }}"
+
+  # Summary job to show what was deployed
+  deployment-summary:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-backend, deploy-frontend, deploy-video-function]
+    if: always()
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary 📋"
+          echo "Backend Changed: ${{ needs.detect-changes.outputs.backend }}"
+          echo "Frontend Changed: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "Video Function Changed: ${{ needs.detect-changes.outputs.video-function }}"
+          echo ""
+          if [ "${{ needs.detect-changes.outputs.backend }}" == "true" ]; then
+            echo "✅ Backend deployed"
+          else
+            echo "⏭️ Backend skipped (no changes)"
+          fi
+          
+          if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
+            echo "✅ Frontend deployed"
+          else
+            echo "⏭️ Frontend skipped (no changes)"
+          fi
+          
+          if [ "${{ needs.detect-changes.outputs.video-function }}" == "true" ]; then
+            echo "✅ Video Function deployed"
+          else
+            echo "⏭️ Video Function skipped (no changes)"
+          fi

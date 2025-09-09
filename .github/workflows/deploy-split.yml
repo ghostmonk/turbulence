@@ -1,4 +1,4 @@
-name: Deploy to GCP (Optimized)
+name: Deploy to GCP (Split Jobs)
 
 on:
   push:
@@ -6,13 +6,9 @@ on:
       - main
 
 jobs:
-  deploy:
+  # Deploy backend service
+  deploy-backend:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false  # Don't stop other deployments if one fails
-      matrix:
-        component: [backend, frontend, video-function]
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,7 +25,6 @@ jobs:
           sudo apt-get install -y google-cloud-cli
 
       - name: Deploy Backend
-        if: matrix.component == 'backend'
         run: |
           gcloud builds submit ./backend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service
           
@@ -46,8 +41,25 @@ jobs:
             --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS_JSON_B64=${GCP_CREDS_B64}" \
             --timeout=600s
 
-      - name: Deploy Frontend
-        if: matrix.component == 'frontend'
+  # Deploy frontend service  
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Install Google Cloud CLI
+        run: |
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
+
+      - name: Build and Deploy Frontend
         run: |
           gcloud builds submit ./frontend --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-frontend --project=${{ vars.GCP_PROJECT_ID }}
           gcloud run deploy turbulent-frontend \
@@ -60,7 +72,6 @@ jobs:
             --timeout=600s
 
       - name: Make Frontend Public
-        if: matrix.component == 'frontend'
         run: |
           gcloud run services add-iam-policy-binding turbulent-frontend \
             --region us-central1 \
@@ -69,8 +80,25 @@ jobs:
             --role="roles/run.invoker" \
             --quiet
 
+  # Deploy video processing function
+  deploy-video-function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Install Google Cloud CLI
+        run: |
+          echo "Installing Google Cloud CLI..."
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli
+
       - name: Deploy Video Processing Function
-        if: matrix.component == 'video-function'
         run: |
           echo "Deploying containerized video processing Cloud Function..."
           
