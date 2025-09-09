@@ -55,7 +55,7 @@ def process_video(cloud_event):
     
     # Verify FFmpeg is available
     if not verify_ffmpeg_availability():
-        logger.error("FFmpeg not available - cannot process video file")
+        logger.error("FFmpeg not available - cannot process video")
         return
     
     if not file_name.startswith('uploads/') or not is_video_file(file_name):
