@@ -47,3 +47,11 @@ class UploadResponse(BaseModel):
                 "dimensions": [{"width": 1200, "height": 800}],
             }
         }
+
+
+class ErrorContext(BaseModel):
+    """Context information for error logging."""
+
+    error_type: str
+    error_details: str
+    traceback: str

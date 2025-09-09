@@ -14,7 +14,13 @@ from google.cloud import storage
 from google.oauth2 import service_account
 from handlers.video_processing import video_jobs_collection
 from logger import logger
-from models.upload import MediaDimensions, ProcessedMediaFile, UploadResponse
+from models.upload import (
+    ErrorContext,
+    MediaDimensions,
+    ProcessedMediaFile,
+    UploadResponse,
+)
+from models.video import VideoMetadata, VideoProcessingJob
 from PIL import Image, ImageOps
 
 router = APIRouter()
@@ -212,30 +218,30 @@ async def process_video_file(
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
-        # Basic video metadata (will be enhanced by Cloud Function)
-        video_metadata = {
-            "duration_seconds": 0.0,  # Will be updated by processing
-            "width": 1280,  # Default, will be updated
-            "height": 720,  # Default, will be updated
-            "file_size": file_size,
-            "content_type": file.content_type,
-            "upload_time": now,
-        }
+        # Create video metadata using Pydantic model
+        video_metadata = VideoMetadata(
+            duration_seconds=0.0,  # Will be updated by processing
+            width=1280,  # Default, will be updated
+            height=720,  # Default, will be updated
+            file_size=file_size,
+            content_type=file.content_type,
+            upload_time=now,
+        )
 
-        job_doc = {
-            "job_id": job_id,
-            "original_file": f"uploads/{new_filename}",
-            "status": "pending",  # Will be updated to 'started' by Cloud Function
-            "created_at": now,
-            "updated_at": now,
-            "metadata": video_metadata,
-            "thumbnail_options": [],
-            "selected_thumbnail_id": "",
-            "processed_formats": [],
-            "error_message": "",
-        }
-
-        await video_jobs_collection.insert_one(job_doc)
+        # Create video processing job using Pydantic model
+        job = VideoProcessingJob(
+            job_id=job_id,
+            original_file=f"uploads/{new_filename}",
+            status="pending",  # Will be updated to 'started' by Cloud Function
+            created_at=now,
+            updated_at=now,
+            metadata=video_metadata,
+            thumbnail_options=[],
+            selected_thumbnail_id="",
+            processed_formats=[],
+            error_message="",
+        )
+        await video_jobs_collection.insert_one(job.model_dump())
         logger.info(f"Created video processing job: {job_id} for file: {new_filename}")
 
     except Exception as e:
@@ -397,13 +403,15 @@ def validate_video(content_type, file_size):
 
 
 def handle_error(e, context="operation"):
+    error_context = ErrorContext(
+        error_type=type(e).__name__,
+        error_details=str(e),
+        traceback=traceback.format_exc(),
+    )
+
     logger.exception_with_context(
         f"Uploads: {context}",
-        {
-            "error_type": type(e).__name__,
-            "error_details": str(e),
-            "traceback": traceback.format_exc(),
-        },
+        error_context.model_dump(),
     )
     if not isinstance(e, HTTPException):
         raise HTTPException(status_code=500, detail=f"Error during {context}: {str(e)}")
