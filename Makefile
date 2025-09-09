@@ -107,19 +107,19 @@ test-ci:
 	pytest -v --tb=short --cov=. --cov-report=term-missing
 
 # Docker operations
-docker-build:
+build:
 	docker-compose build
 
-docker-up:
+up:
 	docker-compose up -d
 
-docker-down:
+down:
 	docker-compose down
 
-docker-logs:
+logs:
 	docker-compose logs -f
 
-# Development server
+# Development servers
 dev:
 	@echo "Starting development servers..."
 	@echo "Backend will run on http://localhost:5001"
@@ -129,12 +129,20 @@ dev:
 	make dev-backend & \
 	make dev-frontend & \
 	wait
-
+# 
+# dev-backend: Start Python backend server on port 5001
+# - Activates virtual environment 
+# - Loads all .env variables (excluding comments and empty lines)
+# - Runs uvicorn with hot reload for development
 dev-backend:
-	. $(VENV_ACTIVATE) && cd backend && uvicorn app:app --reload --port 5001
+	. $(VENV_ACTIVATE) && export $$(cat .env | grep -v '^#' | grep -v '^$$' | xargs) && cd backend && uvicorn app:app --reload --port 5001
 
+# dev-frontend: Start Next.js frontend server on port 3000
+# - Loads .env variables but excludes PORT to avoid conflicts
+# - Explicitly sets PORT=3000 to prevent frontend from using backend's port (5001)
+# - The grep filters ensure only valid env vars are exported (no comments/empty lines)
 dev-frontend:
-	cd frontend && npm run dev
+	export $$(cat .env | grep -v '^#' | grep -v '^$$' | grep -v PORT | xargs) && cd frontend && PORT=3000 npm run dev
 
 # Cleanup
 clean:
@@ -152,7 +160,7 @@ clean:
 	find . -type d -name "build" -exec rm -r {} +
 
 # Nuke all Docker resources for a clean slate
-docker-nuke:
+nuke:
 	docker-compose down -v --rmi all --remove-orphans
 	docker system prune -af --volumes
 

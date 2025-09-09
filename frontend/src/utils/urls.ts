@@ -8,10 +8,10 @@
  */
 export function getBaseUrl(): string {
   if (typeof window === 'undefined') {
-    // Server-side
+    // Server-side - always use production domain for Open Graph
     return process.env.NEXT_PUBLIC_SITE_URL || 
            process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-           'http://localhost:3000';
+           'https://www.ghostmonk.com';
   }
   
   // Client-side

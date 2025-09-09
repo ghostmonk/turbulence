@@ -1,0 +1,84 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c1220;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d3748;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Subtle border -->
+  <rect x="2" y="2" width="1196" height="626" fill="none" stroke="#475569" stroke-width="2" opacity="0.3" rx="8"/>
+  
+  <!-- Clean Outlined Skull -->
+  <g transform="translate(600, 200)">
+    <!-- Main skull with tapered jaw -->
+    <path d="M0 -50 C-30 -50, -55 -25, -55 10 C-55 25, -50 40, -35 50 L-30 55 C-32 60, -30 65, -25 70 L-20 75 C-15 80, -12 85, -8 85 L8 85 C12 85, 15 80, 20 75 L25 70 C30 65, 32 60, 30 55 L35 50 C50 40, 55 25, 55 10 C55 -25, 30 -50, 0 -50 Z" 
+          fill="none" stroke="white" stroke-width="6" stroke-linejoin="round" opacity="0.4"/>
+    
+    <!-- Eye sockets - properly positioned -->
+    <circle cx="-18" cy="15" r="10" fill="white" opacity="0.4"/>
+    <circle cx="18" cy="15" r="10" fill="white" opacity="0.4"/>
+    
+    <!-- Nose slits - angled outward -->
+    <ellipse cx="-4" cy="40" rx="2" ry="8" fill="white" opacity="0.4" transform="rotate(15 -4 40)"/>
+    <ellipse cx="4" cy="40" rx="2" ry="8" fill="white" opacity="0.4" transform="rotate(-15 4 40)"/>
+  </g>
+  
+  <!-- Title -->
+  <text x="600" y="380" font-family="'Times New Roman', Times, serif" font-size="72" font-weight="500" fill="#3b82f6" text-anchor="middle">
+    Turbulence
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="420" font-family="'Times New Roman', Times, serif" font-size="28" font-weight="400" fill="#94a3b8" text-anchor="middle">
+    Stories and Such
+  </text>
+  
+  <!-- Ghostmonk branding -->
+  <text x="600" y="460" font-family="'Times New Roman', Times, serif" font-size="18" font-weight="300" fill="#64748b" text-anchor="middle">
+    by Ghostmonk
+  </text>
+  
+  <!-- Decorative stars -->
+  <circle cx="120" cy="80" r="1.5" fill="#94a3b8" opacity="0.6"/>
+  <circle cx="200" cy="150" r="2" fill="#e2e8f0" opacity="0.5"/>
+  <circle cx="300" cy="100" r="1" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="180" cy="520" r="1.5" fill="#cbd5e1" opacity="0.5"/>
+  <circle cx="350" cy="480" r="1" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="900" cy="90" r="2" fill="#e2e8f0" opacity="0.6"/>
+  <circle cx="1050" cy="140" r="1.5" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="980" cy="200" r="1" fill="#cbd5e1" opacity="0.4"/>
+  <circle cx="1100" cy="300" r="1.5" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="950" cy="450" r="2" fill="#e2e8f0" opacity="0.6"/>
+  <circle cx="1020" cy="520" r="1" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="80" cy="300" r="1" fill="#cbd5e1" opacity="0.3"/>
+  <circle cx="150" cy="250" r="1.5" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="250" cy="550" r="1" fill="#e2e8f0" opacity="0.4"/>
+  <circle cx="400" cy="70" r="1" fill="#94a3b8" opacity="0.3"/>
+  <circle cx="800" cy="550" r="1.5" fill="#cbd5e1" opacity="0.5"/>
+  <circle cx="60" cy="150" r="1" fill="#94a3b8" opacity="0.3"/>
+  <circle cx="450" cy="120" r="1.5" fill="#e2e8f0" opacity="0.4"/>
+  <circle cx="520" cy="60" r="1" fill="#cbd5e1" opacity="0.5"/>
+  <circle cx="680" cy="80" r="1" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="750" cy="120" r="1.5" fill="#e2e8f0" opacity="0.3"/>
+  <circle cx="820" cy="110" r="1" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="1150" cy="200" r="1" fill="#cbd5e1" opacity="0.4"/>
+  <circle cx="1080" cy="480" r="1.5" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="1140" cy="550" r="1" fill="#e2e8f0" opacity="0.3"/>
+  <circle cx="50" cy="400" r="1" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="380" cy="580" r="1.5" fill="#cbd5e1" opacity="0.5"/>
+  <circle cx="480" cy="570" r="1" fill="#94a3b8" opacity="0.3"/>
+  <circle cx="680" cy="560" r="1" fill="#e2e8f0" opacity="0.4"/>
+  <circle cx="580" cy="590" r="1.5" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="30" cy="200" r="1" fill="#cbd5e1" opacity="0.3"/>
+  <circle cx="1170" cy="400" r="1" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="320" cy="30" r="1" fill="#e2e8f0" opacity="0.3"/>
+  <circle cx="850" cy="40" r="1.5" fill="#94a3b8" opacity="0.4"/>
+  <circle cx="1000" cy="350" r="1" fill="#cbd5e1" opacity="0.5"/>
+  <circle cx="40" cy="500" r="1" fill="#94a3b8" opacity="0.3"/>
+  <circle cx="420" cy="40" r="1" fill="#e2e8f0" opacity="0.4"/>
+</svg>

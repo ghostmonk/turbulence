@@ -594,6 +594,16 @@ html.dark {
   border-color: var(--color-border-primary);
 }
 
+.prose img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: 0 2px 8px var(--color-shadow-light);
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-lg) 0;
+}
+
+/* Card prose variant - full width for card content */
 .prose--card {
   max-width: none;
   width: 100%;
@@ -636,6 +646,75 @@ html.dark {
   border-color: var(--color-border-primary);
 }
 
+.prose--card img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: 0 2px 8px var(--color-shadow-light);
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-lg) 0;
+  /* Support for aspect-ratio to prevent layout shift */
+  display: block;
+  /* Transition for smooth loading */
+  transition: background 0.3s ease;
+}
+
+.prose--card img[style*="aspect-ratio"] {
+  width: 100%;
+  /* When aspect-ratio is set, the height will be calculated automatically */
+  height: auto;
+}
+
+/* Remove shimmer when image is loaded */
+.prose--card img[data-loaded="true"] {
+  background: transparent;
+  animation: none;
+}
+
+/* Subtle shimmer animation */
+@keyframes imageShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Default light mode shimmer */
+.prose--card img:not([data-loaded="true"]) {
+  background: linear-gradient(90deg, #e5e7eb 25%, #d1d5db 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: imageShimmer 1.5s ease-in-out infinite;
+}
+
+/* Explicit light mode when theme toggle is used */
+html:not(.dark) .prose--card img:not([data-loaded="true"]) {
+  background: linear-gradient(90deg, #e5e7eb 25%, #d1d5db 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+}
+
+/* Dark mode shimmer - system preference (only when no manual theme set) */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .prose--card img:not([data-loaded="true"]) {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+  }
+}
+
+/* Dark mode shimmer - manual theme toggle (highest specificity) */
+.dark .prose--card img:not([data-loaded="true"]) {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}
+
+/* Legacy wrapper class for gradual migration */
+.legacy-styles {
+  /* This class can be used to wrap legacy components that need the old styles */
+  /* while we gradually migrate them to the new system */
+}
+
+/* Story Progress Bar */
 .story-progress-bar {
   position: absolute;
   bottom: 0;

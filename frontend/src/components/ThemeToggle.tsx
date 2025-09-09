@@ -1,54 +1,131 @@
-import { useEffect } from "react";
-import useClientSideStorage from "../hooks/useClientSideStorage";
-import { FaSun, FaMoon } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaSun, FaMoon, FaDesktop } from "react-icons/fa";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "system";
+
+const getSystemTheme = (): "light" | "dark" => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return "light";
+};
+
+const getEffectiveTheme = (theme: Theme): "light" | "dark" => {
+    return theme === "system" ? getSystemTheme() : theme;
+};
 
 export default function ThemeToggle() {
-    const [theme, setTheme, isLoading] = useClientSideStorage<Theme>("theme", "dark");
+    const [theme, setTheme] = useState<Theme>("system");
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Apply theme to HTML element
     useEffect(() => {
-        if (!isLoading) {
-            // Apply the theme to the HTML element via data-theme attribute
-            document.documentElement.setAttribute("data-theme", theme);
+        if (typeof window !== "undefined") {
+            try {
+                const storedTheme = localStorage.getItem("theme");
+                if (storedTheme && ["light", "dark", "system"].includes(storedTheme)) {
+                    setTheme(storedTheme as Theme);
+                }
+            } catch (error) {
+                console.warn("Error reading theme from localStorage:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isLoading && typeof window !== "undefined") {
+            try {
+                localStorage.setItem("theme", theme);
+            } catch (error) {
+                console.warn("Error saving theme to localStorage:", error);
+            }
+        }
+    }, [theme, isLoading]);
+
+    useEffect(() => {
+        if (theme === "system" && typeof window !== "undefined" && window.matchMedia) {
+            const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+            const handleChange = () => {
+                const effectiveTheme = getEffectiveTheme("system");
+                applyTheme(effectiveTheme);
+            };
             
-            // Handle Tailwind dark mode class
-            if (theme === 'dark') {
+            mediaQuery.addEventListener("change", handleChange);
+            return () => mediaQuery.removeEventListener("change", handleChange);
+        }
+    }, [theme]);
+
+    const applyTheme = (effectiveTheme: "light" | "dark") => {
+        if (typeof window !== "undefined") {
+            document.documentElement.setAttribute("data-theme", effectiveTheme);
+            
+            if (effectiveTheme === 'dark') {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
         }
+    };
+
+    useEffect(() => {
+        if (!isLoading) {
+            const effectiveTheme = getEffectiveTheme(theme);
+            applyTheme(effectiveTheme);
+        }
     }, [theme, isLoading]);
 
-    const toggleTheme = () => {
-        setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    const handleThemeChange = (newTheme: Theme) => {
+        setTheme(newTheme);
     };
 
     if (isLoading) return null;
 
+    const effectiveTheme = getEffectiveTheme(theme);
+
     return (
-        <div
-            className="relative flex items-center w-16 h-8 bg-blue-500 rounded-full cursor-pointer"
-            onClick={toggleTheme}
-            role="button"
-            tabIndex={0}
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-            <div
-                className={`absolute w-6 h-6 bg-white rounded-full transition-transform duration-300 shadow-md ${
-                    theme === "light" ? "translate-x-1" : "translate-x-9"
+        <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+            {/* System/Auto option */}
+            <button
+                onClick={() => handleThemeChange("system")}
+                className={`flex items-center justify-center w-8 h-6 rounded transition-all duration-200 ${
+                    theme === "system"
+                        ? "bg-blue-500 text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
-            ></div>
+                aria-label="Use system theme"
+                title={`System theme (currently ${effectiveTheme})`}
+            >
+                <FaDesktop size={12} />
+            </button>
 
-            <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                <FaSun className={`text-yellow-500 ${theme === "dark" ? "opacity-50" : "opacity-100"}`} size={16}/>
-            </div>
+            {/* Light option */}
+            <button
+                onClick={() => handleThemeChange("light")}
+                className={`flex items-center justify-center w-8 h-6 rounded transition-all duration-200 ${
+                    theme === "light"
+                        ? "bg-yellow-400 text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                }`}
+                aria-label="Use light theme"
+                title="Light theme"
+            >
+                <FaSun size={12} />
+            </button>
 
-            <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <FaMoon className={`text-yellow-500 ${theme === "light" ? "opacity-50" : "opacity-100"}`} size={16}/>
-            </div>
+            {/* Dark option */}
+            <button
+                onClick={() => handleThemeChange("dark")}
+                className={`flex items-center justify-center w-8 h-6 rounded transition-all duration-200 ${
+                    theme === "dark"
+                        ? "bg-gray-800 text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                }`}
+                aria-label="Use dark theme"
+                title="Dark theme"
+            >
+                <FaMoon size={12} />
+            </button>
         </div>
     );
 }

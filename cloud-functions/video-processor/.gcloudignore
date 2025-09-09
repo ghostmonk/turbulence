@@ -1,0 +1,15 @@
+# Ignore common files
+.git
+.gitignore
+README.md
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Development files
+*.log
+*.tmp
+.env

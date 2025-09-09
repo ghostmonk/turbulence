@@ -5,26 +5,19 @@ import Link from 'next/link';
 import { formatDate } from '@/utils/formatDate';
 import { getStoryUrl } from '@/utils/urls';
 import { Story } from '@/types/api';
-import { sanitizeHtml } from '@/utils/sanitizer';
+import { LazyStoryContent } from '@/components/LazyStoryContent';
+import { extractImageFromContentServer, getDefaultOGImage } from '@/utils/extractImageFromContent';
+import { getBaseUrl } from '@/utils/urls';
 
 interface StoryPageProps {
   story: Story | null;
   error?: string;
+  ogImage: string;
+  excerpt: string;
 }
 
-export default function StoryPage({ story, error }: StoryPageProps) {
+export default function StoryPage({ story, error, ogImage, excerpt }: StoryPageProps) {
   const canonicalUrl = story?.slug ? getStoryUrl(story.slug) : '';
-  
-  // Create a short excerpt from the content
-  const createExcerpt = (content: string): string => {
-    // Remove HTML tags and get plain text
-    const div = document.createElement('div');
-    div.innerHTML = content;
-    const text = div.textContent || div.innerText || '';
-    
-    // Trim to 160 chars for meta description
-    return text.substring(0, 157) + '...';
-  };
   
   if (error) {
     return (
@@ -49,21 +42,23 @@ export default function StoryPage({ story, error }: StoryPageProps) {
       </div>
     );
   }
-  
-  const excerpt = typeof window !== 'undefined' ? createExcerpt(story.content) : '';
-
   return (
     <>
       <Head>
         <title>{story.title} | Turbulence Blog</title>
-        <meta name="description" content={excerpt || `${story.title} - Read the full story on Turbulence Blog`} />
+        <meta name="description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta property="og:title" content={story.title} />
-        <meta property="og:description" content={excerpt || `Read the full story on Turbulence Blog`} />
+        <meta property="og:description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:alt" content={`Image from ${story.title}`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:title" content={story.title} />
-        <meta name="twitter:description" content={excerpt || `Read the full story on Turbulence Blog`} />
+        <meta name="twitter:description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={ogImage} />
         <link rel="canonical" href={canonicalUrl} />
       </Head>
       
@@ -84,11 +79,9 @@ export default function StoryPage({ story, error }: StoryPageProps) {
             )}
           </div>
           
-          <div 
+          <LazyStoryContent 
+            content={story.content}
             className="prose--card lg:prose-lg dark:prose-invert dark:text-gray-200"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(story.content),
-            }}
           />
           
           <div className="mt-10 pt-6">
@@ -102,16 +95,45 @@ export default function StoryPage({ story, error }: StoryPageProps) {
   );
 }
 
+function createErrorProps(error: string, excerpt?: string): StoryPageProps {
+  return {
+    story: null,
+    error,
+    ogImage: `${getBaseUrl()}${getDefaultOGImage()}`,
+    excerpt: excerpt || 'Browse stories and updates on Turbulence'
+  };
+}
+
+async function processStoryDataSSR(story: any): Promise<{ ogImage: string; excerpt: string }> {
+  const extractedImage = await extractImageFromContentServer(story.content);
+  let excerpt = '';
+  try {
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(story.content);
+    $('script, style').remove();
+    const text = $.text();
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    const metaLength = 157;
+    excerpt = normalized.length > metaLength ? normalized.substring(0, metaLength) + '...' : normalized;
+  } catch (error) {
+    console.error('Error creating excerpt:', error);
+    excerpt = 'Browse stories and updates on Turbulence';
+  }
+  
+  let ogImage = extractedImage;
+  if (ogImage && ogImage.startsWith('/')) {
+    ogImage = `${getBaseUrl()}${ogImage}`;
+  }
+  ogImage = ogImage || `${getBaseUrl()}${getDefaultOGImage()}`;
+  
+  return { ogImage, excerpt };
+}
+
 export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (context) => {
   const { slug } = context.params || {};
 
   if (!slug || typeof slug !== 'string') {
-    return {
-      props: {
-        story: null,
-        error: 'Story not found'
-      }
-    };
+    return { props: createErrorProps('Story not found') };
   }
 
   try {
@@ -121,38 +143,26 @@ export const getServerSideProps: GetServerSideProps<StoryPageProps> = async (con
     
     if (!response.ok) {
       if (response.status === 404) {
-        return {
-          props: {
-            story: null,
-            error: 'Story not found'
-          }
-        };
+        return { props: createErrorProps('Story not found') };
       }
       
       const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      return {
-        props: {
-          story: null,
-          error: errorData.detail || `Error: ${response.statusText}`
-        }
-      };
+      return { props: createErrorProps(errorData.detail || `Error: ${response.statusText}`) };
     }
     
     const story = await response.json();
+    const { ogImage, excerpt } = await processStoryDataSSR(story);
     
     return {
       props: {
-        story
+        story,
+        ogImage,
+        excerpt
       }
     };
   } catch (error) {
     console.error('Error fetching story by slug:', error);
-    
-    return {
-      props: {
-        story: null,
-        error: error instanceof Error ? error.message : 'Failed to load story'
-      }
-    };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load story';
+    return { props: createErrorProps(errorMessage) };
   }
 }; 
