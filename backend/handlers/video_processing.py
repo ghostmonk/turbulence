@@ -31,7 +31,7 @@ router = APIRouter()
 async def create_video_processing_job(
     job_data: VideoProcessingJobCreate,
 ) -> VideoProcessingJobCreateResponse:
-    """Create a new video processing job (called by Cloud Function)."""
+    """Create a new video processing job (called by Cloud Function)"""
     try:
         db = await get_database()
         video_jobs_collection = db.video_processing_jobs
