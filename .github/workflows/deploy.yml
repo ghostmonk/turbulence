@@ -1,4 +1,4 @@
-name: Deploy to GCP (Smart - Only Changed Components)
+name: Deploy to GCP
 
 on:
   push:
