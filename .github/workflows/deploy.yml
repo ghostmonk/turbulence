@@ -81,7 +81,6 @@ jobs:
             --region=us-central1 \
             --source=./cloud-functions/video-processor \
             --entry-point=process_video \
-            --docker-registry=artifact-registry \
             --trigger-event-filters="type=google.cloud.storage.object.v1.finalized" \
             --trigger-event-filters="bucket=${{ vars.GCS_BUCKET_NAME }}" \
             --set-env-vars="GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }},MONGODB_URI=${MONGODB_URI},API_BASE_URL=${{ vars.NEXT_PUBLIC_API_URL }}" \
