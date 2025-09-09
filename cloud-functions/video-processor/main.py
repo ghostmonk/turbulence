@@ -4,9 +4,9 @@ Handles video transcoding, thumbnail generation, and metadata extraction using F
 """
 
 import os
-import json
 import tempfile
 import shutil
+import logging
 from pathlib import Path
 from typing import Dict, List, Any
 from google.cloud import storage
@@ -17,11 +17,26 @@ import ffmpeg
 
 import functions_framework
 
+# Configure logging for Cloud Functions
+try:
+    from google.cloud import logging as cloud_logging
+    cloud_logging_client = cloud_logging.Client()
+    cloud_logging_client.setup_logging()
+except ImportError:
+    # Fallback to basic logging if Google Cloud Logging is not available
+    logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
+
 
 # Environment configuration
 MONGODB_URI = os.environ.get('MONGODB_URI')
 API_BASE_URL = os.environ.get('API_BASE_URL', 'https://api.ghostmonk.com')
 GCS_BUCKET_NAME = os.environ.get('GCS_BUCKET_NAME')
+
+# FFmpeg binary paths (installed via apt in container)
+FFMPEG_PATH = 'ffmpeg'
+FFPROBE_PATH = 'ffprobe'
 
 
 @functions_framework.cloud_event
@@ -36,10 +51,15 @@ def process_video(cloud_event):
     bucket_name = data['bucket']
     file_name = data['name']
     
-    print(f"Processing video: {file_name} from bucket: {bucket_name}")
+    logger.info(f"Processing video: {file_name} from bucket: {bucket_name}")
+    
+    # Verify FFmpeg is available
+    if not verify_ffmpeg_availability():
+        logger.error("FFmpeg not available - cannot process video")
+        return
     
     if not file_name.startswith('uploads/') or not is_video_file(file_name):
-        print(f"Skipping non-video file: {file_name}")
+        logger.info(f"Skipping non-video file: {file_name}")
         return
     
     temp_dir = None
@@ -53,16 +73,16 @@ def process_video(cloud_event):
         input_path = os.path.join(temp_dir, "input_video")
         original_blob.download_to_filename(input_path)
         
-        print(f"Downloaded video to {input_path}")
+        logger.info(f"Downloaded video to {input_path}")
         
         metadata = extract_video_metadata(input_path)
-        print(f"Extracted metadata: {metadata}")
+        logger.info(f"Extracted metadata: {metadata}")
         
         thumbnails = generate_thumbnails(input_path, metadata, bucket, file_name, temp_dir)
-        print(f"Generated {len(thumbnails)} thumbnails")
+        logger.info(f"Generated {len(thumbnails)} thumbnails")
         
         processed_formats = transcode_video(input_path, metadata, bucket, file_name, temp_dir)
-        print(f"Generated {len(processed_formats)} video formats")
+        logger.info(f"Generated {len(processed_formats)} video formats")
         
         update_processing_job(file_name, {
             'status': 'completed',
@@ -71,10 +91,10 @@ def process_video(cloud_event):
             'processed_formats': processed_formats
         })
         
-        print(f"Successfully processed video: {file_name}")
+        logger.info(f"Successfully processed video: {file_name}")
         
     except Exception as e:
-        print(f"Error processing video {file_name}: {str(e)}")
+        logger.error(f"Error processing video {file_name}: {str(e)}")
         
         update_processing_job(file_name, {
             'status': 'failed',
@@ -86,7 +106,28 @@ def process_video(cloud_event):
     finally:
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
-            print(f"Cleaned up temporary directory: {temp_dir}")
+            logger.info(f"Cleaned up temporary directory: {temp_dir}")
+
+
+def verify_ffmpeg_availability() -> bool:
+    """Verify that FFmpeg binaries are available and executable."""
+    try:
+        # Test FFprobe execution with a simple command
+        import subprocess
+        result = subprocess.run([FFPROBE_PATH, '-version'], 
+                              capture_output=True, text=True, check=True)
+        logger.info(f"FFmpeg verified: {result.stdout.splitlines()[0]}")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        logger.error(f"FFmpeg verification failed: {e}")
+        return False
+    except FileNotFoundError:
+        logger.error(f"FFmpeg not found in system PATH")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error verifying FFmpeg: {str(e)}")
+        return False
 
 
 def is_video_file(filename: str) -> bool:
@@ -98,7 +139,7 @@ def is_video_file(filename: str) -> bool:
 def extract_video_metadata(input_path: str) -> Dict[str, Any]:
     """Extract video metadata using FFprobe via ffmpeg-python."""
     try:
-        probe_data = ffmpeg.probe(input_path)
+        probe_data = ffmpeg.probe(input_path, cmd=FFPROBE_PATH)
         
         video_stream = None
         for stream in probe_data['streams']:
@@ -125,10 +166,10 @@ def extract_video_metadata(input_path: str) -> Dict[str, Any]:
         
     except ffmpeg.Error as e:
         error_msg = e.stderr.decode('utf-8') if e.stderr else str(e)
-        print(f"FFprobe error: {error_msg}")
+        logger.error(f"FFprobe error: {error_msg}")
         raise ValueError(f"Failed to extract video metadata: {error_msg}")
     except Exception as e:
-        print(f"Unexpected error extracting metadata: {str(e)}")
+        logger.error(f"Unexpected error extracting metadata: {str(e)}")
         raise ValueError(f"Failed to extract video metadata: {str(e)}")
 
 
@@ -153,7 +194,7 @@ def generate_thumbnails(input_path: str, metadata: Dict[str, Any], bucket: stora
                 .filter('scale', 640, 360)
                 .output(thumbnail_path, vframes=1, **{'q:v': 2})
                 .overwrite_output()
-                .run(quiet=True)
+                .run(quiet=True, cmd=FFMPEG_PATH)
             )
             
             thumbnail_blob_name = f"thumbnails/{thumbnail_filename}"
@@ -171,14 +212,14 @@ def generate_thumbnails(input_path: str, metadata: Dict[str, Any], bucket: stora
                 'is_custom': False
             })
             
-            print(f"Generated thumbnail {i+1}/5 at {timestamp:.1f}s")
+            logger.info(f"Generated thumbnail {i+1}/5 at {timestamp:.1f}s")
             
         except ffmpeg.Error as e:
             error_msg = e.stderr.decode('utf-8') if e.stderr else str(e)
-            print(f"FFmpeg thumbnail error: {error_msg}")
+            logger.error(f"FFmpeg thumbnail error: {error_msg}")
             continue
         except Exception as e:
-            print(f"Unexpected error generating thumbnail {i}: {str(e)}")
+            logger.error(f"Unexpected error generating thumbnail {i}: {str(e)}")
             continue
     
     return thumbnails
@@ -215,7 +256,7 @@ def transcode_video(input_path: str, metadata: Dict[str, Any], bucket: storage.B
             bitrate_num = int(format_config['bitrate'].replace('k', ''))
             bufsize = f"{bitrate_num * 2}k"
             
-            print(f"Transcoding to {format_config['name']}...")
+            logger.info(f"Transcoding to {format_config['name']}...")
             
             (
                 ffmpeg
@@ -235,7 +276,7 @@ def transcode_video(input_path: str, metadata: Dict[str, Any], bucket: storage.B
                     }
                 )
                 .overwrite_output()
-                .run(quiet=True)
+                .run(quiet=True, cmd=FFMPEG_PATH)
             )
             
             processed_blob_name = f"processed/{output_filename}"
@@ -253,14 +294,14 @@ def transcode_video(input_path: str, metadata: Dict[str, Any], bucket: storage.B
                 'height': format_config['height']
             })
             
-            print(f"Successfully transcoded to {format_config['name']}")
+            logger.info(f"Successfully transcoded to {format_config['name']}")
             
         except ffmpeg.Error as e:
             error_msg = e.stderr.decode('utf-8') if e.stderr else str(e)
-            print(f"FFmpeg transcoding error for {format_config['name']}: {error_msg}")
+            logger.error(f"FFmpeg transcoding error for {format_config['name']}: {error_msg}")
             continue
         except Exception as e:
-            print(f"Unexpected error transcoding to {format_config['name']}: {str(e)}")
+            logger.error(f"Unexpected error transcoding to {format_config['name']}: {str(e)}")
             continue
     
     return processed_formats
@@ -279,13 +320,13 @@ def update_processing_job(original_file: str, update_data: Dict[str, Any]) -> No
         )
         
         if response.status_code == 200:
-            print(f"Updated job for {original_file}")
+            logger.info(f"Updated job for {original_file}")
         else:
-            print(f"Failed to update job via API: {response.status_code} - {response.text}")
+            logger.warning(f"Failed to update job via API: {response.status_code} - {response.text}")
             update_via_mongodb(original_file, update_data)
             
     except Exception as e:
-        print(f"Error updating job via API: {str(e)}")
+        logger.error(f"Error updating job via API: {str(e)}")
         update_via_mongodb(original_file, update_data)
 
 
@@ -308,12 +349,12 @@ def update_via_mongodb(original_file: str, update_data: Dict[str, Any]) -> None:
         )
         
         if result.matched_count == 0:
-            print(f"Warning: No job found for file {original_file}")
+            logger.warning(f"No job found for file {original_file}")
         else:
-            print(f"Updated job for {original_file} via MongoDB")
+            logger.info(f"Updated job for {original_file} via MongoDB")
             
     except Exception as e:
-        print(f"Error updating job in MongoDB: {str(e)}")
+        logger.error(f"Error updating job in MongoDB: {str(e)}")
         raise
     finally:
         if client:

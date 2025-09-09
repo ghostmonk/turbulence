@@ -1,6 +1,6 @@
-# FFmpeg-based Video Processing Setup Guide - Phase 2
+# Container-based Video Processing Setup Guide - Phase 2
 
-This guide covers setting up the cost-effective video processing pipeline using FFmpeg in Google Cloud Functions.
+This guide covers setting up the cost-effective video processing pipeline using FFmpeg in containerized Google Cloud Functions.
 
 ## Prerequisites
 
