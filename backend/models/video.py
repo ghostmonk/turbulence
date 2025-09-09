@@ -70,3 +70,46 @@ class VideoProcessingJobUpdate(BaseModel):
     selected_thumbnail_id: str = None
     processed_formats: List[str] = None
     error_message: str = None
+
+
+class VideoProcessingJobCreateResponse(BaseModel):
+    """Response for creating a video processing job."""
+
+    job_id: str
+    status: str
+    message: str = "Video processing job created successfully"
+
+
+class VideoProcessingJobUpdateResponse(BaseModel):
+    """Response for updating a video processing job."""
+
+    status: str
+    message: str = "Video processing job updated successfully"
+
+
+class ThumbnailSelectionResponse(BaseModel):
+    """Response for selecting a thumbnail."""
+
+    status: str
+    thumbnail_id: str
+    message: str = "Thumbnail selected successfully"
+
+
+class VideoProcessingJobDeleteResponse(BaseModel):
+    """Response for deleting a video processing job."""
+
+    status: str
+    message: str = "Video processing job deleted successfully"
+
+
+class VideoProcessingJobUpdateByFileRequest(BaseModel):
+    """Request for updating a video processing job by file path."""
+
+    original_file: str
+    update_data: dict
+
+
+class ThumbnailSelectionRequest(BaseModel):
+    """Request for selecting a thumbnail."""
+
+    thumbnail_id: str

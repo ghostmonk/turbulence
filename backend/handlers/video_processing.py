@@ -13,10 +13,16 @@ from fastapi import APIRouter, HTTPException, Request
 from logger import logger
 from models.video import (
     ThumbnailOption,
+    ThumbnailSelectionRequest,
+    ThumbnailSelectionResponse,
     VideoMetadata,
     VideoProcessingJob,
     VideoProcessingJobCreate,
+    VideoProcessingJobCreateResponse,
+    VideoProcessingJobDeleteResponse,
     VideoProcessingJobUpdate,
+    VideoProcessingJobUpdateByFileRequest,
+    VideoProcessingJobUpdateResponse,
 )
 
 router = APIRouter()
@@ -31,55 +37,53 @@ db = client.turbulence
 video_jobs_collection = db.video_processing_jobs
 
 
-@router.post("/video-processing/jobs", response_model=dict)
-async def create_video_processing_job(job_data: VideoProcessingJobCreate) -> dict:
+@router.post("/video-processing/jobs", response_model=VideoProcessingJobCreateResponse)
+async def create_video_processing_job(
+    job_data: VideoProcessingJobCreate,
+) -> VideoProcessingJobCreateResponse:
     """Create a new video processing job (called by Cloud Function)."""
     try:
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
-        job_doc = {
-            "job_id": job_id,
-            "original_file": job_data.original_file,
-            "status": "started",
-            "created_at": now,
-            "updated_at": now,
-            "metadata": job_data.metadata.dict(),
-            "thumbnail_options": [],
-            "selected_thumbnail_id": "",
-            "processed_formats": [],
-            "error_message": "",
-        }
+        # Create typed job object
+        new_job = VideoProcessingJob(
+            job_id=job_id,
+            original_file=job_data.original_file,
+            status="started",
+            created_at=now,
+            updated_at=now,
+            metadata=job_data.metadata,
+            thumbnail_options=[],
+            selected_thumbnail_id="",
+            processed_formats=[],
+            error_message="",
+        )
 
-        result = await video_jobs_collection.insert_one(job_doc)
+        # Convert to dict only for MongoDB insertion
+        result = await video_jobs_collection.insert_one(new_job.model_dump())
         logger.info(f"Created video processing job: {job_id}")
 
-        return {"job_id": job_id, "status": "created"}
+        return VideoProcessingJobCreateResponse(
+            job_id=job_id, status="started", message="Video processing job created successfully"
+        )
 
     except Exception as e:
         logger.error(f"Error creating video processing job: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create job: {str(e)}")
 
 
-@router.patch("/video-processing/jobs/{job_id}")
-async def update_video_processing_job(job_id: str, update_data: VideoProcessingJobUpdate):
+@router.patch("/video-processing/jobs/{job_id}", response_model=VideoProcessingJobUpdateResponse)
+async def update_video_processing_job(
+    job_id: str, update_data: VideoProcessingJobUpdate
+) -> VideoProcessingJobUpdateResponse:
     """Update video processing job status (called by Cloud Function)."""
     try:
-        update_fields = {"updated_at": datetime.now(timezone.utc)}
+        # Get only non-None fields from the update model
+        update_fields = update_data.model_dump(exclude_none=True)
 
-        # Add non-None fields to update
-        if update_data.status is not None:
-            update_fields["status"] = update_data.status
-        if update_data.thumbnail_options is not None:
-            update_fields["thumbnail_options"] = [
-                thumb.dict() for thumb in update_data.thumbnail_options
-            ]
-        if update_data.selected_thumbnail_id is not None:
-            update_fields["selected_thumbnail_id"] = update_data.selected_thumbnail_id
-        if update_data.processed_formats is not None:
-            update_fields["processed_formats"] = update_data.processed_formats
-        if update_data.error_message is not None:
-            update_fields["error_message"] = update_data.error_message
+        # Always update the timestamp
+        update_fields["updated_at"] = datetime.now(timezone.utc)
 
         result = await video_jobs_collection.update_one({"job_id": job_id}, {"$set": update_fields})
 
@@ -87,7 +91,9 @@ async def update_video_processing_job(job_id: str, update_data: VideoProcessingJ
             raise HTTPException(status_code=404, detail="Job not found")
 
         logger.info(f"Updated video processing job {job_id}: {update_fields}")
-        return {"status": "updated"}
+        return VideoProcessingJobUpdateResponse(
+            status="updated", message=f"Video processing job {job_id} updated successfully"
+        )
 
     except HTTPException:
         raise
@@ -96,28 +102,30 @@ async def update_video_processing_job(job_id: str, update_data: VideoProcessingJ
         raise HTTPException(status_code=500, detail=f"Failed to update job: {str(e)}")
 
 
-@router.patch("/video-processing/jobs/by-file")
-async def update_video_processing_job_by_file(request_data: dict):
+@router.patch("/video-processing/jobs/by-file", response_model=VideoProcessingJobUpdateResponse)
+async def update_video_processing_job_by_file(
+    request_data: VideoProcessingJobUpdateByFileRequest,
+) -> VideoProcessingJobUpdateResponse:
     """Update video processing job by original file path (called by Cloud Function)."""
     try:
-        original_file = request_data.get("original_file")
-        update_data = request_data.get("update_data", {})
-
-        if not original_file:
-            raise HTTPException(status_code=400, detail="original_file is required")
-
-        update_fields = {"updated_at": datetime.now(timezone.utc)}
-        update_fields.update(update_data)
+        # Build update fields from the typed request
+        update_fields = request_data.update_data.copy()
+        update_fields["updated_at"] = datetime.now(timezone.utc)
 
         result = await video_jobs_collection.update_one(
-            {"original_file": original_file}, {"$set": update_fields}
+            {"original_file": request_data.original_file}, {"$set": update_fields}
         )
 
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Job not found")
 
-        logger.info(f"Updated video processing job for file {original_file}: {update_fields}")
-        return {"status": "updated"}
+        logger.info(
+            f"Updated video processing job for file {request_data.original_file}: {update_fields}"
+        )
+        return VideoProcessingJobUpdateResponse(
+            status="updated",
+            message=f"Video processing job for {request_data.original_file} updated successfully",
+        )
 
     except HTTPException:
         raise
@@ -194,21 +202,21 @@ async def list_video_processing_jobs(
         raise HTTPException(status_code=500, detail=f"Failed to list jobs: {str(e)}")
 
 
-@router.post("/video-processing/jobs/{job_id}/select-thumbnail")
+@router.post(
+    "/video-processing/jobs/{job_id}/select-thumbnail", response_model=ThumbnailSelectionResponse
+)
 @requires_auth
-async def select_thumbnail(request: Request, job_id: str, thumbnail_data: dict):
+async def select_thumbnail(
+    request: Request, job_id: str, thumbnail_data: ThumbnailSelectionRequest
+) -> ThumbnailSelectionResponse:
     """Select a thumbnail for the video or upload a custom one."""
     try:
-        thumbnail_id = thumbnail_data.get("thumbnail_id")
-
-        if not thumbnail_id:
-            raise HTTPException(status_code=400, detail="thumbnail_id is required")
 
         result = await video_jobs_collection.update_one(
             {"job_id": job_id},
             {
                 "$set": {
-                    "selected_thumbnail_id": thumbnail_id,
+                    "selected_thumbnail_id": thumbnail_data.thumbnail_id,
                     "updated_at": datetime.now(timezone.utc),
                 }
             },
@@ -217,8 +225,12 @@ async def select_thumbnail(request: Request, job_id: str, thumbnail_data: dict):
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Job not found")
 
-        logger.info(f"Selected thumbnail {thumbnail_id} for job {job_id}")
-        return {"status": "thumbnail_selected", "thumbnail_id": thumbnail_id}
+        logger.info(f"Selected thumbnail {thumbnail_data.thumbnail_id} for job {job_id}")
+        return ThumbnailSelectionResponse(
+            status="thumbnail_selected",
+            thumbnail_id=thumbnail_data.thumbnail_id,
+            message=f"Thumbnail {thumbnail_data.thumbnail_id} selected for job {job_id}",
+        )
 
     except HTTPException:
         raise
@@ -227,9 +239,11 @@ async def select_thumbnail(request: Request, job_id: str, thumbnail_data: dict):
         raise HTTPException(status_code=500, detail=f"Failed to select thumbnail: {str(e)}")
 
 
-@router.delete("/video-processing/jobs/{job_id}")
+@router.delete("/video-processing/jobs/{job_id}", response_model=VideoProcessingJobDeleteResponse)
 @requires_auth
-async def delete_video_processing_job(request: Request, job_id: str):
+async def delete_video_processing_job(
+    request: Request, job_id: str
+) -> VideoProcessingJobDeleteResponse:
     """Delete a video processing job."""
     try:
         result = await video_jobs_collection.delete_one({"job_id": job_id})
@@ -238,7 +252,9 @@ async def delete_video_processing_job(request: Request, job_id: str):
             raise HTTPException(status_code=404, detail="Job not found")
 
         logger.info(f"Deleted video processing job: {job_id}")
-        return {"status": "deleted"}
+        return VideoProcessingJobDeleteResponse(
+            status="deleted", message=f"Video processing job {job_id} deleted successfully"
+        )
 
     except HTTPException:
         raise
