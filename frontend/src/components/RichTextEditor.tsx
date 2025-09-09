@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { VideoExtension } from './VideoExtension';
 import { appLogger } from '@/utils/logger';
+import { ErrorService } from '@/services/errorService';
+import { ErrorCode, ApiRequestError } from '@/types/error';
+import { ErrorDisplay } from './ErrorDisplay';
 
 interface RichTextEditorProps {
     onChange: (content: string) => void;
@@ -14,6 +17,7 @@ interface RichTextEditorProps {
 export default function RichTextEditor({ onChange, content = "" }: RichTextEditorProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoInputRef = useRef<HTMLInputElement>(null);
+    const [uploadError, setUploadError] = useState<any>(null);
     
     const editor = useEditor({
         extensions: [
@@ -93,14 +97,15 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files.length) return;
         
+        const file = e.target.files[0];
+        setUploadError(null); // Clear any previous errors
+        
+        const loadingText = `![Uploading ${file.name}...]()`;
+        editor?.commands.insertContent(loadingText);
+        
         try {
-            const file = e.target.files[0];
-            
             const formData = new FormData();
             formData.append('files', file);
-            
-            const loadingText = `![Uploading ${file.name}...]()`;
-            editor?.commands.insertContent(loadingText);
             
             const response = await fetch('/api/upload-proxy', {
                 method: 'POST',
@@ -111,10 +116,10 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             appLogger.info('Image upload response received', { status: response.status });
             
             if (!response.ok) {
-                const errorText = await response.text().catch(() => 'No error details');
-                const error = new Error(`Failed to upload image: ${response.status}`);
-                appLogger.error('Image upload failed', error, { status: response.status, errorText });
-                throw error;
+                const apiError = await ErrorService.parseApiError(response);
+                ErrorService.logError(apiError, 'image upload', { fileName: file.name });
+                setUploadError(apiError);
+                throw apiError;
             }
             
             const data = await response.json();
@@ -143,12 +148,18 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 }
             }
         } catch (error) {
-            appLogger.error('Error uploading image', error instanceof Error ? error : new Error(String(error)));
             const content = editor?.getHTML() || '';
             const loadingPattern = /!\[Uploading .*?\]\(\)/g;
             const updatedContent = content.replace(loadingPattern, '');
             editor?.commands.setContent(updatedContent);
-            alert('Failed to upload image. Please try again.');
+            
+            // Handle different types of errors
+            if (error instanceof ApiRequestError) {
+                // Already handled above
+            } else {
+                ErrorService.logError(error, 'image upload', { fileName: file.name });
+                setUploadError(ErrorService.createDisplayError(error));
+            }
         }
         
         if (fileInputRef.current) {
@@ -159,14 +170,15 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
     const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files.length) return;
         
+        const file = e.target.files[0];
+        setUploadError(null);
+        
+        const loadingText = `[Uploading video ${file.name}...]`;
+        editor?.commands.insertContent(loadingText);
+        
         try {
-            const file = e.target.files[0];
-            
             const formData = new FormData();
             formData.append('files', file);
-            
-            const loadingText = `[Uploading video ${file.name}...]`;
-            editor?.commands.insertContent(loadingText);
             
             const response = await fetch('/api/upload-proxy', {
                 method: 'POST',
@@ -177,10 +189,10 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             appLogger.info('Video upload response received', { status: response.status });
             
             if (!response.ok) {
-                const errorText = await response.text().catch(() => 'No error details');
-                const error = new Error(`Failed to upload video: ${response.status}`);
-                appLogger.error('Video upload failed', error, { status: response.status, errorText });
-                throw error;
+                const apiError = await ErrorService.parseApiError(response);
+                ErrorService.logError(apiError, 'video upload', { fileName: file.name });
+                setUploadError(apiError);
+                throw apiError;
             }
             
             const data = await response.json();
@@ -202,12 +214,18 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 });
             }
         } catch (error) {
-            appLogger.error('Error uploading video', error instanceof Error ? error : new Error(String(error)));
             const content = editor?.getHTML() || '';
             const loadingPattern = /\[Uploading video .*?\]/g;
             const updatedContent = content.replace(loadingPattern, '');
             editor?.commands.setContent(updatedContent);
-            alert('Failed to upload video. Please try again.');
+            
+            // Handle different types of errors
+            if (error instanceof ApiRequestError) {
+                // Already handled above
+            } else {
+                ErrorService.logError(error, 'video upload', { fileName: file.name });
+                setUploadError(ErrorService.createDisplayError(error));
+            }
         }
         
         if (videoInputRef.current) {
@@ -221,6 +239,17 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
 
     return (
         <div className="w-full border rounded dark:border-gray-700 p-2">
+            {/* Error display */}
+            {uploadError && (
+                <div className="mb-4">
+                    <ErrorDisplay 
+                        error={uploadError} 
+                        onDismiss={() => setUploadError(null)}
+                        showDetails={true}
+                    />
+                </div>
+            )}
+            
             <div className="mb-2 flex flex-wrap gap-2">
                 <button
                     type="button"

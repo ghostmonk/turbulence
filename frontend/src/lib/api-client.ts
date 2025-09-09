@@ -3,6 +3,8 @@
  */
 
 import { ApiError, Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
+import { ApiRequestError } from '@/types/error';
+import { ErrorService } from '@/services/errorService';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -11,34 +13,6 @@ interface RequestOptions<T = unknown> {
   token?: string;
   body?: T;
   params?: Record<string, string | number>;
-}
-
-class ApiRequestError extends Error {
-  status: number;
-  data: unknown;
-  requestDetails?: {
-    url: string;
-    method: string;
-    hasToken: boolean;
-    bodyPreview?: string;
-  };
-
-  constructor(
-    message: string, 
-    status: number, 
-    data?: unknown, 
-    requestDetails?: { url: string; method: string; hasToken: boolean; bodyPreview?: string }
-  ) {
-    super(message);
-    this.name = 'ApiRequestError';
-    this.status = status;
-    this.data = data;
-    this.requestDetails = requestDetails;
-    
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ApiRequestError);
-    }
-  }
 }
 
 /**
@@ -101,18 +75,18 @@ async function fetchApi<T, B = unknown>(
       );
     }
 
-    const data = await response.json();
-
     if (!response.ok) {
-      const errorMessage = (data as ApiError).detail || `Error: ${response.status} ${response.statusText}`;
+      // Use ErrorService to parse the error properly (it will read the response)
+      const apiError = await ErrorService.parseApiError(response, requestDetails);
       console.error('API error:', { 
         status: response.status, 
-        data,
-        request: requestDetails
+        request: requestDetails,
+        error: apiError
       });
-      throw new ApiRequestError(errorMessage, response.status, data, requestDetails);
+      throw apiError;
     }
 
+    const data = await response.json();
     return data as T;
   } catch (error) {
     if (error instanceof ApiRequestError) {
