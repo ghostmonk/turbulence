@@ -2,12 +2,11 @@
 Video processing handler for managing video transcoding jobs and status.
 """
 
-import os
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
-import motor.motor_asyncio
+from database import get_database
 from decorators.auth import requires_auth
 from fastapi import APIRouter, HTTPException, Request
 from logger import logger
@@ -27,31 +26,16 @@ from models.video import (
 
 router = APIRouter()
 
-# MongoDB connection - conditional to allow Docker builds without env vars
-MONGODB_URI = os.environ.get("MONGODB_URI")
-client = None
-db = None
-video_jobs_collection = None
-
-if MONGODB_URI:
-    client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-    db = client.turbulence
-    video_jobs_collection = db.video_processing_jobs
-
-
-def _check_db_available():
-    """Check if database connection is available."""
-    if video_jobs_collection is None:
-        raise HTTPException(status_code=503, detail="Database connection not available")
-
 
 @router.post("/video-processing/jobs", response_model=VideoProcessingJobCreateResponse)
 async def create_video_processing_job(
     job_data: VideoProcessingJobCreate,
 ) -> VideoProcessingJobCreateResponse:
     """Create a new video processing job (called by Cloud Function)."""
-    _check_db_available()
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
@@ -88,6 +72,9 @@ async def update_video_processing_job(
 ) -> VideoProcessingJobUpdateResponse:
     """Update video processing job status (called by Cloud Function)."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         # Get only non-None fields from the update model
         update_fields = update_data.model_dump(exclude_none=True)
 
@@ -117,6 +104,9 @@ async def update_video_processing_job_by_file(
 ) -> VideoProcessingJobUpdateResponse:
     """Update video processing job by original file path (called by Cloud Function)."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         # Build update fields from the typed request
         update_fields = request_data.update_data.copy()
         update_fields["updated_at"] = datetime.now(timezone.utc)
@@ -148,6 +138,9 @@ async def update_video_processing_job_by_file(
 async def get_video_processing_job(request: Request, job_id: str) -> VideoProcessingJob:
     """Get video processing job status."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         job_doc = await video_jobs_collection.find_one({"job_id": job_id})
 
         if not job_doc:
@@ -182,6 +175,9 @@ async def list_video_processing_jobs(
 ) -> List[VideoProcessingJob]:
     """List video processing jobs, optionally filtered by status."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         query = {}
         if status:
             query["status"] = status
@@ -220,6 +216,8 @@ async def select_thumbnail(
 ) -> ThumbnailSelectionResponse:
     """Select a thumbnail for the video or upload a custom one."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
 
         result = await video_jobs_collection.update_one(
             {"job_id": job_id},
@@ -255,6 +253,9 @@ async def delete_video_processing_job(
 ) -> VideoProcessingJobDeleteResponse:
     """Delete a video processing job."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         result = await video_jobs_collection.delete_one({"job_id": job_id})
 
         if result.deleted_count == 0:
@@ -276,6 +277,9 @@ async def delete_video_processing_job(
 async def get_job_by_original_file(original_file: str) -> Optional[VideoProcessingJob]:
     """Get processing job by original file path."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         job_doc = await video_jobs_collection.find_one({"original_file": original_file})
 
         if not job_doc:
@@ -300,6 +304,9 @@ async def get_job_by_original_file(original_file: str) -> Optional[VideoProcessi
 async def update_job_progress(job_id: str, progress_data: dict):
     """Update job progress with transcoding status."""
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         await video_jobs_collection.update_one(
             {"job_id": job_id},
             {"$set": {"progress": progress_data, "updated_at": datetime.now(timezone.utc)}},
