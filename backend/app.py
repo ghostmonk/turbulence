@@ -148,7 +148,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 @app.get("/health")
 async def health_check():
-    """Fast health check endpoint for keep-alive pings"""
+    """Fast health check endpoint for keep-alive ping"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
