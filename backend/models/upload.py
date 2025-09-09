@@ -20,7 +20,7 @@ class ProcessedMediaFile(BaseModel):
 
     class Config:
         # Add example for API documentation
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "primary_url": "/uploads/20241201_123456_abc123.webp",
                 "srcset": "/uploads/20241201_123456_abc123_500.webp 500w, /uploads/20241201_123456_abc123_750.webp 750w, /uploads/20241201_123456_abc123.webp 1200w",
@@ -38,7 +38,7 @@ class UploadResponse(BaseModel):
     dimensions: List[MediaDimensions]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "urls": ["/uploads/20241201_123456_abc123.webp"],
                 "srcsets": [

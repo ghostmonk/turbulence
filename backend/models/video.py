@@ -39,7 +39,7 @@ class VideoProcessingJob(BaseModel):
     error_message: str = ""
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "job_id": "job_123456",
                 "original_file": "uploads/video_20241201.mp4",

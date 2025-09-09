@@ -12,7 +12,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from google.oauth2 import service_account
-from handlers.video_processing import video_jobs_collection
+from database import get_database
 from logger import logger
 from models.upload import (
     ErrorContext,
@@ -215,6 +215,9 @@ async def process_video_file(
 
     # Create video processing job entry
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+        
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
