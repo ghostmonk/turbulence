@@ -7,23 +7,23 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
+from database import get_database
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from google.oauth2 import service_account
-from database import get_database
 from logger import logger
+from models.error import (
+    ErrorCode,
+    StandardErrorResponse,
+    create_upload_error_response,
+)
 from models.upload import (
     ErrorContext,
     MediaDimensions,
     ProcessedMediaFile,
     UploadResponse,
-)
-from models.error import (
-    ErrorCode,
-    StandardErrorResponse,
-    create_upload_error_response,
 )
 from models.video import VideoMetadata, VideoProcessingJob
 from PIL import Image, ImageOps
@@ -222,7 +222,7 @@ async def process_video_file(
     try:
         db = await get_database()
         video_jobs_collection = db.video_processing_jobs
-        
+
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
@@ -284,7 +284,11 @@ async def upload_media(request: Request, files: List[UploadFile] = File(...)) ->
                 )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {str(e)}")
-                if isinstance(e, HTTPException) and isinstance(e.detail, dict) and 'error_code' in e.detail:
+                if (
+                    isinstance(e, HTTPException)
+                    and isinstance(e.detail, dict)
+                    and "error_code" in e.detail
+                ):
                     raise e
                 handle_error(e, f"uploading media file {file.filename}")
 
@@ -397,7 +401,7 @@ def validate_image(content_type, file_size):
         error_response = create_upload_error_response(
             error_code=ErrorCode.UPLOAD_INVALID_FORMAT,
             file_type="image",
-            allowed_formats=["JPEG", "PNG", "GIF", "WebP"]
+            allowed_formats=["JPEG", "PNG", "GIF", "WebP"],
         )
         raise HTTPException(status_code=400, detail=error_response.model_dump())
 
@@ -406,7 +410,7 @@ def validate_image(content_type, file_size):
             error_code=ErrorCode.UPLOAD_FILE_TOO_LARGE,
             file_type="image",
             current_size=file_size,
-            max_size=MAX_FILE_SIZE
+            max_size=MAX_FILE_SIZE,
         )
         raise HTTPException(status_code=400, detail=error_response.model_dump())
 
@@ -416,7 +420,7 @@ def validate_video(content_type, file_size):
         error_response = create_upload_error_response(
             error_code=ErrorCode.UPLOAD_INVALID_FORMAT,
             file_type="video",
-            allowed_formats=["MP4", "WebM", "QuickTime", "AVI"]
+            allowed_formats=["MP4", "WebM", "QuickTime", "AVI"],
         )
         raise HTTPException(status_code=400, detail=error_response.model_dump())
 
@@ -425,7 +429,7 @@ def validate_video(content_type, file_size):
             error_code=ErrorCode.UPLOAD_FILE_TOO_LARGE,
             file_type="video",
             current_size=file_size,
-            max_size=MAX_VIDEO_SIZE
+            max_size=MAX_VIDEO_SIZE,
         )
         raise HTTPException(status_code=400, detail=error_response.model_dump())
 
@@ -441,11 +445,10 @@ def handle_error(e, context="operation"):
         f"Uploads: {context}",
         error_context.model_dump(),
     )
-    
+
     if not isinstance(e, HTTPException):
         error_response = create_upload_error_response(
-            error_code=ErrorCode.UPLOAD_PROCESSING_FAILED,
-            file_type="generic"
+            error_code=ErrorCode.UPLOAD_PROCESSING_FAILED, file_type="generic"
         )
         raise HTTPException(status_code=500, detail=error_response.model_dump())
     raise e
