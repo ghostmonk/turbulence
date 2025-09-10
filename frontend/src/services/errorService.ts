@@ -5,9 +5,27 @@
 import { ApiRequestError, ErrorCode, StandardErrorResponse, ErrorSeverity, ERROR_SEVERITY_MAP, RequestDetails } from '@/types/error';
 import { appLogger } from '@/utils/logger';
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+function isStandardErrorResponse(value: unknown): value is StandardErrorResponse {
+  return isObject(value) && 
+         typeof value.error_code === 'string' && 
+         typeof value.user_message === 'string';
+}
+
+function hasDetailProperty(value: unknown): value is { detail: unknown } {
+  return isObject(value) && 'detail' in value;
+}
+
+function hasNestedStandardError(value: unknown): value is { detail: StandardErrorResponse } {
+  return hasDetailProperty(value) && isStandardErrorResponse(value.detail);
+}
+
 export class ErrorService {
   static async parseApiError(response: Response, requestDetails?: RequestDetails): Promise<ApiRequestError> {
-    let data: any;
+    let data: unknown;
     let message = `HTTP ${response.status}: ${response.statusText}`;
 
     try {
@@ -15,17 +33,13 @@ export class ErrorService {
       if (text) {
         data = JSON.parse(text);
         
-        if (data && typeof data === 'object') {
-          if ('error_code' in data && 'user_message' in data) {
-            message = data.user_message;
-          } else if ('detail' in data) {
-            if (typeof data.detail === 'string') {
-              message = data.detail;
-            } else if (typeof data.detail === 'object' && 'user_message' in data.detail) {
-              message = data.detail.user_message;
-              data = data.detail;
-            }
-          }
+        if (isStandardErrorResponse(data)) {
+          message = data.user_message;
+        } else if (hasNestedStandardError(data)) {
+          message = data.detail.user_message;
+          data = data.detail;
+        } else if (hasDetailProperty(data) && typeof data.detail === 'string') {
+          message = data.detail;
         }
       }
     } catch (parseError) {
@@ -36,19 +50,19 @@ export class ErrorService {
     return new ApiRequestError(message, response.status, data, requestDetails);
   }
 
-  static getUserMessage(error: any): string {
+  static getUserMessage(error: unknown): string {
     if (error instanceof ApiRequestError) {
       return error.getUserMessage();
     }
     
-    if (error && typeof error === 'object') {
-      if ('user_message' in error) {
+    if (isObject(error)) {
+      if ('user_message' in error && typeof error.user_message === 'string') {
         return error.user_message;
       }
-      if ('message' in error) {
+      if ('message' in error && typeof error.message === 'string') {
         return error.message;
       }
-      if ('detail' in error) {
+      if ('detail' in error && typeof error.detail === 'string') {
         return error.detail;
       }
     }
@@ -60,7 +74,7 @@ export class ErrorService {
     return 'An unexpected error occurred';
   }
 
-  static getErrorSeverity(error: any): ErrorSeverity {
+  static getErrorSeverity(error: unknown): ErrorSeverity {
     if (error instanceof ApiRequestError && error.errorResponse?.error_code) {
       return ERROR_SEVERITY_MAP[error.errorResponse.error_code] || ErrorSeverity.ERROR;
     }
@@ -74,19 +88,19 @@ export class ErrorService {
     return ErrorSeverity.ERROR;
   }
 
-  static isErrorCode(error: any, code: ErrorCode): boolean {
+  static isErrorCode(error: unknown, code: ErrorCode): boolean {
     if (error instanceof ApiRequestError) {
       return error.isErrorCode(code);
     }
     
-    if (error && typeof error === 'object' && 'error_code' in error) {
+    if (isObject(error) && 'error_code' in error) {
       return error.error_code === code;
     }
     
     return false;
   }
 
-  static getErrorSuggestions(error: any): string[] {
+  static getErrorSuggestions(error: unknown): string[] {
     if (error instanceof ApiRequestError && error.errorResponse?.details?.suggestions) {
       return error.errorResponse.details.suggestions;
     }
@@ -109,21 +123,21 @@ export class ErrorService {
     return [];
   }
 
-  static logError(error: any, context?: string, additionalData?: any) {
+  static logError(error: unknown, context?: string, additionalData?: unknown) {
     const severity = this.getErrorSeverity(error);
     const message = this.getUserMessage(error);
     const logData = {
       context,
       severity,
-      ...additionalData
+      ...(isObject(additionalData) ? additionalData : {})
     };
 
     switch (severity) {
       case ErrorSeverity.CRITICAL:
-        appLogger.error(`Critical error${context ? ` in ${context}` : ''}: ${message}`, error, logData);
+        appLogger.error(`Critical error${context ? ` in ${context}` : ''}: ${message}`, error instanceof Error ? error : new Error(String(error)), logData);
         break;
       case ErrorSeverity.ERROR:
-        appLogger.error(`Error${context ? ` in ${context}` : ''}: ${message}`, error, logData);
+        appLogger.error(`Error${context ? ` in ${context}` : ''}: ${message}`, error instanceof Error ? error : new Error(String(error)), logData);
         break;
       case ErrorSeverity.WARNING:
         appLogger.warn(`Warning${context ? ` in ${context}` : ''}: ${message}`, logData);
@@ -134,7 +148,7 @@ export class ErrorService {
     }
   }
 
-  static handleAuthError(error: any): string {
+  static handleAuthError(error: unknown): string {
     if (this.isErrorCode(error, ErrorCode.AUTHENTICATION_EXPIRED)) {
       return 'Your session has expired. Please log in again.';
     }
@@ -159,7 +173,7 @@ export class ErrorService {
     return this.getUserMessage(error);
   }
 
-  static handleUploadError(error: any, fileName?: string): string {
+  static handleUploadError(error: unknown, fileName?: string): string {
     const fileContext = fileName ? ` for "${fileName}"` : '';
     
     if (this.isErrorCode(error, ErrorCode.UPLOAD_FILE_TOO_LARGE)) {
@@ -186,7 +200,7 @@ export class ErrorService {
     return `Failed to upload file${fileContext}. ${this.getUserMessage(error)}`;
   }
 
-  static createDisplayError(error: any): StandardErrorResponse | string {
+  static createDisplayError(error: unknown): StandardErrorResponse | string {
     if (error instanceof ApiRequestError && error.errorResponse) {
       return error.errorResponse;
     }
