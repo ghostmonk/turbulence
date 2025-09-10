@@ -6,8 +6,19 @@ import Image from '@tiptap/extension-image';
 import { VideoExtension } from './VideoExtension';
 import { appLogger } from '@/utils/logger';
 import { ErrorService } from '@/services/errorService';
-import { ErrorCode, ApiRequestError, StandardErrorResponse } from '@/types/error'; 
+import { ErrorCode, ApiRequestError, StandardErrorResponse } from '@/types/error';
 import { ErrorDisplay } from './ErrorDisplay';
+import { 
+    MAX_IMAGE_SIZE, 
+    MAX_VIDEO_SIZE, 
+    ALLOWED_IMAGE_TYPES, 
+    ALLOWED_VIDEO_TYPES,
+    ALLOWED_IMAGE_FORMATS,
+    ALLOWED_VIDEO_FORMATS,
+    formatFileSize,
+    validateImageFile,
+    validateVideoFile
+} from '@/utils/uploadUtils';
 
 interface RichTextEditorProps {
     onChange: (content: string) => void;
@@ -100,28 +111,21 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         const file = e.target.files[0];
         setUploadError(null);
         
-        // Basic client-side validation
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        
-        if (file.size > maxSize) {
+        // Client-side validation using utility functions
+        const validation = validateImageFile(file);
+        if (!validation.isValid) {
+            const isFormatError = !ALLOWED_IMAGE_TYPES.includes(file.type);
             setUploadError({
-                error_code: ErrorCode.UPLOAD_FILE_TOO_LARGE,
-                user_message: `The image file is too large. Please choose a file smaller than 5MB.`,
+                error_code: isFormatError ? ErrorCode.UPLOAD_INVALID_FORMAT : ErrorCode.UPLOAD_FILE_TOO_LARGE,
+                user_message: validation.error!,
                 details: {
-                    current_file_size: `${(file.size / (1024 * 1024)).toFixed(1)}MB`,
-                    max_file_size: '5MB'
-                }
-            });
-            return;
-        }
-        
-        if (!allowedTypes.includes(file.type)) {
-            setUploadError({
-                error_code: ErrorCode.UPLOAD_INVALID_FORMAT,
-                user_message: 'This image format is not supported. Please use JPEG, PNG, GIF, or WebP.',
-                details: {
-                    allowed_formats: ['JPEG', 'PNG', 'GIF', 'WebP']
+                    ...(isFormatError ? 
+                        { allowed_formats: ALLOWED_IMAGE_FORMATS } : 
+                        { 
+                            current_file_size: formatFileSize(file.size),
+                            max_file_size: formatFileSize(MAX_IMAGE_SIZE)
+                        }
+                    )
                 }
             });
             return;
@@ -197,28 +201,20 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         const file = e.target.files[0];
         setUploadError(null);
         
-        // Basic client-side validation
-        const maxSize = 100 * 1024 * 1024; // 100MB
-        const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/avi'];
-        
-        if (file.size > maxSize) {
+        const validation = validateVideoFile(file);
+        if (!validation.isValid) {
+            const isFormatError = !ALLOWED_VIDEO_TYPES.includes(file.type);
             setUploadError({
-                error_code: ErrorCode.UPLOAD_FILE_TOO_LARGE,
-                user_message: `The video file is too large. Please choose a file smaller than 100MB.`,
+                error_code: isFormatError ? ErrorCode.UPLOAD_INVALID_FORMAT : ErrorCode.UPLOAD_FILE_TOO_LARGE,
+                user_message: validation.error!,
                 details: {
-                    current_file_size: `${(file.size / (1024 * 1024)).toFixed(1)}MB`,
-                    max_file_size: '100MB'
-                }
-            });
-            return;
-        }
-        
-        if (!allowedTypes.includes(file.type)) {
-            setUploadError({
-                error_code: ErrorCode.UPLOAD_INVALID_FORMAT,
-                user_message: 'This video format is not supported. Please use MP4, WebM, QuickTime, or AVI.',
-                details: {
-                    allowed_formats: ['MP4', 'WebM', 'QuickTime', 'AVI']
+                    ...(isFormatError ? 
+                        { allowed_formats: ALLOWED_VIDEO_FORMATS } : 
+                        { 
+                            current_file_size: formatFileSize(file.size),
+                            max_file_size: formatFileSize(MAX_VIDEO_SIZE)
+                        }
+                    )
                 }
             });
             return;
@@ -365,14 +361,14 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                     type="file" 
                     ref={fileInputRef} 
                     className="hidden" 
-                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    accept={ALLOWED_IMAGE_TYPES.join(',')}
                     onChange={handleImageUpload}
                 />
                 <input 
                     type="file" 
                     ref={videoInputRef} 
                     className="hidden" 
-                    accept="video/mp4,video/webm,video/quicktime,video/avi"
+                    accept={ALLOWED_VIDEO_TYPES.join(',')}
                     onChange={handleVideoUpload}
                 />
             </div>
