@@ -17,7 +17,8 @@ import {
     ALLOWED_VIDEO_FORMATS,
     formatFileSize,
     validateImageFile,
-    validateVideoFile
+    validateVideoFile,
+    createFileValidationError
 } from '@/utils/uploadUtils';
 
 interface RichTextEditorProps {
@@ -114,20 +115,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         // Client-side validation using utility functions
         const validation = validateImageFile(file);
         if (!validation.isValid) {
-            const isFormatError = !ALLOWED_IMAGE_TYPES.includes(file.type);
-            setUploadError({
-                error_code: isFormatError ? ErrorCode.UPLOAD_INVALID_FORMAT : ErrorCode.UPLOAD_FILE_TOO_LARGE,
-                user_message: validation.error!,
-                details: {
-                    ...(isFormatError ? 
-                        { allowed_formats: ALLOWED_IMAGE_FORMATS } : 
-                        { 
-                            current_file_size: formatFileSize(file.size),
-                            max_file_size: formatFileSize(MAX_IMAGE_SIZE)
-                        }
-                    )
-                }
-            });
+            setUploadError(createFileValidationError(file, validation.error!, 'image'));
             return;
         }
         
@@ -203,20 +191,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
         
         const validation = validateVideoFile(file);
         if (!validation.isValid) {
-            const isFormatError = !ALLOWED_VIDEO_TYPES.includes(file.type);
-            setUploadError({
-                error_code: isFormatError ? ErrorCode.UPLOAD_INVALID_FORMAT : ErrorCode.UPLOAD_FILE_TOO_LARGE,
-                user_message: validation.error!,
-                details: {
-                    ...(isFormatError ? 
-                        { allowed_formats: ALLOWED_VIDEO_FORMATS } : 
-                        { 
-                            current_file_size: formatFileSize(file.size),
-                            max_file_size: formatFileSize(MAX_VIDEO_SIZE)
-                        }
-                    )
-                }
-            });
+            setUploadError(createFileValidationError(file, validation.error!, 'video'));
             return;
         }
         

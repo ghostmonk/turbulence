@@ -2,6 +2,8 @@
  * Upload utilities and constants
  */
 
+import { StandardErrorResponse, ErrorCode } from '@/types/error';
+
 // File size limits (in bytes)
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 export const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
@@ -93,4 +95,34 @@ export function validateVideoFile(file: File): { isValid: boolean; error?: strin
   }
   
   return { isValid: true };
+}
+
+/**
+ * Create a structured error response for file validation failures
+ */
+export function createFileValidationError(
+  file: File, 
+  validationError: string,
+  fileType: 'image' | 'video'
+): StandardErrorResponse {
+  const isFormatError = fileType === 'image' 
+    ? !ALLOWED_IMAGE_TYPES.includes(file.type)
+    : !ALLOWED_VIDEO_TYPES.includes(file.type);
+  
+  const maxSize = fileType === 'image' ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+  const allowedFormats = fileType === 'image' ? ALLOWED_IMAGE_FORMATS : ALLOWED_VIDEO_FORMATS;
+  
+  return {
+    error_code: isFormatError ? ErrorCode.UPLOAD_INVALID_FORMAT : ErrorCode.UPLOAD_FILE_TOO_LARGE,
+    user_message: validationError,
+    details: {
+      ...(isFormatError ? 
+        { allowed_formats: allowedFormats } : 
+        { 
+          current_file_size: formatFileSize(file.size),
+          max_file_size: formatFileSize(maxSize)
+        }
+      )
+    }
+  };
 }
