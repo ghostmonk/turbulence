@@ -75,8 +75,15 @@ async function fetchApi<T, B = unknown>(
       );
     }
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const apiError = await ErrorService.parseApiError(response, requestDetails);
+      const apiError = new ApiRequestError(
+        data?.user_message || data?.detail || `HTTP ${response.status}: ${response.statusText}`,
+        response.status,
+        data,
+        requestDetails
+      );
       console.error('API error:', { 
         status: response.status, 
         request: requestDetails,
@@ -85,7 +92,6 @@ async function fetchApi<T, B = unknown>(
       throw apiError;
     }
 
-    const data = await response.json();
     return data as T;
   } catch (error) {
     if (error instanceof ApiRequestError) {

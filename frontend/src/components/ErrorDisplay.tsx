@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ErrorDisplayProps, ErrorSeverity, StandardErrorResponse } from '@/types/error';
 import { ErrorService } from '@/services/errorService';
 
@@ -126,7 +126,7 @@ export function ErrorDisplay({ error, onDismiss, className = '', showDetails = f
 export function ErrorToast({ error, onDismiss, duration = 5000 }: ErrorDisplayProps & { duration?: number }) {
   const [isVisible, setIsVisible] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
         setIsVisible(false);
