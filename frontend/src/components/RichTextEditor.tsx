@@ -153,10 +153,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             const updatedContent = content.replace(loadingPattern, '');
             editor?.commands.setContent(updatedContent);
             
-            // Handle different types of errors
-            if (error instanceof ApiRequestError) {
-                // Already handled above
-            } else {
+            if (!(error instanceof ApiRequestError)) {
                 ErrorService.logError(error, 'image upload', { fileName: file.name });
                 setUploadError(ErrorService.createDisplayError(error));
             }
@@ -219,10 +216,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             const updatedContent = content.replace(loadingPattern, '');
             editor?.commands.setContent(updatedContent);
             
-            // Handle different types of errors
-            if (error instanceof ApiRequestError) {
-                // Already handled above
-            } else {
+            if (!(error instanceof ApiRequestError)) {
                 ErrorService.logError(error, 'video upload', { fileName: file.name });
                 setUploadError(ErrorService.createDisplayError(error));
             }
@@ -239,7 +233,6 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
 
     return (
         <div className="w-full border rounded dark:border-gray-700 p-2">
-            {/* Error display */}
             {uploadError && (
                 <div className="mb-4">
                     <ErrorDisplay 

@@ -53,7 +53,6 @@ export function ErrorDisplay({ error, onDismiss, className = '', showDetails = f
             <h3 className="text-sm font-medium mb-1">{styles.title}</h3>
             <p className="text-sm">{userMessage}</p>
             
-            {/* File size and format details */}
             {errorData?.details && (
               <div className="mt-2 text-xs space-y-1">
                 {errorData.details.current_file_size && (
@@ -68,7 +67,6 @@ export function ErrorDisplay({ error, onDismiss, className = '', showDetails = f
               </div>
             )}
 
-            {/* Helpful suggestions */}
             {suggestions.length > 0 && (
               <div className="mt-3">
                 <h4 className="text-xs font-medium mb-1">What you can do:</h4>
@@ -83,7 +81,6 @@ export function ErrorDisplay({ error, onDismiss, className = '', showDetails = f
               </div>
             )}
 
-            {/* Technical details (collapsible) */}
             {showDetails && errorData && (
               <div className="mt-3">
                 <button
@@ -109,7 +106,6 @@ export function ErrorDisplay({ error, onDismiss, className = '', showDetails = f
           </div>
         </div>
 
-        {/* Dismiss button */}
         {onDismiss && (
           <button
             onClick={onDismiss}

@@ -284,7 +284,6 @@ async def upload_media(request: Request, files: List[UploadFile] = File(...)) ->
                 )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {str(e)}")
-                # If this is already an HTTPException with structured error, preserve it
                 if isinstance(e, HTTPException) and isinstance(e.detail, dict) and 'error_code' in e.detail:
                     raise e
                 handle_error(e, f"uploading media file {file.filename}")
@@ -444,7 +443,6 @@ def handle_error(e, context="operation"):
     )
     
     if not isinstance(e, HTTPException):
-        # Create structured error response for internal errors
         error_response = create_upload_error_response(
             error_code=ErrorCode.UPLOAD_PROCESSING_FAILED,
             file_type="generic"

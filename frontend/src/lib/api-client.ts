@@ -76,7 +76,6 @@ async function fetchApi<T, B = unknown>(
     }
 
     if (!response.ok) {
-      // Use ErrorService to parse the error properly (it will read the response)
       const apiError = await ErrorService.parseApiError(response, requestDetails);
       console.error('API error:', { 
         status: response.status, 

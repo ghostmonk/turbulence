@@ -229,10 +229,7 @@ export default function EditorPage() {
         <div className="mb-4">
           <ErrorDisplay 
             error={ErrorService.createDisplayError(error || saveError)}
-            onDismiss={() => {
-              setError(null);
-              // Note: saveError is handled by useStoryOperations hook
-            }}
+            onDismiss={() => setError(null)}
             showDetails={true}
           />
         </div>
