@@ -71,18 +71,13 @@ export class ApiRequestError extends Error {
   status: number;
   data: unknown;
   errorResponse?: StandardErrorResponse;
-  requestDetails?: {
-    url: string;
-    method: string;
-    hasToken: boolean;
-    bodyPreview?: string;
-  };
+  requestDetails?: RequestDetails;
 
   constructor(
     message: string, 
     status: number, 
     data?: unknown, 
-    requestDetails?: { url: string; method: string; hasToken: boolean; bodyPreview?: string }
+    requestDetails?: RequestDetails
   ) {
     super(message);
     this.name = 'ApiRequestError';
