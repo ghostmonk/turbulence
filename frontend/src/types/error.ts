@@ -45,6 +45,13 @@ export interface StandardErrorResponse {
   request_id?: string;
 }
 
+export interface RequestDetails {
+  url: string;
+  method: string;
+  hasToken: boolean;
+  bodyPreview?: string;
+}
+
 export interface ErrorDisplayProps {
   error: StandardErrorResponse | string;
   onDismiss?: () => void;

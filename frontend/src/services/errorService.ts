@@ -2,11 +2,11 @@
  * Centralized error handling service for the frontend
  */
 
-import { ApiRequestError, ErrorCode, StandardErrorResponse, ErrorSeverity, ERROR_SEVERITY_MAP } from '@/types/error';
+import { ApiRequestError, ErrorCode, StandardErrorResponse, ErrorSeverity, ERROR_SEVERITY_MAP, RequestDetails } from '@/types/error';
 import { appLogger } from '@/utils/logger';
 
 export class ErrorService {
-  static async parseApiError(response: Response, requestDetails?: any): Promise<ApiRequestError> {
+  static async parseApiError(response: Response, requestDetails?: RequestDetails): Promise<ApiRequestError> {
     let data: any;
     let message = `HTTP ${response.status}: ${response.statusText}`;
 
