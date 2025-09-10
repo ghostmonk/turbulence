@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { Story } from '@/types/api';
 import { isTokenExpired } from '@/lib/auth';
 import { useFetchStory, useStoryOperations } from '@/hooks/useStories';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
+import { ErrorService } from '@/services/errorService';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
@@ -224,21 +226,12 @@ export default function EditorPage() {
       </div>
 
       {(error || saveError) && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <div className="font-bold">Error:</div>
-          <div>{error || saveError}</div>
-          <button 
-            onClick={toggleDebugInfo} 
-            className="mt-2 text-xs underline"
-          >
-            {showDebugInfo ? 'Hide' : 'Show'} Debug Info
-          </button>
-          
-          {showDebugInfo && errorDetails && (
-            <pre className="mt-2 p-2 bg-gray-800 text-white text-xs overflow-auto rounded">
-              {JSON.stringify(errorDetails, null, 2)}
-            </pre>
-          )}
+        <div className="mb-4">
+          <ErrorDisplay 
+            error={ErrorService.createDisplayError(error || saveError)}
+            onDismiss={() => setError(null)}
+            showDetails={true}
+          />
         </div>
       )}
 

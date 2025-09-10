@@ -4,9 +4,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import apiClient, { ApiRequestError } from '@/lib/api-client';
+import apiClient from '@/lib/api-client';
+import { ApiRequestError } from '@/types/error';
 import { Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
-import { handleAuthError } from '@/lib/auth';
+import { ErrorService } from '@/services/errorService';
 
 const STORIES_PAGE_SIZE = 5;
 
@@ -222,8 +223,8 @@ export function useStoryOperations() {
       
       if (err instanceof ApiRequestError) {
         const errMsg = err.status === 401 
-          ? handleAuthError(err) 
-          : err.message;
+          ? ErrorService.handleAuthError(err) 
+          : err.getUserMessage();
         
         setError(errMsg);
         setErrorDetails({
@@ -285,8 +286,8 @@ export function useStoryOperations() {
       
       if (err instanceof ApiRequestError) {
         const errMsg = err.status === 401 
-          ? handleAuthError(err) 
-          : err.message;
+          ? ErrorService.handleAuthError(err) 
+          : err.getUserMessage();
         
         setError(errMsg);
         setErrorDetails({
@@ -339,8 +340,8 @@ export function useStoryOperations() {
       
       if (err instanceof ApiRequestError) {
         const errMsg = err.status === 401 
-          ? handleAuthError(err) 
-          : err.message;
+          ? ErrorService.handleAuthError(err) 
+          : err.getUserMessage();
         
         setError(errMsg);
         setErrorDetails({
