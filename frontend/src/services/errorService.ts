@@ -24,6 +24,17 @@ function hasNestedStandardError(value: unknown): value is { detail: StandardErro
 }
 
 export class ErrorService {
+  /**
+   * Parses an API error response into a standardized ApiRequestError.
+   * 
+   * This method is async to handle response.text() and maintain consistency
+   * with other API-related operations. The async nature also allows for
+   * future extensibility (e.g., logging, external validation, caching).
+   * 
+   * @param response - The failed HTTP response to parse
+   * @param requestDetails - Optional context about the original request
+   * @returns Promise resolving to an ApiRequestError with parsed error details
+   */
   static async parseApiError(response: Response, requestDetails?: RequestDetails): Promise<ApiRequestError> {
     let data: unknown;
     let message = `HTTP ${response.status}: ${response.statusText}`;
