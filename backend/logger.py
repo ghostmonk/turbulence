@@ -1,187 +1,210 @@
-import logging
+"""
+Platform-independent logging implementation.
+
+This module provides a clean logging interface that automatically detects your
+environment and chooses the appropriate provider (GCP Cloud Logging, Console, etc.)
+without coupling your application code to any specific platform.
+
+Usage:
+    from logger import logger, get_component_logger
+    
+    # Basic logging (same as before)
+    logger.info("Application started")
+    
+    # Component-specific logger (recommended)
+    auth_logger = get_component_logger('auth')
+    auth_logger.info("User authenticated", user_id="123")
+    
+    # Request logging
+    logger.log_request("GET", "/api/users", status=200, latency_ms=45.2)
+    
+    # Backward compatibility - all your existing code works unchanged
+    from logger import info, error, debug, warning, critical, exception
+    info("This works exactly like before")
+"""
+
 import os
-import sys
-import traceback
-from functools import wraps
+from logging import auto_configure_logging, get_logger, LoggerFactory, Logger
 
-from google.cloud import logging as cloud_logging
+# Initialize logging based on environment
+_factory: LoggerFactory = auto_configure_logging()
 
+# Create a default logger for backward compatibility
+logger: Logger = _factory.create_logger('turbulence')
 
-def setup_cloud_logging():
-    """Setup Google Cloud Logging if running in Cloud Run"""
-    try:
-        # Check if running in Cloud Run
-        if os.getenv("K_SERVICE"):
-            # Get project ID from environment or metadata server
-            project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-
-            # Initialize client with explicit project
-            client = cloud_logging.Client(project=project_id)
-
-            # Configure handler with service name for better filtering
-            handler = cloud_logging.handlers.CloudLoggingHandler(
-                client,
-                name=os.getenv("K_SERVICE"),
-                labels={
-                    "service": os.getenv("K_SERVICE"),
-                    "revision": os.getenv("K_REVISION", "unknown"),
-                    "configuration": os.getenv("K_CONFIGURATION", "unknown"),
-                },
-            )
-
-            # Setup handler with formatter
-            handler.setFormatter(logging.Formatter("%(message)s"))
-            logger.addHandler(handler)
-
-            # Set logging level
-            logger.setLevel(logging.INFO)
-            return True
-        return False
-    except Exception as e:
-        print(f"Failed to setup Cloud Logging: {e}", file=sys.stderr)
-        return False
+def get_component_logger(component: str, **default_context) -> Logger:
+    """
+    Get a logger for a specific component.
+    
+    This is the preferred way to create loggers for different parts of the application.
+    
+    Args:
+        component: Component name (e.g., 'auth', 'api', 'video-processor')
+        **default_context: Default context to include in all logs
+        
+    Returns:
+        Logger configured for the component
+        
+    Example:
+        auth_logger = get_component_logger('auth', service='authentication-service')
+        auth_logger.info("User logged in", user_id="123")
+    """
+    return _factory.create_logger(component, **default_context)
 
 
-def create_structured_log(record, message, context=None, exc_info=None):
-    """Create a structured log entry for Cloud Logging"""
-    log_dict = {
-        "severity": record.levelname,
-        "component": record.name,
-        "message": message,
-        "logging.googleapis.com/sourceLocation": {
-            "file": record.pathname,
-            "line": str(record.lineno),
-            "function": record.funcName,
-        },
-    }
-
-    if context:
-        log_dict["context"] = context
-
-    if exc_info:
-        log_dict["exception"] = {
-            "type": type(exc_info[1]).__name__,
-            "message": str(exc_info[1]),
-            "traceback": "".join(traceback.format_exception(*exc_info)),
-        }
-
-    return log_dict
+def get_request_logger(request_id: str, **context) -> Logger:
+    """
+    Get a logger configured for a specific request.
+    
+    Args:
+        request_id: Unique request identifier
+        **context: Additional request context
+        
+    Returns:
+        Logger with request context pre-configured
+        
+    Example:
+        req_logger = get_request_logger("req-123", user_id="456", path="/api/users")
+        req_logger.info("Processing request")
+    """
+    return logger.with_context(request_id=request_id, **context)
 
 
-# Initialize logger
-logger = logging.getLogger("ghostmonk-turbulence")
-logger.setLevel(logging.INFO)
-
-# Remove any existing handlers
-for handler in logger.handlers[:]:
-    logger.removeHandler(handler)
-
-# Setup Cloud Logging if in Cloud Run, otherwise use standard logging
-if not setup_cloud_logging():
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    console_handler.setFormatter(console_formatter)
-    logger.addHandler(console_handler)
-
-
-def log_with_context(level, message, context=None, exc_info=None):
-    """Log with additional context information."""
-    if os.getenv("K_SERVICE"):  # If running in Cloud Run
-        record = logging.LogRecord(
-            name=logger.name,
-            level=level,
-            pathname=sys._getframe().f_back.f_code.co_filename,
-            lineno=sys._getframe().f_back.f_lineno,
-            msg=message,
-            args=(),
-            exc_info=exc_info,
-            func=sys._getframe().f_back.f_code.co_name,
-        )
-        structured_log = create_structured_log(record, message, context, exc_info)
-        logger.log(level, structured_log)
-    else:
-        extra = {"extra": context} if context else {}
-        logger.log(level, message, extra=extra, exc_info=exc_info)
-
-
+# Backward compatibility functions that map to the old logger.py interface
 def debug(message, context=None, exc_info=None):
-    log_with_context(logging.DEBUG, message, context, exc_info)
+    """Backward compatibility function for debug logging."""
+    kwargs = {}
+    if context:
+        kwargs.update(context)
+    if exc_info:
+        # Convert exc_info tuple to exception
+        if isinstance(exc_info, tuple) and len(exc_info) == 3 and exc_info[1]:
+            exception = exc_info[1]
+        else:
+            exception = None
+        logger.debug(message, exception=exception, **kwargs)
+    else:
+        logger.debug(message, **kwargs)
 
 
 def info(message, context=None):
-    log_with_context(logging.INFO, message, context)
+    """Backward compatibility function for info logging."""
+    kwargs = context or {}
+    logger.info(message, **kwargs)
 
 
 def warning(message, context=None, exc_info=None):
-    log_with_context(logging.WARNING, message, context, exc_info)
+    """Backward compatibility function for warning logging."""
+    kwargs = context or {}
+    if exc_info:
+        if isinstance(exc_info, tuple) and len(exc_info) == 3 and exc_info[1]:
+            exception = exc_info[1]
+        else:
+            exception = None
+        logger.warning(message, exception=exception, **kwargs)
+    else:
+        logger.warning(message, **kwargs)
 
 
 def error(message, context=None, exc_info=None):
-    log_with_context(logging.ERROR, message, context, exc_info)
+    """Backward compatibility function for error logging."""
+    kwargs = context or {}
+    if exc_info:
+        if isinstance(exc_info, tuple) and len(exc_info) == 3 and exc_info[1]:
+            exception = exc_info[1]
+        else:
+            exception = None
+        logger.error(message, exception=exception, **kwargs)
+    else:
+        logger.error(message, **kwargs)
 
 
 def critical(message, context=None, exc_info=None):
-    log_with_context(logging.CRITICAL, message, context, exc_info)
+    """Backward compatibility function for critical logging."""
+    kwargs = context or {}
+    if exc_info:
+        if isinstance(exc_info, tuple) and len(exc_info) == 3 and exc_info[1]:
+            exception = exc_info[1]
+        else:
+            exception = None
+        logger.critical(message, exception=exception, **kwargs)
+    else:
+        logger.critical(message, **kwargs)
 
 
 def exception(message, context=None):
-    """Log an exception with full traceback."""
-    log_with_context(logging.ERROR, message, context, exc_info=sys.exc_info())
+    """Backward compatibility function for exception logging."""
+    import sys
+    exc_info = sys.exc_info()
+    if exc_info[1]:
+        error(message, context, exc_info)
+    else:
+        error(message, context)
 
 
 def log_request_response(request, response=None, error=None):
-    """Log detailed request and response information."""
+    """
+    Backward compatibility function for request/response logging.
+    
+    This function adapts the old interface to the new logging system.
+    """
     try:
-        trace_header = request.headers.get("X-Cloud-Trace-Context")
-
-        req_info = {
-            "httpRequest": {  # Special field for Cloud Logging
-                "requestMethod": getattr(request, "method", "UNKNOWN"),
-                "requestUrl": str(getattr(request, "url", "UNKNOWN")),
-                "remoteIp": getattr(request, "client", None) and str(getattr(request, "client")),
-                "protocol": getattr(request, "scope", {}).get("type", "UNKNOWN"),
-            },
-            "requestHeaders": dict(getattr(request, "headers", {})),
-        }
-
-        if trace_header:  # Add trace context for Cloud Logging
-            req_info["logging.googleapis.com/trace"] = trace_header
-
-        if hasattr(request, "body") and request.body:
+        # Extract request information
+        method = getattr(request, 'method', 'UNKNOWN')
+        url = str(getattr(request, 'url', 'UNKNOWN'))
+        
+        # Extract response information
+        status = None
+        response_size = None
+        if response:
+            status = getattr(response, 'status_code', None)
+            response_body = getattr(response, 'body', '')
+            response_size = len(str(response_body)) if response_body else None
+        
+        # Extract additional context
+        context = {}
+        if hasattr(request, 'headers'):
+            context['request_headers'] = dict(request.headers)
+            
+        if hasattr(request, 'client') and request.client:
+            context['client_ip'] = str(request.client)
+            
+        if hasattr(request, 'body') and request.body:
             try:
                 if isinstance(request.body, bytes):
-                    req_info["requestBody"] = request.body.decode("utf-8")[:1000]
+                    context['request_body'] = request.body.decode('utf-8')[:1000]
                 else:
-                    req_info["requestBody"] = str(request.body)[:1000]
+                    context['request_body'] = str(request.body)[:1000]
             except Exception:
-                req_info["requestBody"] = "[Binary data]"
-
-        if response:
-            req_info["httpRequest"]["status"] = getattr(response, "status_code", 0)
-            req_info["httpRequest"]["responseSize"] = len(str(getattr(response, "body", "")))
-            req_info["responseHeaders"] = dict(getattr(response, "headers", {}))
-
+                context['request_body'] = '[Binary data]'
+        
+        if response and hasattr(response, 'headers'):
+            context['response_headers'] = dict(response.headers)
+            
+        # Add trace context if available
+        trace_header = None
+        if hasattr(request, 'headers'):
+            trace_header = request.headers.get('X-Cloud-Trace-Context')
+        if trace_header:
+            context['trace_id'] = trace_header
+        
+        # Log the request
         if error:
-            req_info["error"] = {"@type": type(error).__name__, "message": str(error)}
-            if isinstance(error, Exception):
-                req_info["error"]["stack_trace"] = "".join(
-                    traceback.format_exception(type(error), error, error.__traceback__)
-                )
-
-        # Log with appropriate severity
-        if error:
-            error("Request failed", req_info, exc_info=error)
-        elif response and getattr(response, "status_code", 200) >= 400:
-            warning("Request resulted in error response", req_info)
+            context['error_type'] = type(error).__name__
+            context['error_message'] = str(error)
+            logger.log_request(method, url, status, **context)
+            logger.error(f"Request failed: {method} {url}", exception=error, **context)
         else:
-            info("Request processed", req_info)
-
+            logger.log_request(method, url, status, **context)
+            
     except Exception as e:
-        logger.error(f"Error in log_request_response: {e}", exc_info=e)
+        # Fallback logging if request parsing fails
+        logger.error(f"Error in log_request_response: {e}", exception=e)
 
 
+# Add backward compatibility methods to the logger object
 logger.debug_with_context = debug
-logger.info_with_context = info
+logger.info_with_context = info  
 logger.warning_with_context = warning
 logger.error_with_context = error
 logger.critical_with_context = critical
