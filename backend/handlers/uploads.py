@@ -284,11 +284,7 @@ async def upload_media(request: Request, files: List[UploadFile] = File(...)) ->
                 )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {str(e)}")
-                if (
-                    isinstance(e, HTTPException)
-                    and isinstance(e.detail, dict)
-                    and "error_code" in e.detail
-                ):
+                if is_structured_http_exception(e):
                     raise e
                 handle_error(e, f"uploading media file {file.filename}")
 
@@ -432,6 +428,15 @@ def validate_video(content_type, file_size):
             max_size=MAX_VIDEO_SIZE,
         )
         raise HTTPException(status_code=400, detail=error_response.model_dump())
+
+
+def is_structured_http_exception(exception: Exception) -> bool:
+    """Check if an exception is an HTTPException with a structured error response."""
+    return (
+        isinstance(exception, HTTPException)
+        and isinstance(exception.detail, dict)
+        and "error_code" in exception.detail
+    )
 
 
 def handle_error(e, context="operation"):
