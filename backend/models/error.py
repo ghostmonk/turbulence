@@ -43,6 +43,10 @@ class ErrorDetails(BaseModel):
     suggestions: Optional[List[str]] = None
     resource_id: Optional[str] = None
 
+    def has_content(self) -> bool:
+        """Check if the error details contain any meaningful content."""
+        return bool(self.model_dump(exclude_unset=True, exclude_none=True))
+
 
 class StandardErrorResponse(BaseModel):
     """Standardized error response format."""
@@ -161,17 +165,6 @@ def create_upload_error_response(
     return StandardErrorResponse(
         error_code=error_code,
         user_message=user_message,
-        details=(
-            details
-            if any(
-                [
-                    details.max_file_size,
-                    details.current_file_size,
-                    details.allowed_formats,
-                    details.suggestions,
-                ]
-            )
-            else None
-        ),
+        details=details if details.has_content() else None,
         request_id=request_id,
     )
