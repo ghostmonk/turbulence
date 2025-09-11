@@ -16,9 +16,8 @@ import ffmpeg
 import functions_framework
 import pymongo
 import requests
-from google.cloud import storage
-
 from glogger import get_component_logger
+from google.cloud import storage
 
 # Initialize logging for video processor
 logger = get_component_logger("video-processor")

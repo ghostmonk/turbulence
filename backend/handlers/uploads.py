@@ -11,9 +11,9 @@ from database import get_database
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
+from glogger import logger
 from google.cloud import storage
 from google.oauth2 import service_account
-from glogger import logger
 from models.error import (
     ErrorCode,
     StandardErrorResponse,
