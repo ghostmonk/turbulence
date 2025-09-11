@@ -3,7 +3,7 @@
  */
 
 import { ApiRequestError, ErrorCode, StandardErrorResponse, ErrorSeverity, ERROR_SEVERITY_MAP, RequestDetails } from '@/types/error';
-import { appLogger } from '@/utils/logger';
+import { logger } from '@/utils/logger';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object';
@@ -32,7 +32,7 @@ export class ErrorService {
    * future extensibility (e.g., logging, external validation, caching).
    * 
    * @param response - The failed HTTP response to parse
-   * @param requestDetails - Optional context about the original request
+   * @param requestDetails - context about the original request
    * @returns Promise resolving to an ApiRequestError with parsed error details
    */
   static async parseApiError(response: Response, requestDetails?: RequestDetails): Promise<ApiRequestError> {
@@ -54,7 +54,7 @@ export class ErrorService {
         }
       }
     } catch (parseError) {
-      appLogger.warn('Failed to parse error response as JSON', parseError as Error);
+      logger.warn('Failed to parse error response as JSON', parseError as Error);
       data = { detail: message };
     }
 
@@ -145,16 +145,16 @@ export class ErrorService {
 
     switch (severity) {
       case ErrorSeverity.CRITICAL:
-        appLogger.error(`Critical error${context ? ` in ${context}` : ''}: ${message}`, error instanceof Error ? error : new Error(String(error)), logData);
+        logger.error(`Critical error${context ? ` in ${context}` : ''}: ${message}`, error instanceof Error ? error : new Error(String(error)), logData);
         break;
       case ErrorSeverity.ERROR:
-        appLogger.error(`Error${context ? ` in ${context}` : ''}: ${message}`, error instanceof Error ? error : new Error(String(error)), logData);
+        logger.error(`Error${context ? ` in ${context}` : ''}: ${message}`, error instanceof Error ? error : new Error(String(error)), logData);
         break;
       case ErrorSeverity.WARNING:
-        appLogger.warn(`Warning${context ? ` in ${context}` : ''}: ${message}`, logData);
+        logger.warn(`Warning${context ? ` in ${context}` : ''}: ${message}`, logData);
         break;
       case ErrorSeverity.INFO:
-        appLogger.info(`Info${context ? ` in ${context}` : ''}: ${message}`, logData);
+        logger.info(`Info${context ? ` in ${context}` : ''}: ${message}`, logData);
         break;
     }
   }

@@ -2,9 +2,8 @@
  * API Client for making requests to the backend
  */
 
-import { ApiError, Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
+import { Story, CreateStoryRequest, PaginatedResponse } from '@/types/api';
 import { ApiRequestError } from '@/types/error';
-import { ErrorService } from '@/services/errorService';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 

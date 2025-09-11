@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from glogger import logger
 from handlers.backfill import backfill_published_flag
 from handlers.stories import router as stories_router
 from handlers.uploads import router as uploads_router
 from handlers.video_processing import router as video_processing_router
-from logger import logger
 from middleware.logging_middleware import LoggingMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse

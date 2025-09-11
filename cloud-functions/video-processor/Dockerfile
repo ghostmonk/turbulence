@@ -12,11 +12,7 @@ RUN apt-get update && \
 # Verify FFmpeg installation
 RUN ffmpeg -version && ffprobe -version
 
-# Copy function source code
-COPY . /workspace
 WORKDIR /workspace
-
-# Install Python dependencies
+COPY shared/python/glogger/ ./shared/python/glogger/
+COPY cloud-functions/video-processor/ ./
 RUN pip install --no-cache-dir -r requirements.txt
-
-# The Functions Framework will handle the entry point

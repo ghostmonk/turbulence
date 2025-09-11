@@ -4,18 +4,13 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { VideoExtension } from './VideoExtension';
-import { appLogger } from '@/utils/logger';
+import { logger } from '@/utils/logger';
 import { ErrorService } from '@/services/errorService';
-import { ErrorCode, ApiRequestError, StandardErrorResponse } from '@/types/error';
+import { ApiRequestError, StandardErrorResponse } from '@/types/error';
 import { ErrorDisplay } from './ErrorDisplay';
 import { 
-    MAX_IMAGE_SIZE, 
-    MAX_VIDEO_SIZE, 
     ALLOWED_IMAGE_TYPES, 
     ALLOWED_VIDEO_TYPES,
-    ALLOWED_IMAGE_FORMATS,
-    ALLOWED_VIDEO_FORMATS,
-    formatFileSize,
     validateImageFile,
     validateVideoFile,
     createFileValidationError
@@ -132,7 +127,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 credentials: 'include',
             });
             
-            appLogger.info('Image upload response received', { status: response.status });
+            logger.info('Image upload response received', { status: response.status });
             
             if (!response.ok) {
                 const apiError = await ErrorService.parseApiError(response);
@@ -142,7 +137,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             }
             
             const data = await response.json();
-            appLogger.info('Image upload successful', { data });
+            logger.info('Image upload successful', { data });
             
             if (data && data.urls && data.urls.length > 0) {
                 const content = editor?.getHTML() || '';
@@ -208,7 +203,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
                 credentials: 'include',
             });
             
-            appLogger.info('Video upload response received', { status: response.status });
+            logger.info('Video upload response received', { status: response.status });
             
             if (!response.ok) {
                 const apiError = await ErrorService.parseApiError(response);
@@ -218,7 +213,7 @@ export default function RichTextEditor({ onChange, content = "" }: RichTextEdito
             }
             
             const data = await response.json();
-            appLogger.info('Video upload successful', { data });
+            logger.info('Video upload successful', { data });
             
             if (data && data.urls && data.urls.length > 0) {
                 const content = editor?.getHTML() || '';
