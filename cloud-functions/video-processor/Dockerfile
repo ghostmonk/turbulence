@@ -13,6 +13,6 @@ RUN apt-get update && \
 RUN ffmpeg -version && ffprobe -version
 
 WORKDIR /workspace
-COPY shared/python/ ./shared/python/
+COPY shared/python/glogger/ ./shared/python/glogger/
 COPY cloud-functions/video-processor/ ./
 RUN pip install --no-cache-dir -r requirements.txt

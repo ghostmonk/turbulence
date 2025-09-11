@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from logger import logger
+from glogger import logger
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
     AsyncIOMotorCollection,

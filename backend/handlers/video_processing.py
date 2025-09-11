@@ -9,7 +9,7 @@ from typing import List, Optional
 from database import get_database
 from decorators.auth import requires_auth
 from fastapi import APIRouter, HTTPException, Request
-from logger import logger
+from glogger import logger
 from models.video import (
     ThumbnailOption,
     ThumbnailSelectionRequest,

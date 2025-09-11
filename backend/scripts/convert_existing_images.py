@@ -13,7 +13,7 @@ from PIL import Image, ImageOps
 sys.path.append(str(Path(__file__).parent.parent))
 
 from handlers.uploads import IMAGE_SIZES, OUTPUT_FORMAT
-from logger import logger
+from glogger import logger
 
 GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
 if not GCS_BUCKET_NAME:

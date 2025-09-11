@@ -13,7 +13,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
 from google.cloud import storage
 from google.oauth2 import service_account
-from logger import logger
+from glogger import logger
 from models.error import (
     ErrorCode,
     StandardErrorResponse,

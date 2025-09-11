@@ -2,7 +2,7 @@ import time
 import traceback
 
 from fastapi import Request
-from logger import logger
+from glogger import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 
 

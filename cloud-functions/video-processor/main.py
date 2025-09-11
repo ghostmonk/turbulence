@@ -18,13 +18,10 @@ import pymongo
 import requests
 from google.cloud import storage
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "shared", "python"))
-
-from logging import auto_configure_logging, get_logger
+from glogger import get_component_logger
 
 # Initialize logging for video processor
-_factory = auto_configure_logging()
-logger = _factory.create_logger("video-processor")
+logger = get_component_logger("video-processor")
 
 
 def get_video_logger(video_id: str, **context):

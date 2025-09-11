@@ -5,7 +5,7 @@ from bson import ObjectId
 from database import get_collection
 from decorators.auth import requires_auth
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from logger import logger
+from glogger import logger
 from models.story import StoryCreate, StoryResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import ValidationError
