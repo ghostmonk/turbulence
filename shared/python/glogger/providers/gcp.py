@@ -5,9 +5,9 @@ This provider integrates with GCP Cloud Logging and handles GCP-specific
 log formatting, trace context, and service metadata.
 """
 
+import logging
 import os
 import sys
-import logging
 from typing import Any, Dict
 
 from ..interfaces import LogEntry, LogLevel, LogProvider
