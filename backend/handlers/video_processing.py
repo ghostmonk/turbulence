@@ -4,7 +4,7 @@ Video processing handler for managing video transcoding jobs and status.
 
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List
 
 from database import get_database
 from decorators.auth import requires_auth
@@ -171,7 +171,7 @@ async def get_video_processing_job(request: Request, job_id: str) -> VideoProces
 @router.get("/video-processing/jobs", response_model=List[VideoProcessingJob])
 @requires_auth
 async def list_video_processing_jobs(
-    request: Request, status: Optional[str] = None
+    request: Request, status: str | None = None
 ) -> List[VideoProcessingJob]:
     """List video processing jobs, optionally filtered by status."""
     try:
@@ -274,7 +274,7 @@ async def delete_video_processing_job(
 
 
 # Utility functions for video processing status
-async def get_job_by_original_file(original_file: str) -> Optional[VideoProcessingJob]:
+async def get_job_by_original_file(original_file: str) -> VideoProcessingJob | None:
     """Get processing job by original file path."""
     try:
         db = await get_database()

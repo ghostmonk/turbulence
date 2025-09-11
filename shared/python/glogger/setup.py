@@ -7,7 +7,7 @@ deployment scenarios.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .factory import create_logger_factory
 from .interfaces import LoggerFactory, LogProvider

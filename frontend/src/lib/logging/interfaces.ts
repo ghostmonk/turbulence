@@ -45,21 +45,18 @@ export interface LogEntry {
     timestamp: Date;
     context: LogContext;
     
-    // Optional error information
     error?: {
         name: string;
         message: string;
         stack?: string;
     };
     
-    // Optional HTTP request information (for API calls)
     http_method?: string;
     http_url?: string;
     http_status?: number;
     http_latency_ms?: number;
     http_response_size?: number;
     
-    // Source location information
     source_file?: string;
     source_line?: number;
     source_function?: string;

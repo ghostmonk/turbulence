@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -34,14 +34,14 @@ class ErrorCode(str, Enum):
 
 
 class ErrorDetails(BaseModel):
-    """Optional context information for errors."""
+    """Context information for errors."""
 
-    max_file_size: Optional[str] = None
-    current_file_size: Optional[str] = None
-    allowed_formats: Optional[List[str]] = None
-    field_errors: Optional[Dict[str, str]] = None
-    suggestions: Optional[List[str]] = None
-    resource_id: Optional[str] = None
+    max_file_size: str | None = None
+    current_file_size: str | None = None
+    allowed_formats: List[str] | None = None
+    field_errors: Dict[str, str] | None = None
+    suggestions: List[str] | None = None
+    resource_id: str | None = None
 
     def has_content(self) -> bool:
         """Check if the error details contain any meaningful content."""
@@ -53,8 +53,8 @@ class StandardErrorResponse(BaseModel):
 
     error_code: ErrorCode
     user_message: str
-    details: Optional[ErrorDetails] = None
-    request_id: Optional[str] = None
+    details: ErrorDetails | None = None
+    request_id: str | None = None
 
     class Config:
         json_schema_extra = {
@@ -128,10 +128,10 @@ def get_error_message(error_code: ErrorCode, context: str = "generic", **kwargs)
 def create_upload_error_response(
     error_code: ErrorCode,
     file_type: str = "generic",
-    current_size: Optional[int] = None,
-    max_size: Optional[int] = None,
-    allowed_formats: Optional[List[str]] = None,
-    request_id: Optional[str] = None,
+    current_size: int | None = None,
+    max_size: int | None = None,
+    allowed_formats: List[str] | None = None,
+    request_id: str | None = None,
 ) -> StandardErrorResponse:
     """Create a standardized upload error response."""
 

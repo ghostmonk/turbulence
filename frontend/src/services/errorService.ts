@@ -32,7 +32,7 @@ export class ErrorService {
    * future extensibility (e.g., logging, external validation, caching).
    * 
    * @param response - The failed HTTP response to parse
-   * @param requestDetails - Optional context about the original request
+   * @param requestDetails - context about the original request
    * @returns Promise resolving to an ApiRequestError with parsed error details
    */
   static async parseApiError(response: Response, requestDetails?: RequestDetails): Promise<ApiRequestError> {

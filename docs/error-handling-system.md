@@ -37,8 +37,8 @@ This document describes the comprehensive error handling system implemented to p
 class StandardErrorResponse(BaseModel):
     error_code: ErrorCode
     user_message: str
-    details: Optional[ErrorDetails] = None
-    request_id: Optional[str] = None
+    details: ErrorDetails | None = None
+    request_id: str | None = None
 ```
 
 #### Updated Upload Handlers (`backend/handlers/uploads.py`)

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict
 
 
 class LogLevel(Enum):
@@ -34,19 +34,19 @@ class LogContext:
 
     # Core application context
     component: str
-    environment: Optional[str] = None
-    service_name: Optional[str] = None
-    service_version: Optional[str] = None
+    environment: str | None = None
+    service_name: str | None = None
+    service_version: str | None = None
 
     # Request/operation context
-    request_id: Optional[str] = None
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
-    operation_id: Optional[str] = None
+    request_id: str | None = None
+    user_id: str | None = None
+    session_id: str | None = None
+    operation_id: str | None = None
 
     # Error context
-    error_type: Optional[str] = None
-    error_code: Optional[str] = None
+    error_type: str | None = None
+    error_code: str | None = None
 
     # Custom fields for application-specific context
     custom: Dict[str, Any] = field(default_factory=dict)
@@ -76,23 +76,20 @@ class LogEntry:
     timestamp: datetime
     context: LogContext
 
-    # Optional exception information
-    exception: Optional[Exception] = None
-    stack_trace: Optional[str] = None
+    exception: Exception | None = None
+    stack_trace: str | None = None
 
-    # Optional HTTP request information
-    http_method: Optional[str] = None
-    http_url: Optional[str] = None
-    http_status: Optional[int] = None
-    http_user_agent: Optional[str] = None
-    http_referer: Optional[str] = None
-    http_latency_ms: Optional[float] = None
-    http_response_size: Optional[int] = None
+    http_method: str | None = None
+    http_url: str | None = None
+    http_status: int | None = None
+    http_user_agent: str | None = None
+    http_referer: str | None = None
+    http_latency_ms: float | None = None
+    http_response_size: int | None = None
 
-    # Source location information
-    source_file: Optional[str] = None
-    source_line: Optional[int] = None
-    source_function: Optional[str] = None
+    source_file: str | None = None
+    source_line: int | None = None
+    source_function: str | None = None
 
 
 class LogProvider(ABC):
@@ -189,12 +186,12 @@ class Logger(ABC):
         pass
 
     @abstractmethod
-    def error(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+    def error(self, message: str, exception: Exception | None = None, **context) -> None:
         """Log an error message, optionally with exception details."""
         pass
 
     @abstractmethod
-    def critical(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+    def critical(self, message: str, exception: Exception | None = None, **context) -> None:
         """Log a critical message, optionally with exception details."""
         pass
 
@@ -203,11 +200,11 @@ class Logger(ABC):
         self,
         method: str,
         url: str,
-        status: Optional[int] = None,
-        latency_ms: Optional[float] = None,
-        response_size: Optional[int] = None,
-        user_agent: Optional[str] = None,
-        referer: Optional[str] = None,
+        status: int | None = None,
+        latency_ms: float | None = None,
+        response_size: int | None = None,
+        user_agent: str | None = None,
+        referer: str | None = None,
         **context,
     ) -> None:
         """Log HTTP request information."""

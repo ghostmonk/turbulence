@@ -7,7 +7,7 @@ log formatting, trace context, and service metadata.
 
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from ..interfaces import LogEntry, LogLevel, LogProvider
 
@@ -28,7 +28,7 @@ class GCPLogProvider(LogProvider):
     GCP conventions. Falls back to console logging if GCP is not available.
     """
 
-    def __init__(self, project_id: Optional[str] = None, fallback_to_console: bool = True):
+    def __init__(self, project_id: str | None = None, fallback_to_console: bool = True):
         """
         Initialize GCP logging provider.
 
@@ -38,8 +38,8 @@ class GCPLogProvider(LogProvider):
         """
         self.project_id = project_id or os.getenv("GOOGLE_CLOUD_PROJECT")
         self.fallback_to_console = fallback_to_console
-        self.client: Optional[cloud_logging.Client] = None
-        self.handler: Optional[cloud_logging.handlers.CloudLoggingHandler] = None
+        self.client: cloud_logging.Client | None = None
+        self.handler: cloud_logging.handlers.CloudLoggingHandler | None = None
         self.is_cloud_run = bool(os.getenv("K_SERVICE"))
         self.initialized = False
         self.using_fallback = False

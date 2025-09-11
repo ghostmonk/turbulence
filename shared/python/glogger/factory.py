@@ -6,7 +6,7 @@ import os
 import sys
 import traceback
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .interfaces import (
     LogContext,
@@ -37,7 +37,7 @@ class DefaultLogger(Logger):
         return DefaultLogger(self.component, self.provider, merged_context)
 
     def _create_log_entry(
-        self, level: LogLevel, message: str, exception: Optional[Exception] = None, **context
+        self, level: LogLevel, message: str, exception: Exception | None = None, **context
     ) -> LogEntry:
         """Create a log entry with source location and context."""
         # Get caller information
@@ -83,12 +83,12 @@ class DefaultLogger(Logger):
         entry = self._create_log_entry(LogLevel.WARNING, message, **context)
         self.provider.log(entry)
 
-    def error(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+    def error(self, message: str, exception: Exception | None = None, **context) -> None:
         """Log an error message."""
         entry = self._create_log_entry(LogLevel.ERROR, message, exception, **context)
         self.provider.log(entry)
 
-    def critical(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+    def critical(self, message: str, exception: Exception | None = None, **context) -> None:
         """Log a critical message."""
         entry = self._create_log_entry(LogLevel.CRITICAL, message, exception, **context)
         self.provider.log(entry)
@@ -97,11 +97,11 @@ class DefaultLogger(Logger):
         self,
         method: str,
         url: str,
-        status: Optional[int] = None,
+        status: int | None = None,
         latency_ms: Optional[float] = None,
-        response_size: Optional[int] = None,
-        user_agent: Optional[str] = None,
-        referer: Optional[str] = None,
+        response_size: int | None = None,
+        user_agent: str | None = None,
+        referer: str | None = None,
         **context,
     ) -> None:
         """Log HTTP request information."""

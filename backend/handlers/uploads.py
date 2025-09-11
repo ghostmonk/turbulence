@@ -5,7 +5,7 @@ import os
 import traceback
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from database import get_database
 from decorators.auth import requires_auth
@@ -53,7 +53,7 @@ ALLOWED_ORIGINS = [
 ]
 
 
-def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
+def generate_signed_url_or_none(blob, blob_path: str) -> str | None:
     """Generate a signed URL for the blob, returning None if it fails."""
     try:
         signed_url = blob.generate_signed_url(
@@ -99,7 +99,7 @@ async def options_media(request: Request, filename: str):
 
 
 @router.get("/uploads/{filename:path}")
-async def get_media(request: Request, filename: str, size: Optional[int] = None):
+async def get_media(request: Request, filename: str, size: int | None = None):
     try:
         logger.info(f"Media request received: {filename}, size: {size}")
 

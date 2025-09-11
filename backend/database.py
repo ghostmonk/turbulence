@@ -1,7 +1,6 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
 
 from glogger import logger
 from motor.motor_asyncio import (
@@ -10,7 +9,7 @@ from motor.motor_asyncio import (
     AsyncIOMotorDatabase,
 )
 
-client: Optional[AsyncIOMotorClient] = None
+client: AsyncIOMotorClient | None = None
 _connection_lock = asyncio.Lock()
 
 
