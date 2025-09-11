@@ -98,7 +98,7 @@ class DefaultLogger(Logger):
         method: str,
         url: str,
         status: int | None = None,
-        latency_ms: Optional[float] = None,
+        latency_ms: float | None = None,
         response_size: int | None = None,
         user_agent: str | None = None,
         referer: str | None = None,
@@ -153,7 +153,7 @@ class DefaultLoggerFactory(LoggerFactory):
 
 
 # Global factory instance
-_logger_factory: Optional[LoggerFactory] = None
+_logger_factory: LoggerFactory | None = None
 
 
 def create_logger_factory(provider: LogProvider) -> LoggerFactory:
