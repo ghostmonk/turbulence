@@ -7,6 +7,7 @@ log formatting, trace context, and service metadata.
 
 import os
 import sys
+import logging
 from typing import Any, Dict
 
 from ..interfaces import LogEntry, LogLevel, LogProvider
@@ -172,13 +173,11 @@ class GCPLogProvider(LogProvider):
                 k: v for k, v in log_dict["httpRequest"].items() if v is not None
             }
 
-        # Use the Cloud Logging handler
-        import logging
-
         log_level = self._convert_log_level(entry.level)
+        logger_name = entry.context.get("component", "app") if entry.context else "app"
         self.handler.emit(
             logging.LogRecord(
-                name="turbulence",
+                name=logger_name,
                 level=log_level,
                 pathname="",
                 lineno=0,
@@ -227,7 +226,6 @@ class GCPLogProvider(LogProvider):
 
     def _convert_log_level(self, level: LogLevel) -> int:
         """Convert our LogLevel to Python logging level."""
-        import logging
 
         mapping = {
             LogLevel.DEBUG: logging.DEBUG,
