@@ -1,14 +1,12 @@
 /**
- * New logging implementation using the abstraction layer.
+ * Platform-independent logging for the frontend.
  * 
- * This file demonstrates how to use the new logging abstraction and provides
- * a migration path from the old logger implementation. Once the migration is complete,
- * this can replace the old logger files.
+ * Provides a clean logging interface that automatically detects the environment
+ * and chooses the appropriate provider (console, structured JSON, etc.)
  */
 
-import { Logger, LoggerFactory, autoConfigureLogging, getLogger } from '@/lib/logging';
+import { Logger, LoggerFactory, autoConfigureLogging } from '@/lib/logging';
 
-// Initialize logging based on environment
 let _factory: LoggerFactory | null = null;
 let _initPromise: Promise<LoggerFactory> | null = null;
 
@@ -23,7 +21,6 @@ async function getFactory(): Promise<LoggerFactory> {
     return _factory;
 }
 
-// Create a default logger for backward compatibility
 let _defaultLogger: Logger | null = null;
 
 async function getDefaultLogger(): Promise<Logger> {
@@ -44,7 +41,6 @@ export async function getRequestLogger(requestId: string, context: any = {}): Pr
     return logger.withContext({ request_id: requestId, ...context });
 }
 
-// Backward compatibility - create a proxy that initializes lazily
 export const logger = {
     debug: (message: string, context?: any) => {
         getDefaultLogger().then(l => l.debug(message, context)).catch(console.error);
@@ -66,7 +62,6 @@ export const logger = {
     }
 };
 
-// Enhanced API for better usage patterns
 export class LoggerManager {
     private static instance: LoggerManager;
     private factory: LoggerFactory | null = null;
@@ -113,14 +108,41 @@ export class LoggerManager {
     }
 }
 
-// Convenience exports
 export const loggerManager = LoggerManager.getInstance();
 
-// Pre-configured loggers for common use cases
 export const apiLogger = {
     async logRequest(method: string, url: string, status?: number, latencyMs?: number, context?: any) {
         const logger = await loggerManager.createApiLogger(url, method);
         logger.logRequest(method, url, status, latencyMs, undefined, context);
+    },
+    
+    async logApiRequest(req: any, res?: any) {
+        const logger = await loggerManager.createApiLogger(req.url || 'unknown', req.method || 'unknown');
+        const startTime = Date.now();
+        
+        logger.info(`API request started: ${req.method} ${req.url}`, {
+            method: req.method,
+            url: req.url,
+            query: req.query,
+            headers: req.headers
+        });
+        
+        if (res) {
+            const latencyMs = Date.now() - startTime;
+            logger.logRequest(req.method, req.url, res.statusCode, latencyMs, undefined, {
+                query: req.query
+            });
+        }
+    },
+    
+    async info(message: string, context?: any) {
+        const logger = await loggerManager.getLogger('api');
+        logger.info(message, context);
+    },
+    
+    async error(message: string, error?: Error, context?: any) {
+        const logger = await loggerManager.getLogger('api');
+        logger.error(message, error, context);
     },
     
     async logError(method: string, url: string, error: Error, context?: any) {
@@ -146,5 +168,4 @@ export const errorLogger = {
     }
 };
 
-// Initialize the logging system
 loggerManager.initialize().catch(console.error);

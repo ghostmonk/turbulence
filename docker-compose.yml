@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "5001:5001"
     env_file:

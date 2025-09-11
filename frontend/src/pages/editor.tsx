@@ -17,7 +17,7 @@ export default function EditorPage() {
   const storyId = typeof id === 'string' ? id : undefined;
   
   const { story: fetchedStory, loading: fetchLoading, error: fetchError } = useFetchStory(storyId);
-  const { saveStory, deleteStory, loading: saveLoading, error: saveError, errorDetails } = useStoryOperations();
+  const { saveStory, deleteStory, loading: saveLoading, error: saveError, errorDetails: _errorDetails } = useStoryOperations();
   
 
   const [story, setStory] = useState<Partial<Story>>({
@@ -27,7 +27,7 @@ export default function EditorPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [_showDebugInfo, _setShowDebugInfo] = useState(false);
   
   const resetForm = useCallback(() => {
     setStory({
@@ -187,8 +187,8 @@ export default function EditorPage() {
     setStory(prev => ({ ...prev, is_published: e.target.checked }));
   };
 
-  const toggleDebugInfo = useCallback(() => {
-    setShowDebugInfo(prev => !prev);
+  const _toggleDebugInfo = useCallback(() => {
+    _setShowDebugInfo(prev => !prev);
   }, []);
 
   const isLoading = fetchLoading || saveLoading || status === 'loading';

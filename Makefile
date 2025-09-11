@@ -52,6 +52,10 @@ venv-clean:
 format:
 	. $(VENV_ACTIVATE) && isort backend/
 	. $(VENV_ACTIVATE) && black backend/
+	. $(VENV_ACTIVATE) && isort cloud-functions/video-processor/
+	. $(VENV_ACTIVATE) && black cloud-functions/video-processor/
+	. $(VENV_ACTIVATE) && isort shared/python/
+	. $(VENV_ACTIVATE) && black shared/python/
 	cd frontend && npx eslint --fix .
 
 format-check:
