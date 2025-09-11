@@ -42,23 +42,29 @@ export async function getRequestLogger(requestId: string, context: any = {}): Pr
 }
 
 export const logger = {
-    debug: (message: string, context?: any) => {
-        getDefaultLogger().then(l => l.debug(message, context)).catch(console.error);
+    debug: async (message: string, context?: any) => {
+        const l = await getDefaultLogger();
+        return l.debug(message, context);
     },
-    info: (message: string, context?: any) => {
-        getDefaultLogger().then(l => l.info(message, context)).catch(console.error);
+    info: async (message: string, context?: any) => {
+        const l = await getDefaultLogger();
+        return l.info(message, context);
     },
-    warn: (message: string, context?: any) => {
-        getDefaultLogger().then(l => l.warn(message, context)).catch(console.error);
+    warn: async (message: string, context?: any) => {
+        const l = await getDefaultLogger();
+        return l.warn(message, context);
     },
-    error: (message: string, error?: Error, context?: any) => {
-        getDefaultLogger().then(l => l.error(message, error, context)).catch(console.error);
+    error: async (message: string, error?: Error, context?: any) => {
+        const l = await getDefaultLogger();
+        return l.error(message, error, context);
     },
-    critical: (message: string, error?: Error, context?: any) => {
-        getDefaultLogger().then(l => l.critical(message, error, context)).catch(console.error);
+    critical: async (message: string, error?: Error, context?: any) => {
+        const l = await getDefaultLogger();
+        return l.critical(message, error, context);
     },
-    logRequest: (method: string, url: string, status?: number, latencyMs?: number, responseSize?: number, context?: any) => {
-        getDefaultLogger().then(l => l.logRequest(method, url, status, latencyMs, responseSize, context)).catch(console.error);
+    logRequest: async (method: string, url: string, status?: number, latencyMs?: number, responseSize?: number, context?: any) => {
+        const l = await getDefaultLogger();
+        return l.logRequest(method, url, status, latencyMs, responseSize, context);
     }
 };
 
