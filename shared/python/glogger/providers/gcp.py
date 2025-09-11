@@ -191,7 +191,7 @@ class GCPLogProvider(LogProvider):
         """Log to console when Cloud Logging is not available."""
         timestamp = entry.timestamp.strftime("%Y-%m-%d %H:%M:%S")
         level = entry.level.value
-        component = entry.context.component
+        component = getattr(entry.context, "component", "unknown")
 
         message = f"[{timestamp}] [{level}] [{component}] {entry.message}"
 
