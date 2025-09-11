@@ -26,7 +26,7 @@ def detect_environment() -> str:
         return "gcp-cloud-run"
     elif os.getenv("GOOGLE_CLOUD_PROJECT"):
         return "gcp"
-    elif os.getenv("NODE_ENV") == "development" or os.getenv("ENVIRONMENT") == "development":
+    elif os.getenv("ENVIRONMENT") == "development":
         return "development"
     else:
         return "unknown"
