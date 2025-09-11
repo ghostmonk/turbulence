@@ -48,8 +48,20 @@ export class DefaultLogger implements Logger {
         if (stack) {
             // Parse stack trace to get caller information
             const lines = stack.split('\n');
-            // Skip the first few lines (Error constructor, this method, and the calling log method)
-            const callerLine = lines[3] || lines[2] || lines[1];
+            // Find the first stack line that does not reference internal logging methods
+            const internalMethods = [
+                'createLogEntry',
+                'log', 'info', 'warn', 'error', 'debug', 'trace', // common log level methods
+                'DefaultLogger.'
+            ];
+            let callerLine: string | undefined;
+            for (let i = 1; i < lines.length; i++) { // skip the first line ("Error")
+                const line = lines[i];
+                if (!internalMethods.some(method => line.includes(method))) {
+                    callerLine = line;
+                    break;
+                }
+            }
             if (callerLine) {
                 const match = callerLine.match(/at (.+?) \((.+?):(\d+):\d+\)/) ||
                              callerLine.match(/at (.+?):(\d+):\d+/) ||
