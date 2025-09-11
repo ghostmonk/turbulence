@@ -61,7 +61,7 @@ def create_provider_from_config(provider_type: str, config: Dict[str, Any]) -> L
 
 
 def auto_configure_logging(
-    force_provider: Optional[str] = None, provider_config: Optional[Dict[str, Any]] = None
+    force_provider: str | None = None, provider_config: Dict[str, Any] | None = None
 ) -> LoggerFactory:
     """
     Automatically configure logging based on environment detection.
