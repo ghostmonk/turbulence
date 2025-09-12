@@ -2,11 +2,8 @@
 FFmpeg-based video processing Cloud Function triggered by GCS uploads.
 Handles video transcoding, thumbnail generation, and metadata extraction using FFmpeg.
 """
-
-import logging
 import os
 import shutil
-import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -243,20 +240,33 @@ def transcode_video(
     processed_formats = []
     base_name = Path(original_file_name).stem
 
-    formats = [
-        {"name": "mp4_720p", "width": 1280, "height": 720, "bitrate": "2500k", "suffix": "_720p"},
-        {"name": "mp4_480p", "width": 854, "height": 480, "bitrate": "1000k", "suffix": "_480p"},
+    original_width = metadata.get("width", 1920)
+    original_height = metadata.get("height", 1080)
+    aspect_ratio = original_width / original_height
+    target_qualities = [
+        {"name": "mp4_720p", "height": 720, "bitrate": "2500k", "suffix": "_720p"},
+        {"name": "mp4_480p", "height": 480, "bitrate": "1000k", "suffix": "_480p"},
     ]
 
-    for format_config in formats:
+    for quality_config in target_qualities:
         try:
-            output_filename = f"{base_name}{format_config['suffix']}.mp4"
+            target_height = quality_config["height"]
+            target_width = int(target_height * aspect_ratio)
+            
+            if target_width % 2 != 0:
+                target_width += 1
+
+            if original_height <= target_height:
+                logger.info(f"Skipping {quality_config['name']} - original video is smaller ({original_height}p)")
+                continue
+
+            output_filename = f"{base_name}{quality_config['suffix']}.mp4"
             output_path = os.path.join(temp_dir, output_filename)
 
-            bitrate_num = int(format_config["bitrate"].replace("k", ""))
+            bitrate_num = int(quality_config["bitrate"].replace("k", ""))
             bufsize = f"{bitrate_num * 2}k"
 
-            logger.info(f"Transcoding to {format_config['name']}...")
+            logger.info(f"Transcoding to {quality_config['name']} ({target_width}x{target_height})...")
 
             (
                 ffmpeg.input(input_path)
@@ -266,9 +276,9 @@ def transcode_video(
                         "c:v": "libx264",  # H.264 codec
                         "preset": "medium",  # Balance between speed and compression
                         "crf": "23",  # Constant Rate Factor for quality
-                        "maxrate": format_config["bitrate"],
+                        "maxrate": quality_config["bitrate"],
                         "bufsize": bufsize,
-                        "vf": f"scale={format_config['width']}:{format_config['height']}",
+                        "vf": f"scale={target_width}:{target_height}",
                         "c:a": "aac",  # Audio codec
                         "b:a": "128k",  # Audio bitrate
                         "movflags": "+faststart",  # Optimize for web streaming
@@ -288,21 +298,21 @@ def transcode_video(
 
             processed_formats.append(
                 {
-                    "format": format_config["name"],
+                    "format": quality_config["name"],
                     "url": f"/uploads/{processed_blob_name}",
-                    "width": format_config["width"],
-                    "height": format_config["height"],
+                    "width": target_width,
+                    "height": target_height,
                 }
             )
 
-            logger.info(f"Successfully transcoded to {format_config['name']}")
+            logger.info(f"Successfully transcoded to {quality_config['name']}")
 
         except ffmpeg.Error as e:
             error_msg = e.stderr.decode("utf-8") if e.stderr else str(e)
-            logger.error(f"FFmpeg transcoding error for {format_config['name']}: {error_msg}")
+            logger.error(f"FFmpeg transcoding error for {quality_config['name']}: {error_msg}")
             continue
         except Exception as e:
-            logger.error(f"Unexpected error transcoding to {format_config['name']}: {str(e)}")
+            logger.error(f"Unexpected error transcoding to {quality_config['name']}: {str(e)}")
             continue
 
     return processed_formats

@@ -229,8 +229,8 @@ async def process_video_file(
         # Create video metadata using Pydantic model
         video_metadata = VideoMetadata(
             duration_seconds=0.0,  # Will be updated by processing
-            width=1280,  # Default, will be updated
-            height=720,  # Default, will be updated
+            width=0,  # Will be updated with actual dimensions by Cloud Function
+            height=0,  # Will be updated with actual dimensions by Cloud Function
             file_size=file_size,
             content_type=file.content_type,
             upload_time=now,
