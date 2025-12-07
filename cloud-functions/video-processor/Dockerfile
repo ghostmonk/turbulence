@@ -1,5 +1,5 @@
 # Use the official Functions Framework Python base image
-FROM functions-framework-python:3.11
+FROM python:3.11-slim
 
 # Install FFmpeg and other system dependencies
 RUN apt-get update && \
@@ -13,6 +13,6 @@ RUN apt-get update && \
 RUN ffmpeg -version && ffprobe -version
 
 WORKDIR /workspace
-COPY shared/python/glogger/ ./shared/python/glogger/
+COPY shared/python/ ./shared/python/
 COPY cloud-functions/video-processor/ ./
 RUN pip install --no-cache-dir -r requirements.txt

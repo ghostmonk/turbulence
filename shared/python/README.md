@@ -47,11 +47,55 @@ req_logger.info("Request completed", status=200, latency_ms=45.2)
 All loggers support these methods:
 
 - `debug(message, **context)` - Debug information
-- `info(message, **context)` - General information  
+- `info(message, **context)` - General information
 - `warn(message, **context)` - Warning messages
 - `error(message, exception=None, **context)` - Error messages
 - `critical(message, exception=None, **context)` - Critical errors
 - `log_request(method, url, status=None, latency_ms=None, response_size=None, **context)` - HTTP request logging
+
+## API Methods
+
+The logger provides two API styles for compatibility:
+
+### Standard API (Recommended)
+
+Pass context as keyword arguments:
+
+```python
+from glogger import logger
+
+# Log with context
+logger.info("User logged in", user_id="12345", ip_address="192.168.1.1")
+logger.error("Database error", error_code="DB_001", retry_count=3)
+```
+
+### Compatibility API
+
+Pass context as a dictionary (for backward compatibility):
+
+```python
+from glogger import logger
+
+# Log with context dictionary
+logger.info_with_context("Request started", {"method": "GET", "path": "/api/users"})
+logger.error_with_context("Request failed", {"status_code": 500})
+logger.exception_with_context("Unhandled error", {"request_id": "abc-123"})
+```
+
+### Context Logger Pattern
+
+Create a logger with persistent context:
+
+```python
+from glogger import logger
+
+# Create logger with default context
+request_logger = logger.with_context(request_id="abc-123", user_id="user-456")
+
+# All logs include the default context
+request_logger.info("Processing request")  # Includes request_id and user_id
+request_logger.error("Request failed")      # Includes request_id and user_id
+```
 
 ## Context and Exceptions
 
@@ -128,5 +172,23 @@ The package is installed as an editable dependency:
 
 ```bash
 # Already included in requirements.txt as:
+-e ./shared/python
+```
+
+## Deployment
+
+When deploying with Docker, ensure you copy the complete shared package:
+
+```dockerfile
+# Correct - copies entire package including setup.py
+COPY shared/python/ ./shared/python/
+
+# Incorrect - missing setup.py
+COPY shared/python/glogger/ ./shared/python/glogger/
+```
+
+The `requirements.txt` uses editable install which requires `setup.py`:
+
+```
 -e ./shared/python
 ```
