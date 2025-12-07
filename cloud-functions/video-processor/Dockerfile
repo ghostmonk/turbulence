@@ -21,3 +21,6 @@ RUN pip install --no-cache-dir ./shared/python
 # Install remaining requirements
 COPY cloud-functions/video-processor/ ./
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Set the entrypoint to use functions-framework
+CMD exec functions-framework --target=process_video --signature-type=cloudevent
