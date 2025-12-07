@@ -22,6 +22,14 @@ export default function Document() {
                 {/* Security headers as meta tags */}
                 <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
                 <meta name="referrer-policy" content="strict-origin-when-cross-origin"/>
+
+                {/* Google Fonts - Proper place for custom fonts */}
+                <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link 
+                    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Slab:wght@300;400;700&display=swap" 
+                    rel="stylesheet" 
+                />
             </Head>
             <body style={{backgroundColor: '#0f172a'}} className="text-foreground">
             <Main/>

@@ -54,7 +54,7 @@ async def create_video_processing_job(
         )
 
         # Convert to dict only for MongoDB insertion
-        result = await video_jobs_collection.insert_one(new_job.model_dump())
+        await video_jobs_collection.insert_one(new_job.model_dump())
         logger.info(f"Created video processing job: {job_id}")
 
         return VideoProcessingJobCreateResponse(

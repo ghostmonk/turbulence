@@ -1,0 +1,18 @@
+# Development dependencies (includes production)
+-r requirements.in
+
+# Testing dependencies
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-mock==3.14.0
+pytest-cov
+httpx==0.27.2
+mongomock-motor==0.0.34
+
+# Code quality and formatting
+black
+isort
+flake8
+
+# Development tools
+pip-tools 

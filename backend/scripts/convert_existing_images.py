@@ -5,7 +5,6 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import List
 
 from google.cloud import storage
 from PIL import Image, ImageOps
@@ -105,9 +104,9 @@ def main():
 
         for i in range(0, len(all_images), args.batch_size):
             batch = all_images[i : i + args.batch_size]
-            logger.info(
-                f"Processing batch {i//args.batch_size + 1}/{(len(all_images) + args.batch_size - 1)//args.batch_size}"
-            )
+            current_batch = i // args.batch_size + 1
+            total_batches = (len(all_images) + args.batch_size - 1) // args.batch_size
+            logger.info(f"Processing batch {current_batch}/{total_batches}")
 
             for blob in batch:
                 if process_image(bucket, blob, dry_run=args.dry_run):

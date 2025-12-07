@@ -1,4 +1,4 @@
-.PHONY: format format-check test clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke
+.PHONY: format format-check test test-unit test-integration test-coverage test-ci clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke deps deps-dev deps-compile deps-upgrade dev dev-backend dev-frontend
 
 # Virtual environment configuration
 VENV_DEFAULT := $(HOME)/Documents/venvs/turbulence
@@ -33,12 +33,16 @@ venv:
 			echo "Consider removing the virtual environment and recreating it" && \
 			echo "Run: make venv-clean && make venv"; \
 		fi && \
-		echo "Updating dependencies..." && \
-		pip install -r backend/requirements.txt; \
+		echo "Installing pip-tools..." && \
+		pip install pip-tools && \
+		echo "Installing development dependencies..." && \
+		pip install -r backend/requirements-dev.txt; \
 	else \
 		echo "Creating virtual environment at $(VENV_PATH)" && \
 		$(SYSTEM_PYTHON) -m venv $(VENV_PATH) && \
-		. $(VENV_ACTIVATE) && pip install -r backend/requirements.txt; \
+		. $(VENV_ACTIVATE) && \
+		pip install pip-tools && \
+		pip install -r backend/requirements-dev.txt; \
 	fi
 	@echo "\nTo activate the virtual environment, run:"
 	@echo "source $(VENV_ACTIVATE)"
@@ -47,6 +51,25 @@ venv:
 venv-clean:
 	@echo "Removing virtual environment at $(VENV_PATH)"
 	rm -rf $(VENV_PATH)
+
+# Dependency management with pip-tools
+deps-compile:
+	@echo "Compiling requirements files..."
+	. $(VENV_ACTIVATE) && cd backend && pip-compile requirements.in
+	. $(VENV_ACTIVATE) && cd backend && pip-compile requirements-dev.in
+
+deps-upgrade:
+	@echo "Upgrading all dependencies..."
+	. $(VENV_ACTIVATE) && cd backend && pip-compile --upgrade requirements.in
+	. $(VENV_ACTIVATE) && cd backend && pip-compile --upgrade requirements-dev.in
+
+deps:
+	@echo "Installing production dependencies..."
+	. $(VENV_ACTIVATE) && pip install -r backend/requirements.txt
+
+deps-dev:
+	@echo "Installing development dependencies..."
+	. $(VENV_ACTIVATE) && pip install -r backend/requirements-dev.txt
 
 # Python formatting
 format:
@@ -66,6 +89,27 @@ format-check:
 test:
 	. $(VENV_ACTIVATE) && pytest
 
+test-unit:
+	. $(VENV_ACTIVATE) && pytest -v -m unit
+
+test-integration:
+	. $(VENV_ACTIVATE) && pytest -v -m integration
+
+test-coverage:
+	. $(VENV_ACTIVATE) && pytest --cov=backend --cov-report=html --cov-report=term-missing
+
+test-ci:
+	@echo "Running CI-style tests with formatting checks..."
+	. $(VENV_ACTIVATE) && cd backend && \
+	echo "Checking import sorting..." && \
+	isort . --check-only --diff && \
+	echo "Checking code formatting..." && \
+	black . --check --diff && \
+	echo "Running linting..." && \
+	flake8 . --statistics && \
+	echo "Running tests with coverage..." && \
+	pytest -v --tb=short --cov=. --cov-report=term-missing
+
 # Docker operations
 build:
 	docker-compose build
@@ -80,6 +124,15 @@ logs:
 	docker-compose logs -f
 
 # Development servers
+dev:
+	@echo "Starting development servers..."
+	@echo "Backend will run on http://localhost:5001"
+	@echo "Frontend will run on http://localhost:3000"
+	@echo "Press Ctrl+C to stop both servers"
+	@trap 'kill %1 %2' INT; \
+	make dev-backend & \
+	make dev-frontend & \
+	wait
 # 
 # dev-backend: Start Python backend server on port 5001
 # - Activates virtual environment 
@@ -118,18 +171,27 @@ nuke:
 # Help
 help:
 	@echo "Available targets:"
-	@echo "  env          - Show Python environment information"
-	@echo "  venv         - Create or update virtual environment (default: $(VENV_DEFAULT))"
-	@echo "                Override with: make venv VENV_PATH=/path/to/venv"
-	@echo "  venv-clean   - Remove virtual environment"
-	@echo "  format       - Format code using black and isort (backend only)"
-	@echo "  format-check - Check code formatting without making changes (backend only)"
-	@echo "  test         - Run tests"
-	@echo "  docker-build - Build Docker images"
-	@echo "  docker-up    - Start Docker containers"
-	@echo "  docker-down  - Stop Docker containers"
-	@echo "  docker-logs  - Show Docker container logs"
-	@echo "  dev-backend  - Start backend development server"
-	@echo "  dev-frontend - Start frontend development server"
-	@echo "  clean        - Clean up Python cache files and build artifacts"
-	@echo "  docker-nuke  - Nuke all Docker resources for a clean slate" 
+	@echo "  env              - Show Python environment information"
+	@echo "  venv             - Create or update virtual environment (default: $(VENV_DEFAULT))"
+	@echo "                    Override with: make venv VENV_PATH=/path/to/venv"
+	@echo "  venv-clean       - Remove virtual environment"
+	@echo "  deps-compile     - Compile requirements.in files to requirements.txt"
+	@echo "  deps-upgrade     - Upgrade all dependencies and recompile"
+	@echo "  deps             - Install production dependencies only"
+	@echo "  deps-dev         - Install development dependencies"
+	@echo "  format           - Format code using black and isort (backend only)"
+	@echo "  format-check     - Check code formatting without making changes (backend only)"
+	@echo "  test             - Run all tests"
+	@echo "  test-unit        - Run only unit tests"
+	@echo "  test-integration - Run only integration tests"
+	@echo "  test-coverage    - Run tests with coverage report"
+	@echo "  test-ci          - Run CI-style tests with formatting and linting checks"
+	@echo "  docker-build     - Build Docker images"
+	@echo "  docker-up        - Start Docker containers"
+	@echo "  docker-down      - Stop Docker containers"
+	@echo "  docker-logs      - Show Docker container logs"
+	@echo "  dev              - Start both backend and frontend development servers"
+	@echo "  dev-backend      - Start backend development server"
+	@echo "  dev-frontend     - Start frontend development server"
+	@echo "  clean            - Clean up Python cache files and build artifacts"
+	@echo "  docker-nuke      - Nuke all Docker resources for a clean slate" 

@@ -105,6 +105,19 @@ class DefaultLogger(Logger):
         """Log an exception with context dict (compatibility method)."""
         self.error(message, **context)
 
+    def warning_with_context(self, message: str, context: Dict[str, Any]) -> None:
+        """Log a warning message with context dict (compatibility method)."""
+        self.warning(message, **context)
+
+    def log_request_response(self, request: Any, error: Exception | None = None, **context) -> None:
+        """Log request/response information (compatibility method)."""
+        method = getattr(request, "method", "UNKNOWN")
+        url = str(getattr(request, "url", "unknown"))
+        if error:
+            self.error(f"Request failed: {method} {url}", exception=error, **context)
+        else:
+            self.info(f"Request: {method} {url}", **context)
+
     def log_request(
         self,
         method: str,
