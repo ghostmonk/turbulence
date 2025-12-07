@@ -156,7 +156,6 @@ jobs:
         run: |
           echo "🚀 Deploying Backend (files changed)"
           gcloud builds submit . \
-            --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service \
             --config backend/cloudbuild.yaml
           
           # Encode the JSON to base64 to avoid parsing issues
@@ -203,7 +202,6 @@ jobs:
 
           # Build the container image with Cloud Build (includes shared/python)
           gcloud builds submit . \
-            --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/video-processor \
             --config cloud-functions/video-processor/cloudbuild.yaml
 
           # Build MongoDB URI from secrets/vars
