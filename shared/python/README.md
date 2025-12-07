@@ -168,27 +168,26 @@ custom_logger = factory.create_logger('my-service', version="2.0", region="us-we
 
 ## Installation
 
-The package is installed as an editable dependency:
+### Local Development
+
+For local development, you can install as an editable package:
 
 ```bash
-# Already included in requirements.txt as:
--e ./shared/python
+pip install -e ./shared/python
 ```
 
-## Deployment
+### Docker Deployment
 
-When deploying with Docker, ensure you copy the complete shared package:
+For Docker deployments (including GCP Cloud Build), install glogger before other dependencies:
 
 ```dockerfile
-# Correct - copies entire package including setup.py
+# Install shared glogger package first
 COPY shared/python/ ./shared/python/
+RUN pip install --no-cache-dir ./shared/python
 
-# Incorrect - missing setup.py
-COPY shared/python/glogger/ ./shared/python/glogger/
+# Install remaining requirements
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 ```
 
-The `requirements.txt` uses editable install which requires `setup.py`:
-
-```
--e ./shared/python
-```
+**Important:** Do NOT use `-e ./shared/python` in `requirements.txt` for Docker builds. The editable install doesn't work in GCP Cloud Build. Instead, install the package directly as shown above.
