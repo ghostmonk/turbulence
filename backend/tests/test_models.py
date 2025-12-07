@@ -5,7 +5,7 @@ Unit tests for Pydantic models
 from datetime import datetime, timezone
 
 import pytest
-from models import StoryBase, StoryCreate, StoryResponse
+from models.story import StoryBase, StoryCreate, StoryResponse
 from pydantic import ValidationError
 
 
