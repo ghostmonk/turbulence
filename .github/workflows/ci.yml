@@ -62,6 +62,12 @@ jobs:
         env:
           GCS_BUCKET_NAME: test-bucket
           GOOGLE_CLOUD_PROJECT: test-project
+          MONGO_USER: test-user
+          MONGO_PASSWORD: test-password
+          MONGO_CLUSTER: test-cluster
+          MONGO_APP_NAME: test-app
+          MONGO_HOST: test.mongodb.net
+          MONGO_DB_NAME: test-db
         run: |
           cd backend
           echo "Running tests..."
