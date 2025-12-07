@@ -236,9 +236,7 @@ class TestFindOneAndConvert:
         mock_collection = AsyncMock()
         mock_collection.find_one.return_value = mock_doc
 
-        result = await find_one_and_convert(
-            mock_collection, {"_id": object_id}, StoryResponse
-        )
+        result = await find_one_and_convert(mock_collection, {"_id": object_id}, StoryResponse)
 
         assert isinstance(result, StoryResponse)
         assert result.title == "Test Story"
