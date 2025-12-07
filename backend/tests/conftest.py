@@ -8,17 +8,16 @@ from unittest.mock import AsyncMock, MagicMock
 import mongomock_motor
 import pytest
 import pytest_asyncio
+from database import get_collection
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
-
-from database import get_collection
 
 # Create a test app without lifespan to avoid DB connections during startup
 # Import routers directly to avoid the lifespan event
 from handlers.stories import router as stories_router
 from handlers.uploads import router as uploads_router
 from handlers.video_processing import router as video_processing_router
+from httpx import ASGITransport, AsyncClient
 
 test_app = FastAPI()
 test_app.include_router(stories_router)

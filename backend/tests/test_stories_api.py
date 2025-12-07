@@ -8,7 +8,6 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 from httpx import AsyncClient
-
 from tests.test_utils import MockCursor
 
 
