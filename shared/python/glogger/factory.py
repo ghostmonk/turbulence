@@ -93,6 +93,18 @@ class DefaultLogger(Logger):
         entry = self._create_log_entry(LogLevel.CRITICAL, message, exception, **context)
         self.provider.log(entry)
 
+    def info_with_context(self, message: str, context: Dict[str, Any]) -> None:
+        """Log an info message with context dict (compatibility method)."""
+        self.info(message, **context)
+
+    def error_with_context(self, message: str, context: Dict[str, Any]) -> None:
+        """Log an error message with context dict (compatibility method)."""
+        self.error(message, **context)
+
+    def exception_with_context(self, message: str, context: Dict[str, Any]) -> None:
+        """Log an exception with context dict (compatibility method)."""
+        self.error(message, **context)
+
     def log_request(
         self,
         method: str,
