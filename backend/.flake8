@@ -8,7 +8,8 @@ exclude =
     venv,
     *.egg-info,
     build,
-    dist
+    dist,
+    scripts
 # E203: whitespace before ':' (conflicts with black)
 # W503: line break before binary operator (conflicts with black)
 # E501: line too long (handled by black)

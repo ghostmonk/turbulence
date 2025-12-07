@@ -16,7 +16,6 @@ from google.cloud import storage
 from google.oauth2 import service_account
 from models.error import (
     ErrorCode,
-    StandardErrorResponse,
     create_upload_error_response,
 )
 from models.upload import (

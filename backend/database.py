@@ -20,15 +20,14 @@ async def get_database() -> AsyncIOMotorDatabase:
     if not client:
         async with _connection_lock:
             if not client:  # Double-check pattern
-                await _create_client()
+                client = await _create_client()
 
     db_name = os.getenv("MONGO_DB_NAME", "ghostmonk")
     return client[db_name]
 
 
-async def _create_client():
+async def _create_client() -> AsyncIOMotorClient:
     """Create MongoDB client with connection pooling and optimizations"""
-    global client
 
     user = _get_variable("MONGO_USER")
     password = _get_variable("MONGO_PASSWORD")
@@ -50,11 +49,13 @@ async def _create_client():
     )
 
     try:
-        client = AsyncIOMotorClient(mongo_uri)
+        new_client = AsyncIOMotorClient(mongo_uri)
 
         # Test the connection
-        await client.admin.command("ping")
+        await new_client.admin.command("ping")
         logger.info("MongoDB connection established successfully")
+
+        return new_client
 
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {str(e)}")

@@ -26,13 +26,13 @@ async def backfill_published_flag():
             logger.info("Backfill: No stories needed is_published flag update")
 
         # Run the date fields backfill
-        date_update_count = await backfill_date_fields()
+        await backfill_date_fields()
 
         # Run the slug backfill
-        slug_update_count = await backfill_slugs()
+        await backfill_slugs()
 
         return update_count
-    except Exception as e:
+    except Exception:
         logger.exception("Error during backfill operation")
         return 0
 
@@ -71,7 +71,7 @@ async def backfill_date_fields():
             logger.info("Backfill: No stories needed date fields update")
 
         return update_count
-    except Exception as e:
+    except Exception:
         logger.exception("Error during date fields backfill operation")
         return 0
 
@@ -105,6 +105,6 @@ async def backfill_slugs():
             logger.info("Backfill: No stories needed slugs")
 
         return update_count
-    except Exception as e:
+    except Exception:
         logger.exception("Error during slug backfill operation")
         return 0
