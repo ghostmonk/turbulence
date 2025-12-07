@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from bson import ObjectId
-from models import StoryResponse
+from models.story import StoryResponse
 from utils import (
     find_many_and_convert,
     find_one_and_convert,
@@ -15,6 +15,24 @@ from utils import (
     mongo_to_pydantic,
     slugify,
 )
+
+
+class MockAsyncIterator:
+    """Helper class for creating async iterators in tests"""
+
+    def __init__(self, docs):
+        self.docs = list(docs)  # Make a copy to avoid mutation issues
+        self.index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index >= len(self.docs):
+            raise StopAsyncIteration
+        doc = self.docs[self.index]
+        self.index += 1
+        return doc
 
 
 class TestSlugify:
@@ -148,22 +166,23 @@ class TestMongoToPydantic:
     @pytest.mark.unit
     def test_mongo_to_pydantic_success(self):
         """Test successful conversion of MongoDB document to Pydantic model"""
-        now = datetime.now(timezone.utc)
+        fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        object_id = ObjectId()
         mongo_doc = {
-            "_id": ObjectId(),
+            "_id": object_id,
             "title": "Test Story",
             "content": "Test content",
             "is_published": True,
             "slug": "test-story",
-            "date": now,
-            "createdDate": now,
-            "updatedDate": now,
+            "date": fixed_datetime,
+            "createdDate": fixed_datetime,
+            "updatedDate": fixed_datetime,
         }
 
         result = mongo_to_pydantic(mongo_doc, StoryResponse)
 
         assert isinstance(result, StoryResponse)
-        assert result.id == str(mongo_doc["_id"])
+        assert result.id == str(object_id)
         assert result.title == "Test Story"
         assert result.content == "Test content"
         assert result.is_published is True
@@ -178,15 +197,15 @@ class TestMongoToPydantic:
     @pytest.mark.unit
     def test_mongo_to_pydantic_no_id_field(self):
         """Test mongo_to_pydantic with document missing _id field"""
-        now = datetime.now(timezone.utc)
+        fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         mongo_doc = {
             "title": "Test Story",
             "content": "Test content",
             "is_published": True,
             "slug": "test-story",
-            "date": now,
-            "createdDate": now,
-            "updatedDate": now,
+            "date": fixed_datetime,
+            "createdDate": fixed_datetime,
+            "updatedDate": fixed_datetime,
         }
 
         # This should fail since id is required in StoryResponse
@@ -201,28 +220,29 @@ class TestFindOneAndConvert:
     @pytest.mark.asyncio
     async def test_find_one_and_convert_success(self):
         """Test successful find and convert"""
-        now = datetime.now(timezone.utc)
+        fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        object_id = ObjectId()
         mock_doc = {
-            "_id": ObjectId(),
+            "_id": object_id,
             "title": "Test Story",
             "content": "Test content",
             "is_published": True,
             "slug": "test-story",
-            "date": now,
-            "createdDate": now,
-            "updatedDate": now,
+            "date": fixed_datetime,
+            "createdDate": fixed_datetime,
+            "updatedDate": fixed_datetime,
         }
 
         mock_collection = AsyncMock()
         mock_collection.find_one.return_value = mock_doc
 
         result = await find_one_and_convert(
-            mock_collection, {"_id": mock_doc["_id"]}, StoryResponse
+            mock_collection, {"_id": object_id}, StoryResponse
         )
 
         assert isinstance(result, StoryResponse)
         assert result.title == "Test Story"
-        mock_collection.find_one.assert_called_once_with({"_id": mock_doc["_id"]})
+        mock_collection.find_one.assert_called_once_with({"_id": object_id})
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -243,7 +263,7 @@ class TestFindManyAndConvert:
     @pytest.mark.asyncio
     async def test_find_many_and_convert_success(self):
         """Test successful find many and convert"""
-        now = datetime.now(timezone.utc)
+        fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         mock_docs = [
             {
                 "_id": ObjectId(),
@@ -251,9 +271,9 @@ class TestFindManyAndConvert:
                 "content": "Content 1",
                 "is_published": True,
                 "slug": "story-1",
-                "date": now,
-                "createdDate": now,
-                "updatedDate": now,
+                "date": fixed_datetime,
+                "createdDate": fixed_datetime,
+                "updatedDate": fixed_datetime,
             },
             {
                 "_id": ObjectId(),
@@ -261,24 +281,19 @@ class TestFindManyAndConvert:
                 "content": "Content 2",
                 "is_published": False,
                 "slug": "story-2",
-                "date": now,
-                "createdDate": now,
-                "updatedDate": now,
+                "date": fixed_datetime,
+                "createdDate": fixed_datetime,
+                "updatedDate": fixed_datetime,
             },
         ]
 
-        # Create async iterator mock using AsyncMock
-        async def async_iterator():
-            for doc in mock_docs:
-                yield doc
-
-        mock_cursor = AsyncMock()
-        mock_cursor.__aiter__.return_value = async_iterator()
+        mock_cursor = MagicMock()
+        mock_cursor.__aiter__ = lambda self: MockAsyncIterator(mock_docs)
         mock_cursor.sort.return_value = mock_cursor
         mock_cursor.skip.return_value = mock_cursor
         mock_cursor.limit.return_value = mock_cursor
 
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         mock_collection.find.return_value = mock_cursor
 
         result = await find_many_and_convert(
@@ -287,7 +302,7 @@ class TestFindManyAndConvert:
             StoryResponse,
             sort={"createdDate": -1},
             limit=10,
-            skip=0,
+            skip=5,
         )
 
         assert len(result) == 2
@@ -295,26 +310,90 @@ class TestFindManyAndConvert:
         assert result[0].title == "Story 1"
         assert result[1].title == "Story 2"
 
-        mock_collection.find.assert_called_once_with({"is_published": True})
+        mock_collection.find.assert_called_once_with({"is_published": True}, None)
         mock_cursor.sort.assert_called_once_with({"createdDate": -1})
-        mock_cursor.skip.assert_called_once_with(0)
+        mock_cursor.skip.assert_called_once_with(5)
         mock_cursor.limit.assert_called_once_with(10)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_find_many_and_convert_empty_result(self):
         """Test find many and convert with empty result"""
-        # Create empty async iterator
-        async def async_iterator():
-            return
-            yield  # Make this a generator
+        mock_cursor = MagicMock()
+        mock_cursor.__aiter__ = lambda self: MockAsyncIterator([])
 
-        mock_cursor = AsyncMock()
-        mock_cursor.__aiter__.return_value = async_iterator()
-
-        mock_collection = AsyncMock()
+        mock_collection = MagicMock()
         mock_collection.find.return_value = mock_cursor
 
         result = await find_many_and_convert(mock_collection, {"is_published": True}, StoryResponse)
 
         assert result == []
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_find_many_and_convert_with_projection(self):
+        """Test find many and convert with projection parameter"""
+        fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        mock_docs = [
+            {
+                "_id": ObjectId(),
+                "title": "Story 1",
+                "content": "Content 1",
+                "is_published": True,
+                "slug": "story-1",
+                "date": fixed_datetime,
+                "createdDate": fixed_datetime,
+                "updatedDate": fixed_datetime,
+            },
+        ]
+
+        mock_cursor = MagicMock()
+        mock_cursor.__aiter__ = lambda self: MockAsyncIterator(mock_docs)
+
+        mock_collection = MagicMock()
+        mock_collection.find.return_value = mock_cursor
+
+        projection = {"title": 1, "slug": 1}
+        result = await find_many_and_convert(
+            mock_collection,
+            {"is_published": True},
+            StoryResponse,
+            projection=projection,
+        )
+
+        assert len(result) == 1
+        mock_collection.find.assert_called_once_with({"is_published": True}, projection)
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_find_many_and_convert_skip_zero_not_called(self):
+        """Test that skip is not called when skip=0 (default)"""
+        fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        mock_docs = [
+            {
+                "_id": ObjectId(),
+                "title": "Story 1",
+                "content": "Content 1",
+                "is_published": True,
+                "slug": "story-1",
+                "date": fixed_datetime,
+                "createdDate": fixed_datetime,
+                "updatedDate": fixed_datetime,
+            },
+        ]
+
+        mock_cursor = MagicMock()
+        mock_cursor.__aiter__ = lambda self: MockAsyncIterator(mock_docs)
+
+        mock_collection = MagicMock()
+        mock_collection.find.return_value = mock_cursor
+
+        # Call with skip=0 (default)
+        await find_many_and_convert(
+            mock_collection,
+            {"is_published": True},
+            StoryResponse,
+        )
+
+        # skip should not be called when skip=0 due to the `if skip:` check
+        mock_cursor.skip.assert_not_called()
