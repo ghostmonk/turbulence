@@ -267,9 +267,13 @@ class TestFindManyAndConvert:
             },
         ]
 
-        # Create async iterator mock
-        mock_cursor = MagicMock()
-        mock_cursor.__aiter__.return_value = iter(mock_docs)
+        # Create async iterator mock using AsyncMock
+        async def async_iterator():
+            for doc in mock_docs:
+                yield doc
+
+        mock_cursor = AsyncMock()
+        mock_cursor.__aiter__.return_value = async_iterator()
         mock_cursor.sort.return_value = mock_cursor
         mock_cursor.skip.return_value = mock_cursor
         mock_cursor.limit.return_value = mock_cursor
@@ -300,8 +304,13 @@ class TestFindManyAndConvert:
     @pytest.mark.asyncio
     async def test_find_many_and_convert_empty_result(self):
         """Test find many and convert with empty result"""
-        mock_cursor = MagicMock()
-        mock_cursor.__aiter__.return_value = iter([])
+        # Create empty async iterator
+        async def async_iterator():
+            return
+            yield  # Make this a generator
+
+        mock_cursor = AsyncMock()
+        mock_cursor.__aiter__.return_value = async_iterator()
 
         mock_collection = AsyncMock()
         mock_collection.find.return_value = mock_cursor

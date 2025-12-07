@@ -50,26 +50,30 @@ async def async_client():
 @pytest.fixture
 def sample_story_data():
     """Sample story data for testing"""
+    # Use fixed datetime for consistent testing
+    fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     return {
         "title": "Test Story",
         "content": "<p>This is a test story content.</p>",
         "is_published": True,
         "slug": "test-story",
-        "createdDate": datetime.now(timezone.utc),
-        "updatedDate": datetime.now(timezone.utc),
+        "createdDate": fixed_datetime,
+        "updatedDate": fixed_datetime,
     }
 
 
 @pytest.fixture
 def sample_unpublished_story_data():
     """Sample unpublished story data for testing"""
+    # Use fixed datetime for consistent testing
+    fixed_datetime = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     return {
         "title": "Draft Story",
         "content": "<p>This is a draft story content.</p>",
         "is_published": False,
         "slug": "draft-story",
-        "createdDate": datetime.now(timezone.utc),
-        "updatedDate": datetime.now(timezone.utc),
+        "createdDate": fixed_datetime,
+        "updatedDate": fixed_datetime,
     }
 
 

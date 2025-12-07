@@ -60,7 +60,7 @@ def mongo_to_pydantic(doc: dict, model_class: Type[T]) -> T:
     if doc is None:
         return None
 
-    if "_id" in doc:
+    if "_id" in doc and doc["_id"] is not None:
         doc["id"] = str(doc["_id"])
         del doc["_id"]
 
