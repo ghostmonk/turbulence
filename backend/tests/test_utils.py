@@ -35,6 +35,36 @@ class MockAsyncIterator:
         return doc
 
 
+class MockCursor:
+    """Mock MongoDB cursor that supports chaining and async iteration"""
+
+    def __init__(self, docs):
+        self.docs = list(docs)
+        self.index = 0
+
+    def sort(self, *args, **kwargs):
+        """Return self for chaining"""
+        return self
+
+    def skip(self, n):
+        """Return self for chaining"""
+        return self
+
+    def limit(self, n):
+        """Return self for chaining"""
+        return self
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index >= len(self.docs):
+            raise StopAsyncIteration
+        doc = self.docs[self.index]
+        self.index += 1
+        return doc
+
+
 class TestSlugify:
     """Test slugify function"""
 

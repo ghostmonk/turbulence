@@ -3,15 +3,27 @@ Test configuration and fixtures
 """
 
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import mongomock_motor
 import pytest
 import pytest_asyncio
-from app import app
-from database import get_database
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
+
+from database import get_collection
+
+# Create a test app without lifespan to avoid DB connections during startup
+# Import routers directly to avoid the lifespan event
+from handlers.stories import router as stories_router
+from handlers.uploads import router as uploads_router
+from handlers.video_processing import router as video_processing_router
+
+test_app = FastAPI()
+test_app.include_router(stories_router)
+test_app.include_router(uploads_router)
+test_app.include_router(video_processing_router)
 
 
 @pytest.fixture
@@ -23,33 +35,48 @@ def mock_database():
 
 
 @pytest.fixture
-def override_database(mock_database):
-    """Override the database dependency"""
+def mock_collection():
+    """Mock collection for testing
 
-    def get_mock_database():
-        return mock_database
-
-    app.dependency_overrides[get_database] = get_mock_database
-    yield mock_database
-    app.dependency_overrides.clear()
+    Uses MagicMock as base because MongoDB's find() returns a cursor synchronously.
+    Individual methods that should be async (like find_one, count_documents) are set up as AsyncMock.
+    """
+    mock = MagicMock()
+    # These methods need to be async
+    mock.find_one = AsyncMock()
+    mock.count_documents = AsyncMock()
+    mock.insert_one = AsyncMock()
+    mock.update_one = AsyncMock()
+    mock.delete_one = AsyncMock()
+    # find() returns a cursor synchronously, so it stays as MagicMock
+    return mock
 
 
 @pytest.fixture
-def client():
+def override_database(mock_collection):
+    """Override the database functions to use mocks via FastAPI dependency overrides"""
+
+    async def get_mock_collection():
+        return mock_collection
+
+    # Use FastAPI's dependency override system
+    test_app.dependency_overrides[get_collection] = get_mock_collection
+    yield mock_collection
+    # Clear the overrides after the test
+    test_app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(override_database):
     """Test client for synchronous tests"""
-    return TestClient(app)
+    return TestClient(test_app)
 
 
 @pytest_asyncio.fixture
 async def async_client(override_database):
     """Async test client for async tests - requires override_database to mock DB"""
-    # Import here to avoid circular imports
-    from unittest.mock import patch
-
-    # Mock the backfill function to prevent real DB connection during lifespan
-    with patch("app.backfill_published_flag", return_value=0):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            yield ac
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        yield ac
 
 
 @pytest.fixture

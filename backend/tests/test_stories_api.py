@@ -3,11 +3,13 @@ Integration tests for Stories API endpoints
 """
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
 from httpx import AsyncClient
+
+from tests.test_utils import MockCursor
 
 
 class TestStoriesPublicEndpoints:
@@ -17,8 +19,8 @@ class TestStoriesPublicEndpoints:
     @pytest.mark.asyncio
     async def test_get_stories_success(self, async_client: AsyncClient, override_database):
         """Test successful retrieval of published stories"""
-        # Setup test data in mock database
-        now = datetime.now(timezone.utc)
+        # Use fixed datetime for consistent testing
+        now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         test_stories = [
             {
                 "_id": ObjectId(),
@@ -42,52 +44,31 @@ class TestStoriesPublicEndpoints:
                 "updatedDate": now,
                 "deleted": False,
             },
-            {
-                "_id": ObjectId(),
-                "title": "Draft Story",
-                "content": "Draft content",
-                "is_published": False,
-                "slug": "draft-story",
-                "date": now,
-                "createdDate": now,
-                "updatedDate": now,
-                "deleted": False,
-            },
         ]
 
-        # Mock the database collection
-        mock_collection = AsyncMock()
-        mock_collection.count_documents.return_value = 2  # Only published stories
-        mock_collection.find.return_value.__aiter__.return_value = test_stories[
-            :2
-        ]  # Only published
+        # Configure the mock collection provided by the fixture
+        override_database.count_documents.return_value = 2
+        # Use MockCursor for proper cursor chaining and async iteration
+        override_database.find.return_value = MockCursor(test_stories)
 
-        # Setup the mock to return our test collection
-        override_database.stories = mock_collection
-
-        # Mock the dependency
-        with patch("handlers.stories.get_collection", return_value=mock_collection):
-            response = await async_client.get("/stories")
+        response = await async_client.get("/stories")
 
         assert response.status_code == 200
         data = response.json()
         assert "items" in data
         assert "total" in data
         assert data["total"] == 2
-        assert len(data["items"]) <= 2
+        assert len(data["items"]) == 2
 
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_get_stories_with_pagination(self, async_client: AsyncClient, override_database):
         """Test stories endpoint with pagination parameters"""
-        mock_collection = AsyncMock()
-        mock_collection.count_documents.return_value = 100
-        mock_collection.find.return_value.__aiter__.return_value = []
+        # Configure the mock collection provided by the fixture
+        override_database.count_documents.return_value = 100
+        override_database.find.return_value = MockCursor([])
 
-        override_database.stories = mock_collection
-
-        with patch("handlers.stories.get_collection", return_value=mock_collection):
-            response = await async_client.get("/stories?limit=5&offset=10")
+        response = await async_client.get("/stories?limit=5&offset=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -114,7 +95,8 @@ class TestStoriesPublicEndpoints:
     @pytest.mark.asyncio
     async def test_get_story_by_slug_success(self, async_client: AsyncClient, override_database):
         """Test successful retrieval of story by slug"""
-        now = datetime.now(timezone.utc)
+        # Use fixed datetime for consistent testing
+        now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         test_story = {
             "_id": ObjectId(),
             "title": "Test Story",
@@ -126,11 +108,10 @@ class TestStoriesPublicEndpoints:
             "updatedDate": now,
         }
 
-        mock_collection = AsyncMock()
-        mock_collection.find_one.return_value = test_story
+        # Configure the mock collection provided by the fixture
+        override_database.find_one.return_value = test_story
 
-        with patch("handlers.stories.get_collection", return_value=mock_collection):
-            response = await async_client.get("/stories/slug/test-story")
+        response = await async_client.get("/stories/slug/test-story")
 
         assert response.status_code == 200
         data = response.json()
@@ -141,11 +122,10 @@ class TestStoriesPublicEndpoints:
     @pytest.mark.asyncio
     async def test_get_story_by_slug_not_found(self, async_client: AsyncClient, override_database):
         """Test retrieval of non-existent story by slug"""
-        mock_collection = AsyncMock()
-        mock_collection.find_one.return_value = None
+        # Configure the mock collection provided by the fixture
+        override_database.find_one.return_value = None
 
-        with patch("handlers.stories.get_collection", return_value=mock_collection):
-            response = await async_client.get("/stories/slug/non-existent")
+        response = await async_client.get("/stories/slug/non-existent")
 
         assert response.status_code == 404
         data = response.json()
@@ -170,7 +150,8 @@ class TestStoriesAuthenticatedEndpoints:
     @pytest.mark.asyncio
     async def test_get_story_by_id_success(self, async_client: AsyncClient, override_database):
         """Test successful retrieval of story by ID with auth"""
-        now = datetime.now(timezone.utc)
+        # Use fixed datetime for consistent testing
+        now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         story_id = ObjectId()
         test_story = {
             "_id": story_id,
@@ -183,8 +164,8 @@ class TestStoriesAuthenticatedEndpoints:
             "updatedDate": now,
         }
 
-        mock_collection = AsyncMock()
-        mock_collection.find_one.return_value = test_story
+        # Configure the mock collection provided by the fixture
+        override_database.find_one.return_value = test_story
 
         # Mock the auth decorator
         with patch("decorators.auth.requests.get") as mock_auth:
@@ -194,10 +175,9 @@ class TestStoriesAuthenticatedEndpoints:
                 "exp": 9999999999,  # Far future expiry
             }
 
-            with patch("handlers.stories.get_collection", return_value=mock_collection):
-                response = await async_client.get(
-                    f"/stories/{str(story_id)}", headers={"Authorization": "Bearer valid_token"}
-                )
+            response = await async_client.get(
+                f"/stories/{str(story_id)}", headers={"Authorization": "Bearer valid_token"}
+            )
 
         assert response.status_code == 200
         data = response.json()
@@ -238,10 +218,8 @@ class TestStoriesAuthenticatedEndpoints:
         """Test successful story creation with auth"""
         story_data = {"title": "New Story", "content": "New content", "is_published": True}
 
-        # Setup mocks
-        mock_collection = AsyncMock()
-        mock_collection.find_one.return_value = None  # No existing slug
-        mock_collection.insert_one.return_value.inserted_id = ObjectId()
+        # Use fixed datetime for consistent testing
+        now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
         created_story = {
             "_id": ObjectId(),
@@ -249,11 +227,15 @@ class TestStoriesAuthenticatedEndpoints:
             "content": "New content",
             "is_published": True,
             "slug": "new-story",
-            "date": datetime.now(timezone.utc),
-            "createdDate": datetime.now(timezone.utc),
-            "updatedDate": datetime.now(timezone.utc),
+            "date": now,
+            "createdDate": now,
+            "updatedDate": now,
         }
-        mock_collection.find_one.side_effect = [
+
+        # Configure the mock collection provided by the fixture
+        override_database.find_one.return_value = None  # No existing slug
+        override_database.insert_one.return_value.inserted_id = ObjectId()
+        override_database.find_one.side_effect = [
             None,
             created_story,
         ]  # First None for slug check, then return story
@@ -265,10 +247,9 @@ class TestStoriesAuthenticatedEndpoints:
                 "exp": 9999999999,
             }
 
-            with patch("handlers.stories.get_collection", return_value=mock_collection):
-                response = await async_client.post(
-                    "/stories", json=story_data, headers={"Authorization": "Bearer valid_token"}
-                )
+            response = await async_client.post(
+                "/stories", json=story_data, headers={"Authorization": "Bearer valid_token"}
+            )
 
         assert response.status_code == 201
         data = response.json()
@@ -324,21 +305,23 @@ class TestStoriesAuthenticatedEndpoints:
         """Test successful story deletion with auth"""
         story_id = ObjectId()
 
-        # Setup mocks
+        # Use fixed datetime for consistent testing
+        now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+
         existing_story = {
             "_id": story_id,
             "title": "Story to Delete",
             "content": "Content",
             "is_published": True,
             "slug": "story-to-delete",
-            "date": datetime.now(timezone.utc),
-            "createdDate": datetime.now(timezone.utc),
-            "updatedDate": datetime.now(timezone.utc),
+            "date": now,
+            "createdDate": now,
+            "updatedDate": now,
         }
 
-        mock_collection = AsyncMock()
-        mock_collection.find_one.return_value = existing_story
-        mock_collection.update_one.return_value.modified_count = 1
+        # Configure the mock collection provided by the fixture
+        override_database.find_one.return_value = existing_story
+        override_database.update_one.return_value.modified_count = 1
 
         with patch("decorators.auth.requests.get") as mock_auth:
             mock_auth.return_value.status_code = 200
@@ -347,10 +330,9 @@ class TestStoriesAuthenticatedEndpoints:
                 "exp": 9999999999,
             }
 
-            with patch("handlers.stories.get_collection", return_value=mock_collection):
-                response = await async_client.delete(
-                    f"/stories/{str(story_id)}", headers={"Authorization": "Bearer valid_token"}
-                )
+            response = await async_client.delete(
+                f"/stories/{str(story_id)}", headers={"Authorization": "Bearer valid_token"}
+            )
 
         assert response.status_code == 204  # No content for successful deletion
 
@@ -360,8 +342,8 @@ class TestStoriesAuthenticatedEndpoints:
         """Test deleting non-existent story"""
         story_id = ObjectId()
 
-        mock_collection = AsyncMock()
-        mock_collection.find_one.return_value = None  # Story not found
+        # Configure the mock collection provided by the fixture
+        override_database.find_one.return_value = None  # Story not found
 
         with patch("decorators.auth.requests.get") as mock_auth:
             mock_auth.return_value.status_code = 200
@@ -370,9 +352,8 @@ class TestStoriesAuthenticatedEndpoints:
                 "exp": 9999999999,
             }
 
-            with patch("handlers.stories.get_collection", return_value=mock_collection):
-                response = await async_client.delete(
-                    f"/stories/{str(story_id)}", headers={"Authorization": "Bearer valid_token"}
-                )
+            response = await async_client.delete(
+                f"/stories/{str(story_id)}", headers={"Authorization": "Bearer valid_token"}
+            )
 
         assert response.status_code == 404
