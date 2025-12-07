@@ -157,7 +157,8 @@ jobs:
           echo "🚀 Deploying Backend (files changed)"
           gcloud builds submit . \
             --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/turbulent-service \
-            --config backend/cloudbuild.yaml
+            --config backend/cloudbuild.yaml \
+            --no-cache
           
           # Encode the JSON to base64 to avoid parsing issues
           GCP_CREDS_B64=$(echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' | base64 -w 0)
@@ -204,7 +205,8 @@ jobs:
           # Build the container image with Cloud Build (includes shared/python)
           gcloud builds submit . \
             --tag gcr.io/${{ vars.GCP_PROJECT_ID }}/video-processor \
-            --config cloud-functions/video-processor/cloudbuild.yaml
+            --config cloud-functions/video-processor/cloudbuild.yaml \
+            --no-cache
 
           # Build MongoDB URI from secrets/vars
           MONGODB_URI="mongodb+srv://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASSWORD }}@${{ vars.MONGO_HOST }}/${{ vars.MONGO_DB_NAME }}?retryWrites=true&w=majority&appName=${{ vars.MONGO_APP_NAME }}"
