@@ -20,7 +20,7 @@ export function isTokenExpired(token: string): boolean {
     
     return decoded.exp < currentTime;
   } catch (error) {
-    console.error('Error decoding token:', error);
+    console.error('Error decoding JWT token:', error);
     return true; // Treat invalid tokens as expired
   }
 }
@@ -59,6 +59,7 @@ export function getTokenExpiryTime(token: string): number {
 
 /**
  * Handle common auth errors
+ * @deprecated Use ErrorService.handleAuthError() instead
  */
 export function handleAuthError(error: { status?: number; message?: string }): string {
   // Common auth error messages

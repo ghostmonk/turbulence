@@ -1,0 +1,12 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--no-cache'
+      - '-f'
+      - 'cloud-functions/video-processor/Dockerfile'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/video-processor'
+      - '.'
+images:
+  - 'gcr.io/$PROJECT_ID/video-processor'

@@ -1,5 +1,5 @@
 from database import get_collection
-from logger import logger
+from glogger import logger
 from utils import generate_unique_slug
 
 

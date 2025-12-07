@@ -5,15 +5,20 @@ import os
 import traceback
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
+from database import get_database
 from decorators.auth import requires_auth
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
+from glogger import logger
 from google.cloud import storage
 from google.oauth2 import service_account
-from handlers.video_processing import video_jobs_collection
-from logger import logger
+from models.error import (
+    ErrorCode,
+    StandardErrorResponse,
+    create_upload_error_response,
+)
 from models.upload import (
     ErrorContext,
     MediaDimensions,
@@ -48,7 +53,7 @@ ALLOWED_ORIGINS = [
 ]
 
 
-def generate_signed_url_or_none(blob, blob_path: str) -> Optional[str]:
+def generate_signed_url_or_none(blob, blob_path: str) -> str | None:
     """Generate a signed URL for the blob, returning None if it fails."""
     try:
         signed_url = blob.generate_signed_url(
@@ -94,7 +99,7 @@ async def options_media(request: Request, filename: str):
 
 
 @router.get("/uploads/{filename:path}")
-async def get_media(request: Request, filename: str, size: Optional[int] = None):
+async def get_media(request: Request, filename: str, size: int | None = None):
     try:
         logger.info(f"Media request received: {filename}, size: {size}")
 
@@ -215,6 +220,9 @@ async def process_video_file(
 
     # Create video processing job entry
     try:
+        db = await get_database()
+        video_jobs_collection = db.video_processing_jobs
+
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
@@ -276,6 +284,8 @@ async def upload_media(request: Request, files: List[UploadFile] = File(...)) ->
                 )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {str(e)}")
+                if is_structured_http_exception(e):
+                    raise e
                 handle_error(e, f"uploading media file {file.filename}")
 
         return UploadResponse(urls=urls, srcsets=srcsets, dimensions=dimensions)
@@ -384,22 +394,49 @@ def generate_unique_filename(original_filename):
 
 def validate_image(content_type, file_size):
     if content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail=f"Invalid image type: {content_type}")
+        error_response = create_upload_error_response(
+            error_code=ErrorCode.UPLOAD_INVALID_FORMAT,
+            file_type="image",
+            allowed_formats=["JPEG", "PNG", "GIF", "WebP"],
+        )
+        raise HTTPException(status_code=400, detail=error_response.model_dump())
 
     if file_size > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400, detail=f"Image too large. Maximum size is {MAX_FILE_SIZE/1024/1024}MB"
+        error_response = create_upload_error_response(
+            error_code=ErrorCode.UPLOAD_FILE_TOO_LARGE,
+            file_type="image",
+            current_size=file_size,
+            max_size=MAX_FILE_SIZE,
         )
+        raise HTTPException(status_code=400, detail=error_response.model_dump())
 
 
 def validate_video(content_type, file_size):
     if content_type not in ALLOWED_VIDEO_TYPES:
-        raise HTTPException(status_code=400, detail=f"Invalid video type: {content_type}")
+        error_response = create_upload_error_response(
+            error_code=ErrorCode.UPLOAD_INVALID_FORMAT,
+            file_type="video",
+            allowed_formats=["MP4", "WebM", "QuickTime", "AVI"],
+        )
+        raise HTTPException(status_code=400, detail=error_response.model_dump())
 
     if file_size > MAX_VIDEO_SIZE:
-        raise HTTPException(
-            status_code=400, detail=f"Video too large. Maximum size is {MAX_VIDEO_SIZE/1024/1024}MB"
+        error_response = create_upload_error_response(
+            error_code=ErrorCode.UPLOAD_FILE_TOO_LARGE,
+            file_type="video",
+            current_size=file_size,
+            max_size=MAX_VIDEO_SIZE,
         )
+        raise HTTPException(status_code=400, detail=error_response.model_dump())
+
+
+def is_structured_http_exception(exception: Exception) -> bool:
+    """Check if an exception is an HTTPException with a structured error response."""
+    return (
+        isinstance(exception, HTTPException)
+        and isinstance(exception.detail, dict)
+        and "error_code" in exception.detail
+    )
 
 
 def handle_error(e, context="operation"):
@@ -413,6 +450,10 @@ def handle_error(e, context="operation"):
         f"Uploads: {context}",
         error_context.model_dump(),
     )
+
     if not isinstance(e, HTTPException):
-        raise HTTPException(status_code=500, detail=f"Error during {context}: {str(e)}")
+        error_response = create_upload_error_response(
+            error_code=ErrorCode.UPLOAD_PROCESSING_FAILED, file_type="generic"
+        )
+        raise HTTPException(status_code=500, detail=error_response.model_dump())
     raise e

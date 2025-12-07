@@ -1,5 +1,5 @@
 # Use the official Functions Framework Python base image
-FROM functions-framework-python:3.11
+FROM python:3.11-slim
 
 # Install FFmpeg and other system dependencies
 RUN apt-get update && \
@@ -12,11 +12,15 @@ RUN apt-get update && \
 # Verify FFmpeg installation
 RUN ffmpeg -version && ffprobe -version
 
-# Copy function source code
-COPY . /workspace
 WORKDIR /workspace
 
-# Install Python dependencies
+# Install shared glogger package first
+COPY shared/python/ ./shared/python/
+RUN pip install --no-cache-dir ./shared/python
+
+# Install remaining requirements
+COPY cloud-functions/video-processor/ ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# The Functions Framework will handle the entry point
+# Set the entrypoint to use functions-framework
+CMD exec functions-framework --target=process_video --signature-type=cloudevent
