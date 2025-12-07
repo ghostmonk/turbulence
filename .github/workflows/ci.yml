@@ -59,6 +59,9 @@ jobs:
 
       # Run tests with coverage
       - name: Run tests
+        env:
+          GCS_BUCKET_NAME: test-bucket
+          GOOGLE_CLOUD_PROJECT: test-project
         run: |
           cd backend
           echo "Running tests..."
