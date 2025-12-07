@@ -41,10 +41,15 @@ def client():
 
 
 @pytest_asyncio.fixture
-async def async_client():
-    """Async test client for async tests"""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac
+async def async_client(override_database):
+    """Async test client for async tests - requires override_database to mock DB"""
+    # Import here to avoid circular imports
+    from unittest.mock import patch
+
+    # Mock the backfill function to prevent real DB connection during lifespan
+    with patch("app.backfill_published_flag", return_value=0):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            yield ac
 
 
 @pytest.fixture
