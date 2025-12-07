@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 import mongomock_motor
 import pytest
 import pytest_asyncio
-
 from app import app
 from database import get_database
 from fastapi.testclient import TestClient
