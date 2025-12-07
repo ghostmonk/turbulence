@@ -189,6 +189,74 @@ class TestGenerateUniqueSlug:
             {"slug": "test-story", "deleted": {"$ne": True}, "_id": {"$ne": existing_id}}
         )
 
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_generate_unique_slug_empty_title(self):
+        """Test generate unique slug with empty title"""
+        mock_collection = AsyncMock()
+        mock_collection.find_one.return_value = None
+
+        result = await generate_unique_slug(mock_collection, "")
+
+        assert result == ""
+        mock_collection.find_one.assert_called_once_with({"slug": "", "deleted": {"$ne": True}})
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_generate_unique_slug_special_characters_only(self):
+        """Test generate unique slug with title containing only special characters"""
+        mock_collection = AsyncMock()
+        mock_collection.find_one.return_value = None
+
+        result = await generate_unique_slug(mock_collection, "!@#$%^&*()")
+
+        assert result == ""
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_generate_unique_slug_high_collision_count(self):
+        """Test generate unique slug with high number of collisions (stress test)"""
+        mock_collection = AsyncMock()
+        # Simulate 10 collisions before finding unique slug
+        collisions = [{"_id": ObjectId(), "slug": f"test-{i}"} for i in range(10)]
+        mock_collection.find_one.side_effect = collisions + [None]
+
+        result = await generate_unique_slug(mock_collection, "Test")
+
+        assert result == "test-11"
+        assert mock_collection.find_one.call_count == 11
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_generate_unique_slug_excludes_deleted_stories(self):
+        """Test that slug generation properly excludes deleted stories in query"""
+        mock_collection = AsyncMock()
+        mock_collection.find_one.return_value = None
+
+        await generate_unique_slug(mock_collection, "Test Story")
+
+        # Verify the query includes deleted: {$ne: True}
+        call_args = mock_collection.find_one.call_args[0][0]
+        assert "deleted" in call_args
+        assert call_args["deleted"] == {"$ne": True}
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_generate_unique_slug_update_same_slug(self):
+        """Test updating a story with the same slug doesn't cause collision with itself"""
+        mock_collection = AsyncMock()
+        existing_id = ObjectId()
+        # Simulate the story's own slug exists, but query excludes it by id
+        mock_collection.find_one.return_value = None
+
+        result = await generate_unique_slug(mock_collection, "My Story", existing_id=existing_id)
+
+        assert result == "my-story"
+        # Verify the query excludes the existing story's id
+        call_args = mock_collection.find_one.call_args[0][0]
+        assert "_id" in call_args
+        assert call_args["_id"] == {"$ne": existing_id}
+
 
 class TestMongoToPydantic:
     """Test mongo_to_pydantic function"""

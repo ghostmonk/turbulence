@@ -15,17 +15,17 @@ jobs:
     steps:
       # Checkout the code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
       # Cache pip dependencies
       - name: Cache pip dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements-dev.txt') }}
@@ -75,7 +75,7 @@ jobs:
 
       # Upload coverage to codecov (optional)
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: success()
         with:
           file: ./backend/coverage.xml
@@ -85,15 +85,15 @@ jobs:
 
   frontend-lint:
     runs-on: ubuntu-latest
-    
+
     steps:
       # Checkout the code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Set up Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
