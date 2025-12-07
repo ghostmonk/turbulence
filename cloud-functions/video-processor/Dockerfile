@@ -13,6 +13,11 @@ RUN apt-get update && \
 RUN ffmpeg -version && ffprobe -version
 
 WORKDIR /workspace
+
+# Install shared glogger package first
 COPY shared/python/ ./shared/python/
+RUN pip install --no-cache-dir ./shared/python
+
+# Install remaining requirements
 COPY cloud-functions/video-processor/ ./
 RUN pip install --no-cache-dir -r requirements.txt
