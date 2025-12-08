@@ -45,7 +45,8 @@ export function useVideoUpload(editor: Editor | null): UseVideoUploadReturn {
       const dimensions = result.dimensions?.[0] || { width: 1280, height: 720 };
 
       // Use type assertion for custom video command
-      (editor.commands as { setVideo: (opts: { src: string; width: number; height: number }) => boolean }).setVideo({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (editor.commands as any).setVideo({
         src: videoUrl,
         width: dimensions.width,
         height: dimensions.height,

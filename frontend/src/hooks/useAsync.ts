@@ -40,6 +40,7 @@ export function useAsync<T, Args extends unknown[] = []>(
     onError?: (error: Error) => void;
   } = {}
 ): UseAsyncReturn<T, Args> {
+  const { onSuccess, onError } = options;
   const [state, setState] = useState<AsyncState<T>>({
     data: null,
     loading: false,
@@ -55,16 +56,16 @@ export function useAsync<T, Args extends unknown[] = []>(
       try {
         const result = await asyncFn(...args);
         setState({ data: result, loading: false, error: null });
-        options.onSuccess?.(result);
+        onSuccess?.(result);
         return result;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred';
         setState(prev => ({ ...prev, loading: false, error: errorMessage }));
-        options.onError?.(err instanceof Error ? err : new Error(errorMessage));
+        onError?.(err instanceof Error ? err : new Error(errorMessage));
         return null;
       }
     },
-    [asyncFn, options.onSuccess, options.onError]
+    [asyncFn, onSuccess, onError]
   );
 
   const reset = useCallback(() => {

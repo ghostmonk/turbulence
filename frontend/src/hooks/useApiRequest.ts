@@ -50,6 +50,7 @@ export function useApiRequest<T, Args extends unknown[] = []>(
     context?: string; // For error logging
   } = {}
 ): UseApiRequestReturn<T, Args> {
+  const { onSuccess, onError, context } = options;
   const [state, setState] = useState<ApiRequestState<T>>({
     data: null,
     loading: false,
@@ -65,7 +66,7 @@ export function useApiRequest<T, Args extends unknown[] = []>(
       try {
         const result = await apiFn(...args);
         setState({ data: result, loading: false, error: null });
-        options.onSuccess?.(result);
+        onSuccess?.(result);
         return result;
       } catch (err) {
         const apiError = err instanceof ApiRequestError
@@ -77,12 +78,12 @@ export function useApiRequest<T, Args extends unknown[] = []>(
             );
 
         setState(prev => ({ ...prev, loading: false, error: apiError }));
-        ErrorService.logError(apiError, options.context);
-        options.onError?.(apiError);
+        ErrorService.logError(apiError, context);
+        onError?.(apiError);
         return null;
       }
     },
-    [apiFn, options.onSuccess, options.onError, options.context]
+    [apiFn, onSuccess, onError, context]
   );
 
   const reset = useCallback(() => {
