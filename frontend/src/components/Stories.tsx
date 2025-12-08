@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
 import { Story, PaginatedResponse } from '@/types/api';
-import { useFetchStories, useStoryOperations } from '@/hooks/useStories';
+import { useFetchStories, useStoryMutations } from '@/hooks/stories';
 import { StoriesListSkeleton } from '@/components/LoadingSkeletons';
 import { LazyStoryContent } from '@/components/LazyStoryContent';
 
@@ -131,8 +131,8 @@ const Stories: React.FC<StoriesProps> = ({ initialData, initialError }) => {
         fetchStories, 
         hasMore, 
         resetStories 
-    } = useFetchStories(initialData, initialError);
-    const { deleteStory, loading: deleteLoading } = useStoryOperations();
+    } = useFetchStories({ initialData, initialError });
+    const { deleteStory, loading: deleteLoading } = useStoryMutations();
     
     // Initialize data on component mount
     

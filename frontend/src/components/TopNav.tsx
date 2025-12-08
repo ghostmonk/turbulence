@@ -3,7 +3,7 @@ import ThemeToggle from "./ThemeToggle";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useState } from "react";
 import StoryProgressBar from "./StoryProgressBar";
-import { useFetchStories } from "@/hooks/useStories";
+import { useFetchStories } from "@/hooks/stories";
 
 export default function TopNav() {
     const { data: session } = useSession();
