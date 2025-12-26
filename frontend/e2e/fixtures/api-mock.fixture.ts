@@ -2,6 +2,21 @@ import { test as base, Page } from '@playwright/test';
 import { test as authTest, MockSession, defaultMockSession } from './auth.fixture';
 
 /**
+ * API Mock Fixture
+ *
+ * This uses Playwright's page.route() to intercept CLIENT-SIDE API requests.
+ * For SSR (Server-Side Rendering) requests made by Next.js getServerSideProps/getStaticProps,
+ * these routes won't be intercepted because they happen on the server.
+ *
+ * For SSR testing, we use a separate Express mock server (e2e/mock-server.ts) that
+ * Next.js connects to via the BACKEND_URL environment variable.
+ *
+ * Both approaches are needed:
+ * - page.route(): Client-side requests, can be customized per-test
+ * - mock-server.ts: SSR requests, provides baseline data for all tests
+ */
+
+/**
  * Story type matching the frontend API types.
  */
 export interface MockStory {
@@ -25,11 +40,14 @@ export interface MockPaginatedResponse<T> {
   pages: number;
 }
 
+// Counter for generating unique IDs to avoid collisions in parallel tests
+let storyIdCounter = 0;
+
 /**
  * Creates a mock story with default values.
  */
 export function createMockStory(overrides: Partial<MockStory> = {}): MockStory {
-  const id = overrides.id || `story-${Date.now()}`;
+  const id = overrides.id || `story-${Date.now()}-${storyIdCounter++}`;
   const now = new Date().toISOString();
 
   return {
@@ -165,8 +183,9 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
       return;
     }
 
-    const url = route.request().url();
-    const slug = url.split('/stories/slug/')[1]?.split('?')[0];
+    const urlObj = new URL(route.request().url());
+    const pathParts = urlObj.pathname.split('/');
+    const slug = pathParts[pathParts.length - 1];
     const story = stories.find((s) => s.slug === slug);
 
     if (story) {
@@ -198,8 +217,9 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
       return;
     }
 
-    const url = route.request().url();
-    const id = url.split('/stories/')[1]?.split('?')[0];
+    const urlObj = new URL(route.request().url());
+    const pathParts = urlObj.pathname.split('/');
+    const id = pathParts[pathParts.length - 1];
 
     if (method === 'DELETE') {
       await route.fulfill({
@@ -255,7 +275,7 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
     const body = route.request().postDataJSON();
     const newStory = createMockStory({
       ...body,
-      id: `story-${Date.now()}`,
+      id: `story-${Date.now()}-${storyIdCounter++}`,
     });
 
     await route.fulfill({

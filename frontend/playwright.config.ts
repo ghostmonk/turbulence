@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Timeout constants
+const MOCK_SERVER_TIMEOUT = 10 * 1000; // 10 seconds for mock server to start
+const NEXT_DEV_TIMEOUT = 120 * 1000; // 2 minutes for Next.js dev server to start
+
 /**
  * Playwright configuration for E2E tests.
  * Uses data-testid selectors for resilient tests.
@@ -65,19 +69,23 @@ export default defineConfig({
     // },
   ],
 
-  /* Run mock API server and Next.js dev server before starting the tests */
+  /* Run mock API server and Next.js dev server before starting the tests.
+   *
+   * The mock server (port 5555) handles SSR requests from Next.js getServerSideProps.
+   * Client-side API requests are handled by page.route() in the test fixtures.
+   */
   webServer: [
     {
       command: 'npx tsx e2e/mock-server.ts',
       url: 'http://localhost:5555/health',
       reuseExistingServer: !process.env.CI,
-      timeout: 10 * 1000,
+      timeout: MOCK_SERVER_TIMEOUT,
     },
     {
       command: 'npm run dev:test',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
+      timeout: NEXT_DEV_TIMEOUT,
     },
   ],
 });
