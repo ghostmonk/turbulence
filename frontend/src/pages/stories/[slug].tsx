@@ -45,7 +45,7 @@ export default function StoryPage({ story, error, ogImage, excerpt }: StoryPageP
   return (
     <>
       <Head>
-        <title>{story.title} | Turbulence Blog</title>
+        <title>{`${story.title} | Turbulence Blog`}</title>
         <meta name="description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />
         <meta property="og:title" content={story.title} />
         <meta property="og:description" content={excerpt || `${story.title} - Read the full story on ghostmonk.com`} />

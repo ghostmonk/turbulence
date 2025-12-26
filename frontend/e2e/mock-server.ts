@@ -127,8 +127,13 @@ app.get('/warmup', (req: Request, res: Response) => {
 });
 
 // Error handling middleware - prevents server crashes on unexpected errors
+// In CI, we fail fast to surface issues immediately
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   console.error('[Mock API Error]', err);
+  if (process.env.CI) {
+    // Fail fast in CI to surface issues immediately
+    throw err;
+  }
   res.status(500).json({ detail: 'Mock server error' });
 };
 app.use(errorHandler);

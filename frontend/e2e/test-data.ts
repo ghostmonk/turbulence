@@ -9,6 +9,22 @@
  * and SSR mocked responses.
  */
 
+/**
+ * Test story IDs and slugs - use these constants in tests for maintainability.
+ * If values change, only this file needs updating.
+ */
+export const TEST_STORY_IDS = {
+  PUBLISHED: 'story-1',
+  DRAFT: 'story-2',
+  WITH_IMAGES: 'story-3',
+} as const;
+
+export const TEST_STORY_SLUGS = {
+  PUBLISHED: 'my-published-story',
+  DRAFT: 'my-draft-story',
+  WITH_IMAGES: 'story-with-images',
+} as const;
+
 export interface TestStory {
   id: string;
   title: string;
@@ -24,32 +40,32 @@ export const FIXED_TIMESTAMP = '2025-01-01T12:00:00.000Z';
 
 /**
  * Sample stories used in tests.
- * IDs and slugs are referenced in test specs - update tests if changing these.
+ * Uses TEST_STORY_IDS and TEST_STORY_SLUGS constants for maintainability.
  */
 export const sampleStories: TestStory[] = [
   {
-    id: 'story-1',
+    id: TEST_STORY_IDS.PUBLISHED,
     title: 'My Published Story',
     content: '<p>This is a published story with rich content.</p>',
-    slug: 'my-published-story',
+    slug: TEST_STORY_SLUGS.PUBLISHED,
     is_published: true,
     createdDate: FIXED_TIMESTAMP,
     updatedDate: FIXED_TIMESTAMP,
   },
   {
-    id: 'story-2',
+    id: TEST_STORY_IDS.DRAFT,
     title: 'My Draft Story',
     content: '<p>This draft is still in progress.</p>',
-    slug: 'my-draft-story',
+    slug: TEST_STORY_SLUGS.DRAFT,
     is_published: false,
     createdDate: FIXED_TIMESTAMP,
     updatedDate: FIXED_TIMESTAMP,
   },
   {
-    id: 'story-3',
+    id: TEST_STORY_IDS.WITH_IMAGES,
     title: 'Story With Images',
     content: '<p>Story with an image:</p><img src="/test-image.jpg" alt="Test" width="800" height="600" />',
-    slug: 'story-with-images',
+    slug: TEST_STORY_SLUGS.WITH_IMAGES,
     is_published: true,
     createdDate: FIXED_TIMESTAMP,
     updatedDate: FIXED_TIMESTAMP,

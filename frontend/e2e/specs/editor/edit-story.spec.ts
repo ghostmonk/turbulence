@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures';
+import { test, expect, TEST_STORY_IDS } from '../../fixtures';
 import { EditorPage } from '../../page-objects/editor.page';
 import { HomePage } from '../../page-objects/home.page';
 
@@ -6,7 +6,7 @@ test.describe('Edit Story', () => {
   test('loads existing story in edit mode', async ({ mockAuthenticatedApiPage }) => {
     const editorPage = new EditorPage(mockAuthenticatedApiPage);
 
-    await editorPage.gotoEdit('story-1');
+    await editorPage.gotoEdit(TEST_STORY_IDS.PUBLISHED);
     await editorPage.waitForEditor();
 
     // Verify in edit mode
@@ -21,7 +21,7 @@ test.describe('Edit Story', () => {
   test('displays story title in edit mode', async ({ mockAuthenticatedApiPage }) => {
     const editorPage = new EditorPage(mockAuthenticatedApiPage);
 
-    await editorPage.gotoEdit('story-1');
+    await editorPage.gotoEdit(TEST_STORY_IDS.PUBLISHED);
     await editorPage.waitForEditor();
 
     // Wait for form to populate
@@ -35,7 +35,7 @@ test.describe('Edit Story', () => {
   test('new button resets form', async ({ mockAuthenticatedApiPage }) => {
     const editorPage = new EditorPage(mockAuthenticatedApiPage);
 
-    await editorPage.gotoEdit('story-1');
+    await editorPage.gotoEdit(TEST_STORY_IDS.PUBLISHED);
     await editorPage.waitForEditor();
 
     // Click new button
@@ -52,11 +52,11 @@ test.describe('Edit Story', () => {
     await homePage.waitForStories();
 
     // Click edit on a story
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await storyCard.clickEdit();
 
     // Should navigate to editor with story ID
     expect(homePage.url).toContain('/editor');
-    expect(homePage.url).toContain('id=story-1');
+    expect(homePage.url).toContain(`id=${TEST_STORY_IDS.PUBLISHED}`);
   });
 });

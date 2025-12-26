@@ -38,9 +38,12 @@ export class HomePage extends BasePage {
 
   /**
    * Wait for stories to load.
+   * Waits for the container AND at least one story card to be visible.
    */
   async waitForStories() {
     await this.storiesList.waitFor({ state: 'visible' });
+    // Wait for at least one story card to render inside the container
+    await this.page.locator('[data-testid^="story-card-"]').first().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**

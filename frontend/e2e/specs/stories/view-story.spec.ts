@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures';
+import { test, expect, TEST_STORY_IDS, TEST_STORY_SLUGS } from '../../fixtures';
 import { StoryDetailPage } from '../../page-objects/story-detail.page';
 import { HomePage } from '../../page-objects/home.page';
 
@@ -16,7 +16,7 @@ test.describe('View Story', () => {
     await homePage.waitForStories();
 
     // Click on a story to navigate
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await storyCard.clickTitle();
 
     // Verify URL changed to story page
@@ -28,7 +28,7 @@ test.describe('View Story', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await storyCard.clickReadMore();
 
     expect(homePage.url).toContain('/stories/');
@@ -38,7 +38,7 @@ test.describe('View Story', () => {
   test.describe('SSR Tests', () => {
     test('displays story content from mock server', async ({ page }) => {
       const storyPage = new StoryDetailPage(page);
-      await storyPage.gotoBySlug('my-published-story');
+      await storyPage.gotoBySlug(TEST_STORY_SLUGS.PUBLISHED);
       await storyPage.waitForStory();
       await expect(storyPage.article).toBeVisible();
       await expect(storyPage.title).toHaveText('My Published Story');

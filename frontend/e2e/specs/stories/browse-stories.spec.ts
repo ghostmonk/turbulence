@@ -1,4 +1,4 @@
-import { test, expect, sampleStories } from '../../fixtures';
+import { test, expect, TEST_STORY_IDS } from '../../fixtures';
 import { HomePage } from '../../page-objects/home.page';
 
 test.describe('Browse Stories', () => {
@@ -13,7 +13,7 @@ test.describe('Browse Stories', () => {
     expect(storyCount).toBeGreaterThan(0);
 
     // Check a specific story card
-    const publishedCard = homePage.getStoryCard('story-1');
+    const publishedCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await expect(publishedCard.card).toBeVisible();
     await expect(publishedCard.title).toBeVisible();
   });
@@ -24,7 +24,7 @@ test.describe('Browse Stories', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const publishedCard = homePage.getStoryCard('story-1');
+    const publishedCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await expect(publishedCard.readMoreButton).toBeVisible();
   });
 
@@ -34,7 +34,7 @@ test.describe('Browse Stories', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const draftCard = homePage.getStoryCard('story-2');
+    const draftCard = homePage.getStoryCard(TEST_STORY_IDS.DRAFT);
     await expect(draftCard.draftBadge).toBeVisible();
   });
 
@@ -44,7 +44,7 @@ test.describe('Browse Stories', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await expect(storyCard.editButton).toBeVisible();
   });
 
@@ -54,7 +54,7 @@ test.describe('Browse Stories', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await expect(storyCard.editButton).not.toBeVisible();
   });
 
@@ -65,11 +65,11 @@ test.describe('Browse Stories', () => {
     await homePage.waitForStories();
 
     // Draft story should have delete button
-    const draftCard = homePage.getStoryCard('story-2');
+    const draftCard = homePage.getStoryCard(TEST_STORY_IDS.DRAFT);
     await expect(draftCard.deleteButton).toBeVisible();
 
     // Published story should not have delete button
-    const publishedCard = homePage.getStoryCard('story-1');
+    const publishedCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await expect(publishedCard.deleteButton).not.toBeVisible();
   });
 
@@ -79,7 +79,7 @@ test.describe('Browse Stories', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await storyCard.clickTitle();
 
     // Should navigate to story page
@@ -92,7 +92,7 @@ test.describe('Browse Stories', () => {
     await homePage.goto();
     await homePage.waitForStories();
 
-    const storyCard = homePage.getStoryCard('story-1');
+    const storyCard = homePage.getStoryCard(TEST_STORY_IDS.PUBLISHED);
     await storyCard.clickReadMore();
 
     // Should navigate to story page
