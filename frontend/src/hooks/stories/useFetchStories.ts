@@ -100,14 +100,14 @@ export function useFetchStories(options: UseFetchStoriesOptions = {}): UseFetchS
         fetchStoriesInternal(true);
       }
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchStoriesInternal, initialData]);
 
   // Refetch when token changes
   useEffect(() => {
     if (isMountedRef.current) {
       fetchStoriesInternal(true);
     }
-  }, [session?.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.accessToken, fetchStoriesInternal]);
 
   const loadMore = useCallback(() => fetchStoriesInternal(false), [fetchStoriesInternal]);
   const resetStories = useCallback(() => fetchStoriesInternal(true), [fetchStoriesInternal]);

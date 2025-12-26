@@ -1,4 +1,4 @@
-.PHONY: format format-check test test-unit test-integration test-coverage test-ci clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke deps deps-dev deps-compile deps-upgrade dev dev-backend dev-frontend
+.PHONY: format format-check lint-frontend test test-unit test-integration test-coverage test-ci clean docker-build docker-up docker-down docker-logs install venv env venv-clean docker-nuke deps deps-dev deps-compile deps-upgrade dev dev-backend dev-frontend
 
 # Virtual environment configuration
 VENV_DEFAULT := $(HOME)/Documents/venvs/turbulence
@@ -36,13 +36,15 @@ venv:
 		echo "Installing pip-tools..." && \
 		pip install pip-tools && \
 		echo "Installing development dependencies..." && \
-		pip install -r backend/requirements-dev.txt; \
+		pip install -r backend/requirements-dev.txt && \
+		pip install -e shared/python/; \
 	else \
 		echo "Creating virtual environment at $(VENV_PATH)" && \
 		$(SYSTEM_PYTHON) -m venv $(VENV_PATH) && \
 		. $(VENV_ACTIVATE) && \
 		pip install pip-tools && \
-		pip install -r backend/requirements-dev.txt; \
+		pip install -r backend/requirements-dev.txt && \
+		pip install -e shared/python/; \
 	fi
 	@echo "\nTo activate the virtual environment, run:"
 	@echo "source $(VENV_ACTIVATE)"
@@ -84,6 +86,9 @@ format:
 format-check:
 	. $(VENV_ACTIVATE) && isort backend/ --check-only
 	. $(VENV_ACTIVATE) && black backend/ --check
+
+lint-frontend:
+	cd frontend && npm run lint
 
 # Testing
 test:
@@ -142,11 +147,13 @@ dev-backend:
 	. $(VENV_ACTIVATE) && export $$(cat .env | grep -v '^#' | grep -v '^$$' | xargs) && cd backend && uvicorn app:app --reload --port 5001
 
 # dev-frontend: Start Next.js frontend server on port 3000
-# - Loads .env variables but excludes PORT to avoid conflicts
+# - Loads .env variables, then .env.local overrides (if exists)
+# - Excludes PORT to avoid conflicts
 # - Explicitly sets PORT=3000 to prevent frontend from using backend's port (5001)
-# - The grep filters ensure only valid env vars are exported (no comments/empty lines)
 dev-frontend:
-	export $$(cat .env | grep -v '^#' | grep -v '^$$' | grep -v PORT | xargs) && cd frontend && PORT=3000 npm run dev
+	export $$(cat .env | grep -v '^#' | grep -v '^$$' | grep -v PORT | xargs) && \
+	if [ -f .env.local ]; then export $$(cat .env.local | grep -v '^#' | grep -v '^$$' | grep -v PORT | xargs); fi && \
+	cd frontend && PORT=3000 npm run dev
 
 # Cleanup
 clean:
@@ -181,6 +188,7 @@ help:
 	@echo "  deps-dev         - Install development dependencies"
 	@echo "  format           - Format code using black and isort (backend only)"
 	@echo "  format-check     - Check code formatting without making changes (backend only)"
+	@echo "  lint-frontend    - Run ESLint on frontend code"
 	@echo "  test             - Run all tests"
 	@echo "  test-unit        - Run only unit tests"
 	@echo "  test-integration - Run only integration tests"

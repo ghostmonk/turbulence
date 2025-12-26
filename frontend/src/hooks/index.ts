@@ -2,13 +2,6 @@
  * Application hooks - re-exports from focused modules.
  */
 
-// Generic async/API hooks
-export { useAsync } from './useAsync';
-export type { AsyncState, UseAsyncReturn } from './useAsync';
-
-export { useApiRequest } from './useApiRequest';
-export type { ApiRequestState, UseApiRequestReturn } from './useApiRequest';
-
 // Story hooks
 export { useFetchStories, useFetchStory, useStoryMutations } from './stories';
 export type {
