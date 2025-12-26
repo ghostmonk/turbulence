@@ -108,7 +108,7 @@ test.describe('Create Story', () => {
     const editorPage = new EditorPage(mockAuthenticatedApiPage);
 
     // Start from home
-    await editorPage.goto('/');
+    await mockAuthenticatedApiPage.goto('/');
 
     // Click new story link
     await editorPage.nav.goToNewStory();

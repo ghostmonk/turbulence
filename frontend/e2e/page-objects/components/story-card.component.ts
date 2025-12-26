@@ -36,7 +36,8 @@ export class StoryCardComponent {
    * Get the story title text.
    */
   async getTitleText(): Promise<string> {
-    return this.title.textContent() || '';
+    const text = await this.title.textContent();
+    return text || '';
   }
 
   /**

@@ -139,7 +139,8 @@ export class EditorPage extends BasePage {
    * Get save button text.
    */
   async getSaveButtonText(): Promise<string> {
-    return this.saveButton.textContent() || '';
+    const text = await this.saveButton.textContent();
+    return text || '';
   }
 
   /**

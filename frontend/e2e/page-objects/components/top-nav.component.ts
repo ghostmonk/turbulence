@@ -88,7 +88,8 @@ export class TopNavComponent {
    * Get the welcome message text.
    */
   async getWelcomeText(): Promise<string> {
-    return this.userWelcome.textContent() || '';
+    const text = await this.userWelcome.textContent();
+    return text || '';
   }
 
   /**
