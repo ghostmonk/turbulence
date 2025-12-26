@@ -47,14 +47,20 @@ export class TopNavComponent {
    * Navigate to home page via nav link.
    */
   async goHome() {
-    await this.homeLink.click();
+    await Promise.all([
+      this.page.waitForURL('**/'),
+      this.homeLink.click(),
+    ]);
   }
 
   /**
    * Navigate to new story page.
    */
   async goToNewStory() {
-    await this.newStoryLink.click();
+    await Promise.all([
+      this.page.waitForURL('**/editor'),
+      this.newStoryLink.click(),
+    ]);
   }
 
   /**

@@ -65,11 +65,19 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  /* Run mock API server and Next.js dev server before starting the tests */
+  webServer: [
+    {
+      command: 'npx tsx e2e/mock-server.ts',
+      url: 'http://localhost:5555/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 10 * 1000,
+    },
+    {
+      command: 'npm run dev:test',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+  ],
 });

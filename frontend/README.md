@@ -45,6 +45,62 @@ npm run build
 npm start
 ```
 
+## E2E Testing
+
+The frontend uses [Playwright](https://playwright.dev/) for end-to-end testing with a Page Object Model architecture.
+
+### Running Tests
+
+```bash
+# Run all tests (headless)
+npm run test:e2e
+
+# Run tests with UI mode (interactive)
+npm run test:e2e:ui
+
+# Run tests in headed browser (visible)
+npm run test:e2e:headed
+
+# Run tests in debug mode
+npm run test:e2e:debug
+```
+
+### Test Structure
+
+```
+e2e/
+├── fixtures/           # Test fixtures for auth and API mocking
+├── page-objects/       # Page Object Model classes
+│   └── components/     # Reusable component objects
+└── specs/              # Test specifications
+    ├── smoke/          # Basic functionality tests
+    ├── stories/        # Story browsing and viewing tests
+    └── editor/         # Story creation and editing tests
+```
+
+### Writing Tests
+
+Tests use `data-testid` attributes for resilient selectors that don't break when styling changes:
+
+```typescript
+// Use page objects for clean, maintainable tests
+const homePage = new HomePage(page);
+await homePage.goto();
+await homePage.waitForStories();
+
+// Interact with elements via test IDs
+const storyCard = homePage.getStoryCard('story-1');
+await expect(storyCard.title).toBeVisible();
+```
+
+### First Time Setup
+
+Before running tests for the first time, install Playwright browsers:
+
+```bash
+npx playwright install
+```
+
 ## Docker
 
 The application can be run with Docker using:

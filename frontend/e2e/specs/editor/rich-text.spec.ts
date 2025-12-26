@@ -8,12 +8,9 @@ test.describe('Rich Text Editor', () => {
     await editorPage.goto();
     await editorPage.waitForEditor();
 
-    // Type some text
-    await editorPage.richTextEditor.type('Hello');
-
-    // Select all and make bold
-    await editorPage.page.keyboard.press('Control+a');
+    // Click bold first, then type (toggle mode)
     await editorPage.richTextEditor.toggleBold();
+    await editorPage.richTextEditor.type('Hello');
 
     // Check if bold tag is in content
     const html = await editorPage.richTextEditor.getHTML();
@@ -26,9 +23,9 @@ test.describe('Rich Text Editor', () => {
     await editorPage.goto();
     await editorPage.waitForEditor();
 
-    await editorPage.richTextEditor.type('World');
-    await editorPage.page.keyboard.press('Control+a');
+    // Click italic first, then type (toggle mode)
     await editorPage.richTextEditor.toggleItalic();
+    await editorPage.richTextEditor.type('World');
 
     const html = await editorPage.richTextEditor.getHTML();
     expect(html).toContain('<em>');
@@ -107,10 +104,10 @@ test.describe('Rich Text Editor', () => {
     await editorPage.goto();
     await editorPage.waitForEditor();
 
-    await editorPage.richTextEditor.type('Bold and Italic');
-    await editorPage.page.keyboard.press('Control+a');
+    // Toggle both formats then type
     await editorPage.richTextEditor.toggleBold();
     await editorPage.richTextEditor.toggleItalic();
+    await editorPage.richTextEditor.type('Bold and Italic');
 
     const html = await editorPage.richTextEditor.getHTML();
     expect(html).toContain('<strong>');

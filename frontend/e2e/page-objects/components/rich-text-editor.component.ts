@@ -10,6 +10,7 @@ export class RichTextEditorComponent {
   // Container
   readonly editor: Locator;
   readonly content: Locator;
+  readonly proseMirror: Locator;
 
   // Toolbar buttons
   readonly boldButton: Locator;
@@ -32,6 +33,7 @@ export class RichTextEditorComponent {
     // Container
     this.editor = page.getByTestId('rich-text-editor');
     this.content = page.getByTestId('editor-content');
+    this.proseMirror = page.locator('.ProseMirror');
 
     // Toolbar
     this.boldButton = page.getByTestId('toolbar-bold');
@@ -53,7 +55,7 @@ export class RichTextEditorComponent {
    * Focus the editor content area.
    */
   async focus() {
-    await this.content.click();
+    await this.proseMirror.click();
   }
 
   /**
@@ -61,7 +63,7 @@ export class RichTextEditorComponent {
    */
   async type(text: string) {
     await this.focus();
-    await this.page.keyboard.type(text);
+    await this.page.keyboard.type(text, { delay: 50 });
   }
 
   /**
@@ -70,7 +72,7 @@ export class RichTextEditorComponent {
   async setContent(text: string) {
     await this.focus();
     await this.page.keyboard.press('Control+a');
-    await this.page.keyboard.type(text);
+    await this.page.keyboard.type(text, { delay: 50 });
   }
 
   /**
@@ -140,7 +142,7 @@ export class RichTextEditorComponent {
    * Get the HTML content of the editor.
    */
   async getHTML(): Promise<string> {
-    return this.content.innerHTML();
+    return this.proseMirror.innerHTML();
   }
 
   /**

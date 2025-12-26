@@ -66,10 +66,13 @@ export class StoryDetailPage extends BasePage {
   }
 
   /**
-   * Click back to all stories link.
+   * Click back to all stories link and wait for navigation.
    */
   async goBack() {
-    await this.backLink.click();
+    await Promise.all([
+      this.page.waitForURL('**/'),
+      this.backLink.click(),
+    ]);
   }
 
   /**
@@ -80,10 +83,13 @@ export class StoryDetailPage extends BasePage {
   }
 
   /**
-   * Click home link in error state.
+   * Click home link in error state and wait for navigation.
    */
   async clickErrorHomeLink() {
-    await this.errorHomeLink.click();
+    await Promise.all([
+      this.page.waitForURL('**/'),
+      this.errorHomeLink.click(),
+    ]);
   }
 
   /**

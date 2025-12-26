@@ -98,10 +98,13 @@ export class EditorPage extends BasePage {
   }
 
   /**
-   * Click cancel button.
+   * Click cancel button and wait for navigation.
    */
   async cancel() {
-    await this.cancelButton.click();
+    await Promise.all([
+      this.page.waitForURL('**/'),
+      this.cancelButton.click(),
+    ]);
   }
 
   /**

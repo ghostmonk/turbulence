@@ -184,8 +184,8 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
     }
   });
 
-  // Mock individual story by ID
-  await page.route(/\/stories\/[a-f0-9-]+$/, async (route) => {
+  // Mock individual story by ID (matches story-1, UUIDs, etc.)
+  await page.route(/\/stories\/[\w-]+$/, async (route) => {
     await maybeDelay();
     const method = route.request().method();
 

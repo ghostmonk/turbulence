@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "dev:test": "BACKEND_URL=http://localhost:5555 NEXT_PUBLIC_API_URL=http://localhost:5555 next dev"
   },
   "dependencies": {
     "@mantine/tiptap": "^7.0.0",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^20.17.9",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
@@ -48,10 +50,12 @@
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.3.2",
+    "express": "^5.2.1",
     "postcss": "^8.4.32",
     "postcss-import": "^15.1.0",
     "postcss-nested": "^6.0.1",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   }
 }

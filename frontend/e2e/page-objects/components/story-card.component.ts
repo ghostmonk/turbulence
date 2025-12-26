@@ -47,10 +47,13 @@ export class StoryCardComponent {
   }
 
   /**
-   * Click edit button.
+   * Click edit button and wait for navigation.
    */
   async clickEdit() {
-    await this.editButton.click();
+    await Promise.all([
+      this.page.waitForURL('**/editor**'),
+      this.editButton.click(),
+    ]);
   }
 
   /**
@@ -61,17 +64,23 @@ export class StoryCardComponent {
   }
 
   /**
-   * Click to read full story.
+   * Click to read full story and wait for navigation.
    */
   async clickReadMore() {
-    await this.readMoreButton.click();
+    await Promise.all([
+      this.page.waitForURL('**/stories/**'),
+      this.readMoreButton.click(),
+    ]);
   }
 
   /**
-   * Click title to navigate to story.
+   * Click title to navigate to story and wait for navigation.
    */
   async clickTitle() {
-    await this.titleLink.click();
+    await Promise.all([
+      this.page.waitForURL('**/stories/**'),
+      this.titleLink.click(),
+    ]);
   }
 
   /**
