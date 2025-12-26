@@ -93,6 +93,21 @@ const storyCard = homePage.getStoryCard('story-1');
 await expect(storyCard.title).toBeVisible();
 ```
 
+### Test Configuration
+
+The `dev:test` script includes `UNSAFE_EVAL=true` to allow Next.js hot module reloading during tests. This is required because:
+- Next.js dev mode uses `eval()` for fast refresh/HMR
+- The app's Content Security Policy (CSP) blocks `unsafe-eval` by default
+- Without this flag, JavaScript won't execute in Playwright tests
+
+**Note**: This setting is only used for local test runs and is never enabled in production.
+
+### Mocking Strategy
+
+Tests use two complementary mocking approaches:
+- **Playwright route mocking** (`e2e/fixtures/`): Intercepts client-side API requests, customizable per-test
+- **Express mock server** (`e2e/mock-server.ts`): Handles SSR requests from `getServerSideProps`
+
 ### First Time Setup
 
 Before running tests for the first time, install Playwright browsers:

@@ -1,10 +1,26 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 
 const app = express();
 
-// Enable CORS for all origins (needed for Next.js SSR)
+/**
+ * Mock API Server for E2E Testing
+ *
+ * This Express server handles SSR (Server-Side Rendering) requests from Next.js.
+ * When Next.js calls getServerSideProps or getStaticProps, it fetches data from
+ * this server (via BACKEND_URL environment variable).
+ *
+ * Client-side API requests are handled separately by Playwright's page.route()
+ * in the test fixtures (e2e/fixtures/api-mock.fixture.ts).
+ *
+ * Note: This server is intentionally stateless - mutations (POST/PUT/DELETE)
+ * return success responses but don't modify the in-memory data. This simplifies
+ * testing and avoids state pollution between tests. For mutation testing,
+ * use the per-test route mocking in fixtures.
+ */
+
+// Enable CORS for Next.js dev server only
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
@@ -22,6 +38,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Fixed timestamps for consistent test behavior across timezones
+const FIXED_TIMESTAMP = '2025-01-01T12:00:00.000Z';
+
 // Sample stories matching our test fixtures
 const stories = [
   {
@@ -30,8 +49,8 @@ const stories = [
     content: '<p>This is a published story with rich content.</p>',
     slug: 'my-published-story',
     is_published: true,
-    createdDate: new Date().toISOString(),
-    updatedDate: new Date().toISOString(),
+    createdDate: FIXED_TIMESTAMP,
+    updatedDate: FIXED_TIMESTAMP,
   },
   {
     id: 'story-2',
@@ -39,8 +58,8 @@ const stories = [
     content: '<p>This draft is still in progress.</p>',
     slug: 'my-draft-story',
     is_published: false,
-    createdDate: new Date().toISOString(),
-    updatedDate: new Date().toISOString(),
+    createdDate: FIXED_TIMESTAMP,
+    updatedDate: FIXED_TIMESTAMP,
   },
   {
     id: 'story-3',
@@ -48,26 +67,27 @@ const stories = [
     content: '<p>Story with an image:</p><img src="/test-image.jpg" alt="Test" width="800" height="600" />',
     slug: 'story-with-images',
     is_published: true,
-    createdDate: new Date().toISOString(),
-    updatedDate: new Date().toISOString(),
+    createdDate: FIXED_TIMESTAMP,
+    updatedDate: FIXED_TIMESTAMP,
   },
 ];
 
 // GET /stories - List stories with pagination (supports both page/size and limit/offset)
 app.get('/stories', (req: Request, res: Response) => {
-  // Support both pagination styles
-  const limit = parseInt(req.query.limit as string) || parseInt(req.query.size as string) || 10;
-  const offset = parseInt(req.query.offset as string);
-  const page = parseInt(req.query.page as string) || 1;
+  // Support both pagination styles with safe parsing
+  const limit = parseInt(req.query.limit as string || req.query.size as string || '10', 10);
+  const offset = parseInt(req.query.offset as string || '', 10);
+  const page = parseInt(req.query.page as string || '1', 10);
 
-  // Calculate start position
-  const start = !isNaN(offset) ? offset : (page - 1) * limit;
+  // Calculate start position (prefer offset if provided, otherwise use page)
+  const hasOffset = req.query.offset !== undefined;
+  const start = hasOffset ? offset : (page - 1) * limit;
   const pageStories = stories.slice(start, start + limit);
 
   res.json({
     items: pageStories,
     total: stories.length,
-    page: !isNaN(offset) ? Math.floor(offset / limit) + 1 : page,
+    page: hasOffset ? Math.floor(offset / limit) + 1 : page,
     size: limit,
     pages: Math.ceil(stories.length / limit),
   });
@@ -93,22 +113,22 @@ app.get('/stories/:id', (req: Request, res: Response) => {
   }
 });
 
-// POST /stories - Create story
+// POST /stories - Create story (returns success but doesn't persist - see header comment)
 app.post('/stories', (req: Request, res: Response) => {
   const newStory = {
     id: `story-${Date.now()}`,
     ...req.body,
-    createdDate: new Date().toISOString(),
-    updatedDate: new Date().toISOString(),
+    createdDate: FIXED_TIMESTAMP,
+    updatedDate: FIXED_TIMESTAMP,
   };
   res.status(201).json(newStory);
 });
 
-// PUT /stories/:id - Update story
+// PUT /stories/:id - Update story (returns success but doesn't persist - see header comment)
 app.put('/stories/:id', (req: Request, res: Response) => {
   const story = stories.find((s) => s.id === req.params.id);
   if (story) {
-    res.json({ ...story, ...req.body, updatedDate: new Date().toISOString() });
+    res.json({ ...story, ...req.body, updatedDate: FIXED_TIMESTAMP });
   } else {
     res.status(404).json({ detail: 'Story not found' });
   }
@@ -128,6 +148,13 @@ app.post('/upload/:type', (req: Request, res: Response) => {
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
+
+// Error handling middleware - prevents server crashes on unexpected errors
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  console.error('[Mock API Error]', err);
+  res.status(500).json({ detail: 'Mock server error' });
+};
+app.use(errorHandler);
 
 const PORT = process.env.MOCK_SERVER_PORT || 5555;
 
