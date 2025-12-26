@@ -38,14 +38,15 @@ const StoryItem = React.memo(({
     const storyPath = getStoryPath(story);
     
     return (
-        <div 
-            key={story.id} 
+        <div
+            key={story.id}
             className={`card ${isDraft ? 'card--draft' : ''}`}
+            data-testid={`story-card-${story.id}`}
         >
             <div className="story-header">
                 <div className="story-header__actions">
                     {isDraft && (
-                        <span className="badge badge--draft">
+                        <span className="badge badge--draft" data-testid={`story-draft-badge-${story.id}`}>
                             DRAFT
                         </span>
                     )}
@@ -54,6 +55,7 @@ const StoryItem = React.memo(({
                             <button
                                 onClick={() => onEdit(story)}
                                 className="btn btn--primary btn--sm"
+                                data-testid={`story-edit-${story.id}`}
                             >
                                 Edit
                             </button>
@@ -62,6 +64,7 @@ const StoryItem = React.memo(({
                                     onClick={() => onDelete(story)}
                                     disabled={deleteLoading}
                                     className="btn btn--danger btn--sm"
+                                    data-testid={`story-delete-${story.id}`}
                                 >
                                     {deleteLoading ? 'Deleting...' : 'Delete'}
                                 </button>
@@ -69,13 +72,16 @@ const StoryItem = React.memo(({
                         </div>
                     )}
                 </div>
-                
-                <Link 
+
+                <Link
                     href={storyPath}
                     className={`${isDraft ? 'pointer-events-none' : ''}`}
+                    data-testid={`story-title-link-${story.id}`}
                 >
-                    <h2 className={`story-title ${!isDraft ? 'story-title--link' : 'story-title--draft'}`}
+                    <h2
+                        className={`story-title ${!isDraft ? 'story-title--link' : 'story-title--draft'}`}
                         title={story.title}
+                        data-testid={`story-title-${story.id}`}
                     >
                         {story.title}
                     </h2>
@@ -92,13 +98,13 @@ const StoryItem = React.memo(({
             </div>
             
             {!isDraft && (
-                <Link href={storyPath} className="block">
-                    <LazyStoryContent 
+                <Link href={storyPath} className="block" data-testid={`story-content-link-${story.id}`}>
+                    <LazyStoryContent
                         content={story.content}
                         className="story-content prose--card"
                     />
                     <div className="mt-4">
-                        <span className="btn btn--secondary btn--sm">
+                        <span className="btn btn--secondary btn--sm" data-testid={`story-read-more-${story.id}`}>
                             Read full story →
                         </span>
                     </div>
@@ -186,12 +192,13 @@ const Stories: React.FC<StoriesProps> = ({ initialData, initialError }) => {
     // Handle error state
     if (error) {
         return (
-            <div className="error-state">
+            <div className="error-state" data-testid="stories-error">
                 <h3 className="error-state__title">Error Loading Stories</h3>
                 <p className="error-state__message">{error}</p>
-                <button 
+                <button
                     onClick={() => resetStories()}
                     className="btn btn--primary"
+                    data-testid="stories-retry-button"
                 >
                     Try Again
                 </button>
@@ -207,12 +214,13 @@ const Stories: React.FC<StoriesProps> = ({ initialData, initialError }) => {
     // Handle empty state
     if (stories.length === 0 && !loading) {
         return (
-            <div className="empty-state">
+            <div className="empty-state" data-testid="stories-empty">
                 <h2 className="empty-state__title">No stories found</h2>
                 {session && (
                     <button
                         onClick={() => router.push('/editor')}
                         className="btn btn--primary"
+                        data-testid="create-first-story-button"
                     >
                         Create Your First Story
                     </button>
@@ -222,7 +230,7 @@ const Stories: React.FC<StoriesProps> = ({ initialData, initialError }) => {
     }
 
     return (
-        <div className="mt-4">
+        <div className="mt-4" data-testid="stories-list">
             <InfiniteScroll
                 key="story-infinite-scroll"
                 dataLength={stories.length}
@@ -234,7 +242,7 @@ const Stories: React.FC<StoriesProps> = ({ initialData, initialError }) => {
                     </div>
                 }
                 endMessage={
-                    <div className="text-center py-4 text-text-secondary">
+                    <div className="text-center py-4 text-text-secondary" data-testid="stories-end">
                         You&apos;ve reached the end
                     </div>
                 }
