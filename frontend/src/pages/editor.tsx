@@ -1,302 +1,239 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
-import { useSession, signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import { Story } from '@/types/api';
-import { isTokenExpired } from '@/lib/auth';
-import { useFetchStory, useStoryOperations } from '@/hooks/useStories';
+import { useRouter } from 'next/router';
+import { useStoryEditor } from '@/hooks/editor';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { ErrorService } from '@/services/errorService';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
+/**
+ * Story editor page for creating and editing stories.
+ */
 export default function EditorPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const { id } = router.query;
-  const storyId = typeof id === 'string' ? id : undefined;
-  
-  const { story: fetchedStory, loading: fetchLoading, error: fetchError } = useFetchStory(storyId);
-  const { saveStory, deleteStory, loading: saveLoading, error: saveError, errorDetails: _errorDetails } = useStoryOperations();
-  
+  const {
+    story,
+    error,
+    isSaving,
+    isLoading,
+    isEditing,
+    setTitle,
+    setContent,
+    setPublished,
+    handleSubmit,
+    handleDelete,
+    resetForm,
+    clearError,
+  } = useStoryEditor();
 
-  const [story, setStory] = useState<Partial<Story>>({
-    title: '',
-    content: '',
-    is_published: true
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [_showDebugInfo, _setShowDebugInfo] = useState(false);
-  
-  const resetForm = useCallback(() => {
-    setStory({
-      title: '',
-      content: '',
-      is_published: true
-    });
-    setError(null);
-    router.push('/editor', undefined, { shallow: true });
-  }, [router]);
-
-  const handleDelete = useCallback(async () => {
-    if (!story.id || !session) {
-      setError("Cannot delete story: missing ID or not logged in");
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete "${story.title}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const success = await deleteStory(story.id);
-      if (success) {
-        router.push('/');
-      }
-    } catch (err) {
-      console.error('Error deleting story:', err);
-      setError('Failed to delete story');
-    }
-  }, [story.id, story.title, session, deleteStory, router]);
-  
-  useEffect(() => {
-    if (fetchedStory) {
-      setStory(fetchedStory);
-      setError(null);
-    }
-  }, [fetchedStory]);
-
-  useEffect(() => {
-    if (fetchError && storyId) {
-      setError(fetchError);
-    }
-  }, [fetchError, storyId]);
-  
-  useEffect(() => {
-    if (!storyId) {
-      if (Object.keys(router.query).length > 0 || story.id) {
-        resetForm();
-      }
-    }
-  }, [storyId, router.query, story.id, resetForm]);
-  
-  useEffect(() => {
-    if (!storyId) {
-      const { title, content, is_published } = router.query;
-      if (title || content) {
-        setStory({
-          title: title as string || '',
-          content: content as string || '',
-          is_published: is_published === 'true'
-        });
-      }
-    }
-  }, [router.query, storyId]);
-  
-  const handleSubmit = useCallback(async (e: React.FormEvent, shouldPublish: boolean = true) => {
-    e.preventDefault();
-    
-    if (!session) {
-      setError("You must be logged in to save a story");
-      return;
-    }
-    
-    if (!session.accessToken) {
-      setError("No access token found. Please log in again.");
-      console.error("Missing access token in session:", session);
-      return;
-    }
-
-    setError(null);
-    setIsSaving(true);
-
-    try {
-      if (!story.title || story.title.trim() === '') {
-        setError("Story title is required");
-        setIsSaving(false);
-        return;
-      }
-      
-      console.log('Attempting to save story:', {
-        id: story.id,
-        title: story.title,
-        isPublished: shouldPublish ? story.is_published : false,
-        contentLength: story.content?.length || 0
-      });
-      
-      const storyToSave = {
-        ...story,
-        is_published: shouldPublish ? story.is_published : false
-      };
-      
-      const result = await saveStory(storyToSave, false);
-      
-      if (!result) {
-        throw new Error("Failed to save story");
-      }
-      
-      console.log('Story saved successfully:', {
-        id: result.id,
-        title: result.title
-      });
-      
-      router.push('/');
-      
-    } catch (err) {
-      console.error('Error in handleSubmit:', err);
-      
-      if (err instanceof Error && err.stack) {
-        console.error('Error stack trace:', err.stack);
-      }
-      
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(`Error: ${errorMessage}`);
-      setIsSaving(false);
-    }
-  }, [session, story, saveStory, router]);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (session?.accessToken && isTokenExpired(session.accessToken) && (story.title || story.content)) {
-        handleSubmit(new Event('submit') as unknown as React.FormEvent, false).then(() => {
-          alert("Session expired. Your story has been saved as a draft. Logging out.");
-          signOut();
-        });
-      }
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [session?.accessToken, story.title, story.content, handleSubmit]);
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/');
-    }
-  }, [status, router]);
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStory(prev => ({ ...prev, title: e.target.value }));
-  };
-
-  const handleContentChange = (content: string) => {
-    setStory(prev => ({ ...prev, content }));
-  };
-
-  const handlePublishToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStory(prev => ({ ...prev, is_published: e.target.checked }));
-  };
-
-  const _toggleDebugInfo = useCallback(() => {
-    _setShowDebugInfo(prev => !prev);
-  }, []);
-
-  const isLoading = fetchLoading || saveLoading || status === 'loading';
   if (isLoading && !isSaving) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="section-title">
-          {story.id ? 'Edit Story' : 'New Story'}
-        </h1>
-        <div className="flex gap-2">
-          {story.id && (
-            <>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-              >
-                New Story
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={saveLoading}
-                className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <EditorHeader
+        isEditing={isEditing}
+        onNewStory={resetForm}
+        onDelete={handleDelete}
+        isDeleting={isSaving}
+      />
 
-      {(error || saveError) && (
+      {error && (
         <div className="mb-4">
-          <ErrorDisplay 
-            error={ErrorService.createDisplayError(error || saveError)}
-            onDismiss={() => setError(null)}
+          <ErrorDisplay
+            error={ErrorService.createDisplayError(error)}
+            onDismiss={clearError}
             showDetails={true}
           />
         </div>
       )}
 
       <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4 max-w-4xl mx-auto">
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Title
-          </label>
-          <input
-            type="text"
-            id="title"
-            value={story.title || ''}
-            onChange={handleTitleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white"
-            placeholder="Story title"
-            required
-            disabled={isSaving}
-          />
-        </div>
+        <TitleInput
+          value={story.title || ''}
+          onChange={setTitle}
+          disabled={isSaving}
+        />
 
-        <div>
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Content
-          </label>
-          <div className="mt-1">
-            <RichTextEditor
-              content={story.content || ''}
-              onChange={handleContentChange}
-            />
-          </div>
-        </div>
+        <ContentEditor
+          content={story.content || ''}
+          onChange={setContent}
+        />
 
-        <div className="flex items-center">
-          <input
-            id="is_published"
-            name="is_published"
-            type="checkbox"
-            checked={story.is_published || false}
-            onChange={handlePublishToggle}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
-            disabled={isSaving}
-          />
-          <label htmlFor="is_published" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-            Publish
-          </label>
-        </div>
+        <PublishToggle
+          checked={story.is_published || false}
+          onChange={setPublished}
+          disabled={isSaving}
+        />
 
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            disabled={isLoading || isSaving}
-          >
-            {isSaving ? 'Saving...' : `Save${story.is_published ? ' & Publish' : ' as Draft'}`}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            disabled={isSaving}
-          >
-            Cancel
-          </button>
-        </div>
+        <FormActions
+          isLoading={isLoading}
+          isSaving={isSaving}
+          isPublished={story.is_published || false}
+          onCancel={() => router.push('/')}
+        />
       </form>
     </div>
   );
-} 
+}
+
+/**
+ * Editor page header with title and action buttons.
+ */
+function EditorHeader({
+  isEditing,
+  onNewStory,
+  onDelete,
+  isDeleting,
+}: {
+  isEditing: boolean;
+  onNewStory: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <div className="flex justify-between items-center mb-4">
+      <h1 className="section-title">
+        {isEditing ? 'Edit Story' : 'New Story'}
+      </h1>
+      {isEditing && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onNewStory}
+            className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          >
+            New Story
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={isDeleting}
+            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Title input field.
+ */
+function TitleInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div>
+      <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Title
+      </label>
+      <input
+        type="text"
+        id="title"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white"
+        placeholder="Story title"
+        required
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
+/**
+ * Rich text content editor wrapper.
+ */
+function ContentEditor({
+  content,
+  onChange,
+}: {
+  content: string;
+  onChange: (content: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Content
+      </label>
+      <div className="mt-1">
+        <RichTextEditor content={content} onChange={onChange} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Publish toggle checkbox.
+ */
+function PublishToggle({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex items-center">
+      <input
+        id="is_published"
+        name="is_published"
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+        disabled={disabled}
+      />
+      <label htmlFor="is_published" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+        Publish
+      </label>
+    </div>
+  );
+}
+
+/**
+ * Form action buttons (Save/Cancel).
+ */
+function FormActions({
+  isLoading,
+  isSaving,
+  isPublished,
+  onCancel,
+}: {
+  isLoading: boolean;
+  isSaving: boolean;
+  isPublished: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="flex gap-4">
+      <button
+        type="submit"
+        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        disabled={isLoading || isSaving}
+      >
+        {isSaving ? 'Saving...' : `Save${isPublished ? ' & Publish' : ' as Draft'}`}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        disabled={isSaving}
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
