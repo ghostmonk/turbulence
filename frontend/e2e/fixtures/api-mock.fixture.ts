@@ -1,5 +1,6 @@
 import { test as base, Page } from '@playwright/test';
 import { test as authTest, MockSession, defaultMockSession } from './auth.fixture';
+import { sampleStories as sharedStories, FIXED_TIMESTAMP, TestStory } from '../test-data';
 
 /**
  * API Mock Fixture
@@ -14,20 +15,14 @@ import { test as authTest, MockSession, defaultMockSession } from './auth.fixtur
  * Both approaches are needed:
  * - page.route(): Client-side requests, can be customized per-test
  * - mock-server.ts: SSR requests, provides baseline data for all tests
+ *
+ * Test data is shared via e2e/test-data.ts to ensure consistency.
  */
 
 /**
  * Story type matching the frontend API types.
  */
-export interface MockStory {
-  id: string;
-  title: string;
-  content: string;
-  slug: string;
-  is_published: boolean;
-  createdDate: string;
-  updatedDate: string;
-}
+export type MockStory = TestStory;
 
 /**
  * Paginated response matching the backend API.
@@ -45,10 +40,10 @@ let storyIdCounter = 0;
 
 /**
  * Creates a mock story with default values.
+ * Uses fixed timestamp from shared test-data for consistency.
  */
 export function createMockStory(overrides: Partial<MockStory> = {}): MockStory {
   const id = overrides.id || `story-${Date.now()}-${storyIdCounter++}`;
-  const now = new Date().toISOString();
 
   return {
     id,
@@ -56,8 +51,8 @@ export function createMockStory(overrides: Partial<MockStory> = {}): MockStory {
     content: '<p>This is test story content with some <strong>bold</strong> text.</p>',
     slug: 'test-story-title',
     is_published: true,
-    createdDate: now,
-    updatedDate: now,
+    createdDate: FIXED_TIMESTAMP,
+    updatedDate: FIXED_TIMESTAMP,
     ...overrides,
   };
 }
@@ -85,31 +80,12 @@ export function createMockStoriesResponse(
 
 /**
  * Sample stories for testing various scenarios.
+ * Data is imported from shared test-data.ts for consistency with mock server.
  */
 export const sampleStories = {
-  published: createMockStory({
-    id: 'story-1',
-    title: 'My Published Story',
-    slug: 'my-published-story',
-    is_published: true,
-    content: '<p>This is a published story with rich content.</p>',
-  }),
-
-  draft: createMockStory({
-    id: 'story-2',
-    title: 'My Draft Story',
-    slug: 'my-draft-story',
-    is_published: false,
-    content: '<p>This draft is still in progress.</p>',
-  }),
-
-  withImages: createMockStory({
-    id: 'story-3',
-    title: 'Story With Images',
-    slug: 'story-with-images',
-    is_published: true,
-    content: '<p>Story with an image:</p><img src="/test-image.jpg" alt="Test" width="800" height="600" />',
-  }),
+  published: sharedStories[0], // story-1: My Published Story
+  draft: sharedStories[1],     // story-2: My Draft Story
+  withImages: sharedStories[2], // story-3: Story With Images
 };
 
 /**
@@ -204,7 +180,8 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
   });
 
   // Mock individual story by ID (matches story-1, UUIDs, etc.)
-  await page.route(/\/stories\/[\w-]+$/, async (route) => {
+  // Negative lookahead ensures we don't match /stories/slug/... paths
+  await page.route(/\/stories\/(?!slug\/)[\w-]+$/, async (route) => {
     await maybeDelay();
     const method = route.request().method();
 

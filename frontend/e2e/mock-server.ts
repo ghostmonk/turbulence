@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import { sampleStories, FIXED_TIMESTAMP } from './test-data';
 
 const app = express();
 
@@ -16,6 +17,8 @@ const app = express();
  * return success responses but don't modify the in-memory data. This simplifies
  * testing and avoids state pollution between tests. For mutation testing,
  * use the per-test route mocking in fixtures.
+ *
+ * Test data is shared with fixtures via e2e/test-data.ts to ensure consistency.
  */
 
 // Enable CORS for Next.js dev server only
@@ -38,46 +41,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Fixed timestamps for consistent test behavior across timezones
-const FIXED_TIMESTAMP = '2025-01-01T12:00:00.000Z';
-
-// Sample stories matching our test fixtures
-const stories = [
-  {
-    id: 'story-1',
-    title: 'My Published Story',
-    content: '<p>This is a published story with rich content.</p>',
-    slug: 'my-published-story',
-    is_published: true,
-    createdDate: FIXED_TIMESTAMP,
-    updatedDate: FIXED_TIMESTAMP,
-  },
-  {
-    id: 'story-2',
-    title: 'My Draft Story',
-    content: '<p>This draft is still in progress.</p>',
-    slug: 'my-draft-story',
-    is_published: false,
-    createdDate: FIXED_TIMESTAMP,
-    updatedDate: FIXED_TIMESTAMP,
-  },
-  {
-    id: 'story-3',
-    title: 'Story With Images',
-    content: '<p>Story with an image:</p><img src="/test-image.jpg" alt="Test" width="800" height="600" />',
-    slug: 'story-with-images',
-    is_published: true,
-    createdDate: FIXED_TIMESTAMP,
-    updatedDate: FIXED_TIMESTAMP,
-  },
-];
+// Use shared sample stories from test-data.ts
+const stories = [...sampleStories];
 
 // GET /stories - List stories with pagination (supports both page/size and limit/offset)
 app.get('/stories', (req: Request, res: Response) => {
-  // Support both pagination styles with safe parsing
-  const limit = parseInt(req.query.limit as string || req.query.size as string || '10', 10);
-  const offset = parseInt(req.query.offset as string || '', 10);
-  const page = parseInt(req.query.page as string || '1', 10);
+  // Support both pagination styles with safe parsing and validation
+  const limit = Math.max(1, parseInt(req.query.limit as string || req.query.size as string || '10', 10) || 10);
+  const offset = Math.max(0, parseInt(req.query.offset as string || '0', 10) || 0);
+  const page = Math.max(1, parseInt(req.query.page as string || '1', 10) || 1);
 
   // Calculate start position (prefer offset if provided, otherwise use page)
   const hasOffset = req.query.offset !== undefined;
@@ -147,6 +119,11 @@ app.post('/upload/:type', (req: Request, res: Response) => {
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
+});
+
+// Warmup endpoint (called by Next.js keep-alive service)
+app.get('/warmup', (req: Request, res: Response) => {
+  res.json({ status: 'warm', message: 'Mock server is ready' });
 });
 
 // Error handling middleware - prevents server crashes on unexpected errors
