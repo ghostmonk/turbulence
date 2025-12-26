@@ -53,19 +53,23 @@ const stories = [
   },
 ];
 
-// GET /stories - List stories with pagination
+// GET /stories - List stories with pagination (supports both page/size and limit/offset)
 app.get('/stories', (req: Request, res: Response) => {
+  // Support both pagination styles
+  const limit = parseInt(req.query.limit as string) || parseInt(req.query.size as string) || 10;
+  const offset = parseInt(req.query.offset as string);
   const page = parseInt(req.query.page as string) || 1;
-  const size = parseInt(req.query.size as string) || 10;
-  const start = (page - 1) * size;
-  const pageStories = stories.slice(start, start + size);
+
+  // Calculate start position
+  const start = !isNaN(offset) ? offset : (page - 1) * limit;
+  const pageStories = stories.slice(start, start + limit);
 
   res.json({
     items: pageStories,
     total: stories.length,
-    page,
-    size,
-    pages: Math.ceil(stories.length / size),
+    page: !isNaN(offset) ? Math.floor(offset / limit) + 1 : page,
+    size: limit,
+    pages: Math.ceil(stories.length / limit),
   });
 });
 

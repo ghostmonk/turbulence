@@ -34,16 +34,17 @@ test.describe('View Story', () => {
     expect(homePage.url).toContain('/stories/');
   });
 
-  // SSR tests - require mock server integration (skipped for now)
-  test.describe('SSR Tests (require mock server)', () => {
-    test.skip('displays story content', async ({ page }) => {
+  // SSR tests - these use the mock server (not page.route interception)
+  test.describe('SSR Tests', () => {
+    test('displays story content from mock server', async ({ page }) => {
       const storyPage = new StoryDetailPage(page);
       await storyPage.gotoBySlug('my-published-story');
       await storyPage.waitForStory();
       await expect(storyPage.article).toBeVisible();
+      await expect(storyPage.title).toHaveText('My Published Story');
     });
 
-    test.skip('shows error for non-existent story', async ({ page }) => {
+    test('shows error for non-existent story', async ({ page }) => {
       const storyPage = new StoryDetailPage(page);
       await storyPage.gotoBySlug('non-existent-story');
       await expect(storyPage.errorContainer).toBeVisible();
