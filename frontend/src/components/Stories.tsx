@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useCallback } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { useSession } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { formatDate } from "@/utils/formatDate";
@@ -21,16 +22,16 @@ const getStoryPath = (story: Story): string => {
     return `/stories/${story.slug}`;
 };
 
-const StoryItem = React.memo(({ 
-    story, 
-    session, 
-    onEdit, 
-    onDelete, 
-    deleteLoading 
-}: { 
-    story: Story, 
-    session: any, 
-    onEdit: (story: Story) => void, 
+const StoryItem = React.memo(({
+    story,
+    session,
+    onEdit,
+    onDelete,
+    deleteLoading
+}: {
+    story: Story,
+    session: Session | null,
+    onEdit: (story: Story) => void,
     onDelete: (story: Story) => Promise<void>,
     deleteLoading: boolean
 }) => {

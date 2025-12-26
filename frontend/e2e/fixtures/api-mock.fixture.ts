@@ -35,15 +35,13 @@ export interface MockPaginatedResponse<T> {
   pages: number;
 }
 
-// Counter for generating unique IDs to avoid collisions in parallel tests
-let storyIdCounter = 0;
-
 /**
  * Creates a mock story with default values.
  * Uses fixed timestamp from shared test-data for consistency.
+ * ID generation uses timestamp + random suffix to avoid collisions in parallel tests.
  */
 export function createMockStory(overrides: Partial<MockStory> = {}): MockStory {
-  const id = overrides.id || `story-${Date.now()}-${storyIdCounter++}`;
+  const id = overrides.id || `story-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   return {
     id,
@@ -181,7 +179,8 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
 
   // Mock individual story by ID (matches story-1, UUIDs, etc.)
   // Negative lookahead ensures we don't match /stories/slug/... paths
-  await page.route(/\/stories\/(?!slug\/)[\w-]+$/, async (route) => {
+  // Case-insensitive flag handles uppercase UUIDs
+  await page.route(/\/stories\/(?!slug\/)[\w-]+$/i, async (route) => {
     await maybeDelay();
     const method = route.request().method();
 
@@ -252,7 +251,7 @@ async function setupApiMocks(page: Page, options: ApiMockOptions = {}) {
     const body = route.request().postDataJSON();
     const newStory = createMockStory({
       ...body,
-      id: `story-${Date.now()}-${storyIdCounter++}`,
+      id: `story-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     });
 
     await route.fulfill({
